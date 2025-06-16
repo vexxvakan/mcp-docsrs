@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "sse",
+      "url": "https://mcp.context7.com/sse"
+    },
+    "mcp-deepwiki": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-deepwiki@latest"
+      ],
+      "env": {}
+    },
+    "mcp-interactive": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "interactive-mcp@1.9.0"
+      ],
+      "env": {}
+    },
+    "mcp-docsrs": {
+      "command": "/Users/vexx/Repos/mcp-docsrs-rustdoc/dist/mcp-docsrs",
+      "args": [
+        "--cache-ttl",
+        "7200000",
+        "--max-cache-size",
+        "200"
+      ]
+    }
+  }
+}
