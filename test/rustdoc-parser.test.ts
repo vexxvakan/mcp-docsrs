@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test"
+import { RustdocParseError } from "../src/errors.js"
 import { findItem, parseCrateInfo } from "../src/rustdoc-parser.js"
 import type { RustdocJson } from "../src/types.js"
 
@@ -82,7 +83,7 @@ describe("RustdocParser", () => {
 			expect(result).toContain("- **my_function**: A sample function that does something")
 		})
 
-		it("should handle missing crate information", () => {
+		it("should handle missing root item", () => {
 			const emptyJson: RustdocJson = {
 				format_version: 30,
 				root: "invalid",
@@ -92,8 +93,8 @@ describe("RustdocParser", () => {
 				external_crates: {}
 			}
 
-			const result = parseCrateInfo(emptyJson)
-			expect(result).toBe("No crate information available")
+			expect(() => parseCrateInfo(emptyJson)).toThrow(RustdocParseError)
+			expect(() => parseCrateInfo(emptyJson)).toThrow("Root item 'invalid' not found in index")
 		})
 	})
 

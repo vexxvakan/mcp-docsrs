@@ -1,9 +1,17 @@
 import { Database } from "bun:sqlite"
+import { mkdirSync } from "node:fs"
+import { dirname } from "node:path"
 import { CacheError, ErrorLogger } from "./errors.js"
 
 // Create or get cache database
 const createCacheDb = (dbPath = ":memory:") => {
 	try {
+		// Create directory if using file-based database
+		if (dbPath !== ":memory:") {
+			const dir = dirname(dbPath)
+			mkdirSync(dir, { recursive: true })
+		}
+
 		const db = new Database(dbPath)
 
 		// Create cache table if it doesn't exist
@@ -25,9 +33,9 @@ const createCacheDb = (dbPath = ":memory:") => {
 	}
 }
 
-// Create an in-memory cache with SQLite
-export const createCache = <T>(maxSize = 100) => {
-	const db = createCacheDb()
+// Create a cache with SQLite (in-memory or file-based)
+export const createCache = <T>(maxSize = 100, dbPath?: string) => {
+	const db = createCacheDb(dbPath)
 
 	// Prepare statements for better performance
 	const getStmt = db.prepare("SELECT data, timestamp, ttl FROM cache WHERE key = ?")
@@ -46,8 +54,8 @@ export const createCache = <T>(maxSize = 100) => {
 		db.run("DELETE FROM cache WHERE timestamp + ttl < ?", [now])
 	}
 
-	// Get a value from cache
-	const get = (key: string): T | null => {
+	// Get a value from cache with metadata
+	const getWithMetadata = (key: string): { data: T | null; isHit: boolean } => {
 		try {
 			cleanupExpired()
 
@@ -57,19 +65,25 @@ export const createCache = <T>(maxSize = 100) => {
 				ttl: number
 			} | null
 
-			if (!result) return null
+			if (!result) return { data: null, isHit: false }
 
 			// Check if entry is expired
 			if (Date.now() > result.timestamp + result.ttl) {
 				deleteStmt.run(key)
-				return null
+				return { data: null, isHit: false }
 			}
 
-			return JSON.parse(result.data)
+			return { data: JSON.parse(result.data), isHit: true }
 		} catch (error) {
 			ErrorLogger.log(error as Error)
 			throw new CacheError("get", `Failed to get key '${key}': ${(error as Error).message}`)
 		}
+	}
+
+	// Get a value from cache (legacy method)
+	const get = (key: string): T | null => {
+		const { data } = getWithMetadata(key)
+		return data
 	}
 
 	// Set a value in cache
@@ -130,6 +144,7 @@ export const createCache = <T>(maxSize = 100) => {
 
 	return {
 		get,
+		getWithMetadata,
 		set,
 		delete: remove,
 		clear,

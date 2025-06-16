@@ -52,6 +52,7 @@ export type ServerConfig = {
   cacheTtl?: number;
   maxCacheSize?: number;
   requestTimeout?: number;
+  dbPath?: string;
 }
 
 // Rustdoc JSON format types

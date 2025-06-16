@@ -19,12 +19,18 @@ const createHandlers = (config: ServerConfig = {}) => {
 	// Handler for lookup_crate_docs
 	const handleLookupCrate = async (args: LookupCrateArgs): Promise<DocsResponse> => {
 		try {
-			const json = await fetcher.fetchCrateJson(
+			const { data: json, fromCache } = await fetcher.fetchCrateJson(
 				args.crateName,
 				args.version,
 				args.target,
 				args.formatVersion
 			)
+
+			// Log cache status internally for debugging
+			ErrorLogger.logInfo("Crate documentation retrieved", {
+				crateName: args.crateName,
+				fromCache
+			})
 
 			const content = parseCrateInfo(json)
 
@@ -72,7 +78,18 @@ const createHandlers = (config: ServerConfig = {}) => {
 	// Handler for lookup_item_docs
 	const handleLookupItem = async (args: LookupItemArgs): Promise<DocsResponse> => {
 		try {
-			const json = await fetcher.fetchCrateJson(args.crateName, args.version, args.target)
+			const { data: json, fromCache } = await fetcher.fetchCrateJson(
+				args.crateName,
+				args.version,
+				args.target
+			)
+
+			// Log cache status internally for debugging
+			ErrorLogger.logInfo("Item documentation retrieved", {
+				crateName: args.crateName,
+				itemPath: args.itemPath,
+				fromCache
+			})
 
 			const itemContent = findItem(json, args.itemPath)
 

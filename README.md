@@ -136,6 +136,7 @@ Configure the server using environment variables or command-line arguments:
 | `CACHE_TTL` | `--cache-ttl` | 3600000 | Cache time-to-live in milliseconds |
 | `MAX_CACHE_SIZE` | `--max-cache-size` | 100 | Maximum number of cached entries |
 | `REQUEST_TIMEOUT` | `--request-timeout` | 30000 | HTTP request timeout in milliseconds |
+| `DB_PATH` | `--db-path` | :memory: | Path to SQLite database file (use `:memory:` for in-memory) |
 
 **Example:**
 
@@ -145,6 +146,12 @@ CACHE_TTL=7200000 MAX_CACHE_SIZE=200 npm start
 
 # Command-line arguments (executable)
 ./mcp-rust-docs --cache-ttl 7200000 --max-cache-size 200
+
+# Use persistent database to cache documentation between sessions
+./mcp-rust-docs --db-path ~/.mcp-rust-docs/cache.db
+
+# Or with environment variable
+DB_PATH=~/.mcp-rust-docs/cache.db npm start
 ```
 
 ### 🔌 MCP Configuration

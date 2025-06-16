@@ -3,9 +3,9 @@ import { createDocsFetcher } from "../src/docs-fetcher.js"
 
 async function testZstdDecompression() {
 	console.log("Testing zstd decompression with tinc crate...")
-	
+
 	const fetcher = createDocsFetcher()
-	
+
 	try {
 		const result = await fetcher.fetchCrateJson("tinc")
 		console.log("Success! Got JSON data:")

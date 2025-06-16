@@ -1,3 +1,4 @@
+import { decompress } from "fzstd"
 import { createCache } from "./cache.js"
 import {
 	CrateNotFoundError,
@@ -8,7 +9,6 @@ import {
 	TimeoutError
 } from "./errors.js"
 import type { ServerConfig } from "./types.js"
-import { decompress } from "fzstd"
 
 // Build the docs.rs JSON URL for a crate
 const buildJsonUrl = (
@@ -40,24 +40,25 @@ const buildJsonUrl = (
 
 // Create a docs fetcher with caching
 export const createDocsFetcher = (config: ServerConfig = {}) => {
-	const cache = createCache<any>(config.maxCacheSize || 100)
+	const cache = createCache<any>(config.maxCacheSize || 100, config.dbPath)
 	const timeout = config.requestTimeout || 30000
 	const cacheTtl = config.cacheTtl || 3600000 // 1 hour default
 
-	// Fetch rustdoc JSON for a crate
-	const fetchCrateJson = async (
+	// Fetch rustdoc JSON for a crate with cache status
+	const fetchCrateJsonWithStatus = async (
 		crateName: string,
 		version?: string,
 		target?: string,
 		formatVersion?: number
-	): Promise<any> => {
+	): Promise<{ data: any; fromCache: boolean }> => {
 		const url = buildJsonUrl(crateName, version, target, formatVersion)
 		const cacheKey = url
 
 		// Check cache first
-		const cached = cache.get(cacheKey)
+		const { data: cached } = cache.getWithMetadata(cacheKey)
 		if (cached) {
-			return cached
+			ErrorLogger.logInfo("Cache hit for rustdoc JSON", { url, crateName })
+			return { data: cached, fromCache: true }
 		}
 
 		ErrorLogger.logInfo("Fetching rustdoc JSON", {
@@ -113,12 +114,12 @@ export const createDocsFetcher = (config: ServerConfig = {}) => {
 						url,
 						bufferSize: buffer.byteLength
 					})
-					
+
 					// Use fzstd which handles memory allocation better than other libraries
 					// fzstd reads frame headers to determine memory requirements
 					const decompressed = decompress(new Uint8Array(buffer))
 					const jsonText = new TextDecoder().decode(decompressed)
-					
+
 					ErrorLogger.logInfo("Decompression successful", {
 						url,
 						decompressedSize: jsonText.length
@@ -171,7 +172,7 @@ export const createDocsFetcher = (config: ServerConfig = {}) => {
 			cache.set(cacheKey, data, cacheTtl)
 			ErrorLogger.logInfo("Successfully cached rustdoc JSON", { url, cacheKey })
 
-			return data
+			return { data, fromCache: false }
 		} catch (error) {
 			ErrorLogger.log(error as Error)
 
@@ -206,7 +207,7 @@ export const createDocsFetcher = (config: ServerConfig = {}) => {
 	}
 
 	return {
-		fetchCrateJson,
+		fetchCrateJson: fetchCrateJsonWithStatus,
 		clearCache,
 		close
 	}

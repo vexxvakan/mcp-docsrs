@@ -7,7 +7,8 @@ import type { ServerConfig } from "./types.js"
 const config: ServerConfig = {
 	cacheTtl: Number.parseInt(process.env.CACHE_TTL || "3600000"), // 1 hour default
 	maxCacheSize: Number.parseInt(process.env.MAX_CACHE_SIZE || "100"),
-	requestTimeout: Number.parseInt(process.env.REQUEST_TIMEOUT || "30000") // 30s default
+	requestTimeout: Number.parseInt(process.env.REQUEST_TIMEOUT || "30000"), // 30s default
+	dbPath: process.env.DB_PATH // undefined means in-memory database
 }
 
 // Error handling

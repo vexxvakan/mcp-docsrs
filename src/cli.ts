@@ -25,11 +25,13 @@ Options:
   --cache-ttl <ms>        Cache TTL in milliseconds (default: 3600000)
   --max-cache-size <n>    Maximum cache entries (default: 100)
   --request-timeout <ms>  Request timeout in milliseconds (default: 30000)
+  --db-path <path>        Path to SQLite database file (default: :memory:)
 
 Environment Variables:
   CACHE_TTL               Cache TTL in milliseconds
   MAX_CACHE_SIZE          Maximum cache entries
   REQUEST_TIMEOUT         Request timeout in milliseconds
+  DB_PATH                 Path to SQLite database file
 
 Examples:
   # Run with default settings
@@ -37,6 +39,9 @@ Examples:
 
   # Run with custom cache settings
   mcp-rust-docs --cache-ttl 7200000 --max-cache-size 200
+
+  # Run with persistent database
+  mcp-rust-docs --db-path /path/to/cache.db
 
   # Run with environment variables
   CACHE_TTL=7200000 mcp-rust-docs
@@ -81,6 +86,7 @@ const maxCacheSize = Number.parseInt(
 const requestTimeout = Number.parseInt(
 	getArgValue("--request-timeout") || process.env.REQUEST_TIMEOUT || "30000"
 ) // 30s default
+const dbPath = getArgValue("--db-path") || process.env.DB_PATH
 
 // Validate configuration
 if (Number.isNaN(cacheTtl) || cacheTtl <= 0) {
@@ -102,7 +108,8 @@ if (Number.isNaN(requestTimeout) || requestTimeout <= 0) {
 const config: ServerConfig = {
 	cacheTtl,
 	maxCacheSize,
-	requestTimeout
+	requestTimeout,
+	dbPath
 }
 
 // Error handling
