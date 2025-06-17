@@ -33,7 +33,7 @@ This is an MCP server implementation that provides access to Rust crate document
 - **Development**: `bun run src/cli.ts`
 - **As MCP server**: Configure in your MCP client with the built executable
 - **Test cache**: `bun run scripts/test-persistent-cache.ts`
-- **Interactive testing**: run `DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector ./dist/mcp-docsrs` and let the user test the server and report back to you. Use this ONLY if you are sure that you need the user to test the server and when you cannot test it yourself.
+- **Interactive testing**: run `bun inspector` and let the user test the server and report back to you. Use this ONLY if you are sure that you need the user to test the server and when you cannot test it yourself.
 
 ## Important Guidelines
 

@@ -5,19 +5,21 @@
       "Bash(bun install:*)",
       "Bash(bun run:*)",
       "Bash(grep:*)",
-      "mcp__ide__getDiagnostics",
       "Bash(curl:*)",
-      "WebFetch(domain:github.com)",
       "Bash(bun:*)",
-      "mcp__mcp-interactive__message_complete_notification",
-      "WebFetch(domain:bun.sh)",
       "Bash(mkdir:*)",
       "Bash(ls:*)",
       "Bash(./dist/mcp-docsrs:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:bun.sh)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__mcp-interactive__message_complete_notification",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "mcp__ide__getDiagnostics"
     ]
   },
-  "enableAllProjectMcpServers": true,
+  "enableAllProjectMcpServers": false,
   "enabledMcpjsonServers": [
     "context7",
     "mcp-deepwiki",
