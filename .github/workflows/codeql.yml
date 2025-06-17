@@ -1,13 +1,20 @@
 name: CodeQL Analysis
 
 on:
+  pull_request:
+    types: [ labeled ]
+    # Only run when "codeql" label is added
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    paths:
+      - 'src/**/*.ts'
+      - 'src/**/*.js'
+      - '.github/workflows/codeql.yml'
+      - '.github/codeql/**'
   schedule:
-    # Run at 2:00 AM UTC every Monday
-    - cron: '0 2 * * 1'
+    # Run monthly as a backup
+    - cron: '0 2 1 * *'
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -19,6 +26,11 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && contains(github.event.label.name, 'codeql'))
 
     strategy:
       fail-fast: false

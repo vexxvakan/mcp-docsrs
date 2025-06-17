@@ -1,35 +1,65 @@
 # GitHub Workflows Documentation
 
-## Structure
+## Overview
 
-This repository uses a modular workflow structure for better maintainability:
+This repository uses optimized GitHub Actions workflows designed for open-source projects to minimize resource usage while maintaining quality.
+
+## Workflow Strategy
+
+### For Pull Requests
+
+- **Minimal checks only** (Linux, essential tests)
+- **No resource-heavy scans** on every PR
+- **Use `full-ci` label** to trigger complete pipeline
+
+### For Main Branch
+
+- **Full CI/CD pipeline** with all platforms
+- **Security scans** on code changes
+- **Automated releases** with changelogs
+
+## Structure
 
 ```text
 .github/
 ├── workflows/
-│   ├── ci.yml                 # Main CI/CD pipeline orchestrator
-│   ├── release.yml            # Release automation with changelogs
-│   ├── security.yml           # Security scanning and audits
-│   ├── dependency-update.yml  # Bun-specific dependency management
-│   ├── jobs/                  # Reusable workflow components
-│   │   ├── test.yml          # Test suite across platforms
-│   │   ├── build.yml         # Build executables for all platforms
-│   │   ├── code-quality.yml  # Linting, type checking, security
-│   │   ├── integration-test.yml # Integration testing
-│   │   └── setup.yml         # Common setup steps (optional)
-│   └── README.md             # This file
-├── dependabot.yml            # Automated dependency updates
+│   ├── pr-ci.yml             # Fast PR validation (Linux only)
+│   ├── ci.yml                # Full CI/CD pipeline (main + labeled PRs)
+│   ├── release.yml           # Release automation with changelogs
+│   ├── security.yml          # Security scanning (scheduled + main)
+│   ├── codeql.yml            # CodeQL analysis (weekly schedule)
+│   ├── dependency-update.yml # Bun lockfile updates
+│   ├── pr-automation.yml     # PR labeling and stale checks
+│   ├── jobs/                 # Reusable workflow components
+│   │   ├── test.yml         # Test suite across platforms
+│   │   ├── build.yml        # Build executables for all platforms
+│   │   ├── code-quality.yml # Linting, type checking
+│   │   └── integration-test.yml # Integration testing
+│   └── README.md            # This file
+├── codeql/
+│   └── codeql-config.yml    # CodeQL configuration
+├── dependabot.yml           # Automated dependency updates
+├── labeler.yml              # PR auto-labeling rules
+├── secret-scanning.yml      # Secret scanning config
 └── scripts/
     └── generate-changelog.sh # Changelog generation script
 ```
 
 ## Main Workflows
 
-### CI/CD Pipeline (`ci.yml`)
+### PR Quick Checks (`pr-ci.yml`)
 
-- **Triggers**: Push to main, PRs, manual dispatch
-- **Purpose**: Orchestrates all CI jobs
+- **Triggers**: All PRs (except docs-only changes)
+- **Purpose**: Fast validation on Linux only
+- **Jobs**: Lint → Type Check → Test → Build
+- **Runtime**: ~2-3 minutes
+
+### Full CI/CD Pipeline (`ci.yml`)
+
+- **Triggers**: Push to main, PRs with `full-ci` label
+- **Purpose**: Complete validation across all platforms
 - **Jobs**: Test → Build → Quality → Integration → Status Check
+- **Note**: Add `full-ci` label to PR for full platform testing
 
 ### Release Automation (`release.yml`)
 
@@ -46,24 +76,43 @@ This repository uses a modular workflow structure for better maintainability:
 
 ### Security Scanning (`security.yml`)
 
-- **Triggers**: Push, PRs, daily schedule, manual
+- **Triggers**: Push to main (code changes), weekly schedule
 - **Purpose**: Comprehensive security analysis
 - **Features**:
   - Dependency vulnerability scanning
   - License compliance checking
-  - Static Application Security Testing (SAST)
+  - Semgrep SAST analysis
   - Secret scanning with Gitleaks
-  - Security report summaries
+  - TypeScript strict security checks
+
+### CodeQL Analysis (`codeql.yml`)
+
+- **Triggers**:
+  - PRs with `codeql` label
+  - Push to main (code changes only)
+  - Monthly schedule (backup)
+  - Manual dispatch
+- **Purpose**: Deep semantic security analysis
+- **Note**: Resource-intensive, use `codeql` label to run on PRs
 
 ### Dependency Updates (`dependency-update.yml`)
 
-- **Triggers**: Dependabot PRs, weekly schedule, manual
+- **Triggers**: Dependabot PRs, monthly schedule
 - **Purpose**: Bun-specific dependency management
 - **Features**:
   - Automatic Bun lockfile updates on Dependabot PRs
-  - Weekly outdated dependency reports
+  - Monthly outdated dependency reports
   - Bun compatibility validation
-  - Automated issue creation for updates
+
+### PR Automation (`pr-automation.yml`)
+
+- **Triggers**: PR events, weekly stale check
+- **Purpose**: Automate PR management
+- **Features**:
+  - Auto-labeling by file type and size
+  - Weekly stale PR/issue checks
+  - First-time contributor welcome (only with label)
+- **Note**: Minimal automation to avoid spam
 
 ## Reusable Workflows
 
@@ -125,8 +174,30 @@ Located in `.github/dependabot.yml`:
 Since Dependabot doesn't natively support Bun yet:
 
 1. Dependabot creates PRs based on `package.json`
-2. Our `dependency-update.yml` workflow automatically updates `bun.lockb`
+2. Our `dependency-update.yml` workflow automatically updates `bun.lock`
 3. All dependencies are validated for Bun compatibility
+
+## Resource Usage Optimization
+
+This workflow setup is optimized for open-source projects:
+
+- **PRs run minimal checks** (Linux only, ~2-3 min)
+- **Full CI requires label** (`full-ci`) to prevent abuse
+- **Security scans on schedule** not every PR
+- **Stale checks weekly** not daily
+- **Path filters** skip workflows for docs changes
+
+## Triggering Special Workflows on PRs
+
+### Full CI Pipeline
+
+1. Add the `full-ci` label to the PR
+2. The complete test matrix will run across all platforms
+
+### CodeQL Security Analysis
+
+1. Add the `codeql` label to the PR
+2. Deep semantic security analysis will run
 
 ## Running a Release
 

@@ -10,7 +10,7 @@ jobs:
   quality:
     name: Code Quality Checks
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
           path: |
             ~/.bun/install/cache
             node_modules
-          key: ${{ runner.os }}-bun-quality-${{ hashFiles('**/bun.lockb') }}
+          key: ${{ runner.os }}-bun-quality-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-quality-
             ${{ runner.os }}-bun-
@@ -50,12 +50,12 @@ jobs:
           echo "Analyzing bundle size..."
           bun run build
           ls -lah dist/
-          
+
           # Calculate and report sizes
           echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
           echo "| Platform | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|------|" >> $GITHUB_STEP_SUMMARY
-          
+
           for file in dist/mcp-docsrs-*; do
             if [ -f "$file" ]; then
               SIZE=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file")

@@ -10,7 +10,7 @@ jobs:
   integration:
     name: Integration Tests
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,16 +33,16 @@ jobs:
         run: |
           # Test basic functionality
           ./dist/mcp-docsrs-linux-x64 --version
-          
+
           # Test with environment variables
           DB_PATH=":memory:" timeout 5s ./dist/mcp-docsrs-linux-x64 || true
-          
+
       - name: Test cache functionality
         run: |
           # Create test script
           cat > test-cache.js << 'EOF'
           import { promises as fs } from 'fs';
-          
+
           // Test cache directory creation
           const cacheDir = process.env.HOME + '/.mcp-docsrs';
           try {
@@ -52,7 +52,7 @@ jobs:
             console.log('Cache directory will be created on first use');
           }
           EOF
-          
+
           bun test-cache.js
 
       - name: Test with sample crate lookup
@@ -60,19 +60,19 @@ jobs:
           # Create integration test script
           cat > integration-test.js << 'EOF'
           import { spawn } from 'child_process';
-          
+
           const server = spawn('./dist/mcp-docsrs-linux-x64', [], {
             env: { ...process.env, DB_PATH: ':memory:' }
           });
-          
+
           // Give server time to start
           await new Promise(resolve => setTimeout(resolve, 2000));
-          
+
           // Test server is running
           console.log('MCP server started successfully');
-          
+
           // Clean shutdown
           server.kill('SIGTERM');
           EOF
-          
+
           bun integration-test.js

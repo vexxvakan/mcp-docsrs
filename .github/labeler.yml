@@ -4,98 +4,93 @@
 # Language/Framework labels
 typescript:
   - changed-files:
-    - any-glob-to-any-file:
-      - '**/*.ts'
-      - '**/*.tsx'
-      - 'tsconfig.json'
+      - any-glob-to-any-file:
+          - "**/*.ts"
+          - "tsconfig.json"
 
 javascript:
   - changed-files:
-    - any-glob-to-any-file:
-      - '**/*.js'
-      - '**/*.jsx'
+      - any-glob-to-any-file:
+          - "**/*.js"
 
 bun:
   - changed-files:
-    - any-glob-to-any-file:
-      - 'bun.lockb'
-      - 'bunfig.toml'
-      - '**/bun-*.ts'
+      - any-glob-to-any-file:
+          - "bun.lock"
+          - "bunfig.toml"
 
 # Component labels
 cache:
   - changed-files:
-    - any-glob-to-any-file:
-      - 'src/cache.ts'
-      - 'src/cache/**/*'
-      - 'test/cache.test.ts'
+      - any-glob-to-any-file:
+          - "src/cache.ts"
+          - "src/cache/**/*"
+          - "test/cache.test.ts"
 
 mcp-server:
   - changed-files:
-    - any-glob-to-any-file:
-      - 'src/server.ts'
-      - 'src/tools/**/*'
-      - 'src/index.ts'
+      - any-glob-to-any-file:
+          - "src/server.ts"
+          - "src/tools/**/*"
+          - "src/index.ts"
 
 documentation:
   - changed-files:
-    - any-glob-to-any-file:
-      - '**/*.md'
-      - 'docs/**/*'
-      - '.github/*.md'
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**/*"
+          - ".github/*.md"
 
 # Infrastructure labels
 ci:
   - changed-files:
-    - any-glob-to-any-file:
-      - '.github/workflows/**/*'
-      - '.github/actions/**/*'
-      - '.github/labeler.yml'
+      - any-glob-to-any-file:
+          - ".github/workflows/**/*"
+          - ".github/actions/**/*"
+          - ".github/labeler.yml"
 
 dependencies:
   - changed-files:
-    - any-glob-to-any-file:
-      - 'package.json'
-      - 'bun.lockb'
-      - '.github/dependabot.yml'
+      - any-glob-to-any-file:
+          - "package.json"
+          - "bun.lock"
+          - ".github/dependabot.yml"
 
 build:
   - changed-files:
-    - any-glob-to-any-file:
-      - 'scripts/build-*.ts'
-      - 'tsconfig.json'
-      - 'biome.json'
+      - any-glob-to-any-file:
+          - "tsconfig.json"
+          - "biome.json"
 
 tests:
   - changed-files:
-    - any-glob-to-any-file:
-      - 'test/**/*'
-      - '**/*.test.ts'
-      - '**/*.spec.ts'
+      - any-glob-to-any-file:
+          - "test/**/*"
+          - "**/*.test.ts"
 
 # Type labels
 bug:
   - head-branch:
-    - '^fix/.*'
-    - '^bugfix/.*'
-    - '^hotfix/.*'
+      - "^fix/.*"
+      - "^bugfix/.*"
+      - "^hotfix/.*"
 
 feature:
   - head-branch:
-    - '^feat/.*'
-    - '^feature/.*'
+      - "^feat/.*"
+      - "^feature/.*"
 
 enhancement:
   - head-branch:
-    - '^enhance/.*'
-    - '^improvement/.*'
+      - "^enhance/.*"
+      - "^improvement/.*"
 
 chore:
   - head-branch:
-    - '^chore/.*'
-    - '^maintenance/.*'
+      - "^chore/.*"
+      - "^maintenance/.*"
 
 refactor:
   - head-branch:
-    - '^refactor/.*'
-    - '^cleanup/.*'
+      - "^refactor/.*"
+      - "^cleanup/.*"

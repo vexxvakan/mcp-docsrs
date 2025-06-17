@@ -4,7 +4,8 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+    types: [ labeled ]
+    # Only run when "full-ci" label is added
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -16,6 +17,10 @@ on:
 jobs:
   test:
     name: Test Suite
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && contains(github.event.label.name, 'full-ci'))
     uses: ./.github/workflows/jobs/test.yml
     secrets: inherit
     with:

@@ -4,9 +4,10 @@ on:
   pull_request:
     paths:
       - 'package.json'
+    types: [opened, synchronize]
   schedule:
-    # Run weekly dependency checks
-    - cron: '0 4 * * 1'
+    # Run monthly dependency checks
+    - cron: '0 4 1 * *'
   workflow_dispatch:
 
 jobs:
@@ -43,14 +44,14 @@ jobs:
           bun install
 
           # Check if lockfile was modified
-          if git diff --quiet bun.lockb; then
+          if git diff --quiet bun.lock; then
             echo "No lockfile changes needed"
           else
             echo "Lockfile updated"
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add bun.lockb
-            git commit -m "chore: update bun.lockb for dependency updates"
+            git add bun.lock
+            git commit -m "chore: update bun.lock for dependency updates"
             git push
           fi
 
@@ -151,17 +152,17 @@ jobs:
       - name: Clean install
         run: |
           rm -rf node_modules
-          rm -f bun.lockb
+          rm -f bun.lock
           bun install
 
       - name: Verify Bun-specific features
         run: |
           echo "## 🐰 Bun Compatibility Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Check for Node.js specific imports that might not work with Bun
           echo "### Checking for Node.js specific imports..." >> $GITHUB_STEP_SUMMARY
-          
+
           PROBLEMATIC_IMPORTS=(
             "node:cluster"
             "node:async_hooks"
@@ -170,7 +171,7 @@ jobs:
             "node:vm"
             "node:worker_threads"
           )
-          
+
           FOUND_ISSUES=false
           for import in "${PROBLEMATIC_IMPORTS[@]}"; do
             if grep -r "$import" --include="*.ts" --include="*.js" --exclude-dir=node_modules . > /dev/null 2>&1; then
@@ -178,11 +179,11 @@ jobs:
               FOUND_ISSUES=true
             fi
           done
-          
+
           if [ "$FOUND_ISSUES" = false ]; then
             echo "✅ No problematic Node.js imports found!" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Bun Version Info" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

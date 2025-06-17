@@ -81,3 +81,7 @@ The project uses the official `@modelcontextprotocol/sdk` for MCP protocol imple
 - ALWAYS create a copy of the file you are editing before making changes and name it with the suffix `-new.(ts, json, etc.)`. Then ask the user if you should keep the new or the original implementation and list the changes that you made. If you are keeping the new file, delete the original file and rename the new file to the original file name, essentially removing -new from the file name.
 - NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 - At the end of any task, make sure to lint, typecheck, run tests and finally build the code using `build:bytecode`.
+
+## Memories
+
+- Bun uses bun.lock now not bun.lockb anymore

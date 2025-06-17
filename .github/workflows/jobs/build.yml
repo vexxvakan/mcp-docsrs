@@ -23,7 +23,7 @@ jobs:
           - os: windows-latest
             target: win32-x64
             build-cmd: bun run build:windows
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
           path: |
             ~/.bun/install/cache
             node_modules
-          key: ${{ runner.os }}-bun-build-${{ hashFiles('**/bun.lockb') }}
+          key: ${{ runner.os }}-bun-build-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-build-
             ${{ runner.os }}-bun-

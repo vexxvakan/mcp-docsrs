@@ -34,7 +34,7 @@ jobs:
           path: |
             ~/.bun/install/cache
             node_modules
-          key: ${{ runner.os }}-${{ inputs.cache-key-prefix }}-${{ inputs.bun-version }}-${{ hashFiles('**/bun.lockb') }}
+          key: ${{ runner.os }}-${{ inputs.cache-key-prefix }}-${{ inputs.bun-version }}-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ inputs.cache-key-prefix }}-${{ inputs.bun-version }}-
             ${{ runner.os }}-${{ inputs.cache-key-prefix }}-
