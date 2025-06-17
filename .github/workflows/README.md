@@ -5,16 +5,22 @@
 This repository uses a modular workflow structure for better maintainability:
 
 ```text
-.github/workflows/
-├── ci.yml                 # Main CI/CD pipeline orchestrator
-├── release.yml           # Release automation (coming soon)
-├── jobs/                 # Reusable workflow components
-│   ├── test.yml         # Test suite across platforms
-│   ├── build.yml        # Build executables for all platforms
-│   ├── code-quality.yml # Linting, type checking, security
-│   ├── integration-test.yml # Integration testing
-│   └── setup.yml        # Common setup steps (optional)
-└── README.md            # This file
+.github/
+├── workflows/
+│   ├── ci.yml                 # Main CI/CD pipeline orchestrator
+│   ├── release.yml            # Release automation with changelogs
+│   ├── security.yml           # Security scanning and audits
+│   ├── dependency-update.yml  # Bun-specific dependency management
+│   ├── jobs/                  # Reusable workflow components
+│   │   ├── test.yml          # Test suite across platforms
+│   │   ├── build.yml         # Build executables for all platforms
+│   │   ├── code-quality.yml  # Linting, type checking, security
+│   │   ├── integration-test.yml # Integration testing
+│   │   └── setup.yml         # Common setup steps (optional)
+│   └── README.md             # This file
+├── dependabot.yml            # Automated dependency updates
+└── scripts/
+    └── generate-changelog.sh # Changelog generation script
 ```
 
 ## Main Workflows
@@ -37,6 +43,27 @@ This repository uses a modular workflow structure for better maintainability:
   - SHA256 checksums for all artifacts
   - GitHub Release creation with download links
   - Pre-release support
+
+### Security Scanning (`security.yml`)
+
+- **Triggers**: Push, PRs, daily schedule, manual
+- **Purpose**: Comprehensive security analysis
+- **Features**:
+  - Dependency vulnerability scanning
+  - License compliance checking
+  - Static Application Security Testing (SAST)
+  - Secret scanning with Gitleaks
+  - Security report summaries
+
+### Dependency Updates (`dependency-update.yml`)
+
+- **Triggers**: Dependabot PRs, weekly schedule, manual
+- **Purpose**: Bun-specific dependency management
+- **Features**:
+  - Automatic Bun lockfile updates on Dependabot PRs
+  - Weekly outdated dependency reports
+  - Bun compatibility validation
+  - Automated issue creation for updates
 
 ## Reusable Workflows
 
@@ -81,6 +108,25 @@ This repository uses a modular workflow structure for better maintainability:
 
 - `CODECOV_TOKEN`: For coverage reporting (optional)
 - `GITHUB_TOKEN`: Automatically provided by GitHub Actions
+
+## Dependency Management
+
+### Dependabot Configuration
+
+Located in `.github/dependabot.yml`:
+
+- **Package Updates**: Weekly checks for Bun/npm dependencies
+- **GitHub Actions**: Monthly updates for workflow actions
+- **Grouped Updates**: Development and production dependencies
+- **Auto-merge**: Patch updates for production, minor+patch for dev
+
+### Bun Compatibility
+
+Since Dependabot doesn't natively support Bun yet:
+
+1. Dependabot creates PRs based on `package.json`
+2. Our `dependency-update.yml` workflow automatically updates `bun.lockb`
+3. All dependencies are validated for Bun compatibility
 
 ## Running a Release
 
