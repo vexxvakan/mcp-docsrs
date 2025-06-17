@@ -9,6 +9,7 @@
       "Bash(bun:*)",
       "Bash(mkdir:*)",
       "Bash(ls:*)",
+      "Bash(cp:*)",
       "Bash(./dist/mcp-docsrs:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:bun.sh)",
