@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(bun install:*)",
+      "Bash(bun run:*)",
+      "Bash(grep:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(curl:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(bun:*)",
+      "mcp__mcp-interactive__message_complete_notification",
+      "WebFetch(domain:bun.sh)",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(./dist/mcp-docsrs:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "context7",
+    "mcp-deepwiki",
+    "mcp-interactive",
+    "mcp-docsrs"
+  ]
+}

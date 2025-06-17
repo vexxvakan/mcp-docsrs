@@ -4,74 +4,81 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Claude Instructions
 
-- You are a senior software engineer, senior blockchain developer and a cryptography expert.
-- Always remember to think of deterministic behaviour in consensus code.
-- You are working on a project to implement the Juno blockchain.
-- You are using Malachite consensus which is a Tendermint-style consensus engine.
-- You are using redb for state persistence.
-- You are using libp2p for peer-to-peer communication.
-- You are recreating the Cosmos SDK v0.53.0 in Rust in this same workspace.
-- If not specified by the user, ask if you should spawn multiple subagents that work in parallel to complete the tasks faster before beginning the task.
-- Instruct your subagents to use their respective task plans to complete the tasks from the plans directory.
+- You are a senior software engineer with expertise in TypeScript, Node.js ecosystem, API integrations and Bun.
+- Always prioritize code quality, type safety, and maintainability.
+- You are working on an MCP (Model Context Protocol) server that interfaces with docs.rs.
+- You are using Bun as the runtime and package manager and build tool.
+- You are building a tool that helps AI assistants access Rust documentation.
+- If not specified by the user, always ask if you should spawn multiple subagents that work in parallel to complete the tasks faster before beginning the task.
+- Instruct your subagents to use their respective task plans to complete the tasks from the plans directory if they are available.
+- Instead of assuming bun commands look up the bun documentation: https://bun.sh/docs/cli/(run, init, add, update, publish, etc.), https://bun.sh/docs/api/(http, fetch, etc.) and https://bun.sh/docs/bundler
 
 ## Project Overview
 
-This is a work in progress implementation of the Juno blockchain - a Byzantine Fault Tolerant blockchain implementation in Rust that uses Malachite consensus. The project is structured as a Rust workspace with four main crates: `juno-cli` (CLI), `juno-sdk` (core functionality and cryptography), `juno-node` (consensus implementation and node networking), and `juno-wallet` (very basic wallet functionality, needs to be expanded).
+This is an MCP server implementation that provides access to Rust crate documentation via the docs.rs JSON API. The project enables AI assistants to fetch and parse Rust documentation, making it easier to provide accurate information about Rust crates, their APIs, and usage. The server includes intelligent caching and supports fetching documentation for specific crate versions and items.
 
 ## Essential Commands
 
-- **Format code**: `cargo fmt --all`
-- **Build project**: `cargo build`
-- **Run tests**: `cargo test --workspace`
-- **Run linter**: `cargo clippy --all-features -- -D warnings` or `cargo clippy --all-features --fix --offline`
-- **Run specific test**: `cargo test test_name`
-- **Run with verbose output**: `RUST_LOG=debug cargo run -p juno-cli -- [subcommand]`
+- **Format code**: `bun run lint:fix`
+- **Build project**: `bun run build` (current platform) or `bun run build:all` (all platforms) or `bun run build:bytecode` (bytecode, fastest startup performance)
+- **Run tests**: `bun test` or `bun test --watch`
+- **Run linter**: `bun run lint`
+- **Type check**: `bun run typecheck`
+- **Run specific test**: `bun test test_name`
+- **Run with verbose output**: `DEBUG=mcp:* bun run src/cli.ts`
+- **Clean cache**: `rm -rf ~/.cache/mcp-docsrs` (Adjust to the correct dbPath, this is just the default. Check possible ENV DB_PATH, .env files and if not present ask the user for one to set it. Recommend ":memory:" for in-memory cache)
 
 ## Running the Application
 
-PLACEHOLDER
+- **Development**: `bun run src/cli.ts`
+- **As MCP server**: Configure in your MCP client with the built executable
+- **Test cache**: `bun run scripts/test-persistent-cache.ts`
+- **Interactive testing**: run `DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector ./dist/mcp-docsrs` and let the user test the server and report back to you. Use this ONLY if you are sure that you need the user to test the server and when you cannot test it yourself.
 
 ## Important Guidelines
 
-- Always run `cargo fmt --all` before finishing a task
-- Ensure all tests pass with `cargo test --workspace  --all-features`
-- Fix clippy warnings with `cargo clippy --all-features -- -D warnings`
-- Run `cargo audit --deny warnings` and `cargo deny  check` to check for security vulnerabilities.
-- Use descriptive variable and function names
-- Document complex logic with comments
-- When importing from our crates, use `juno_sdk::`, `juno_node::`, `juno_wallet::`,`juno_cli::` , `juno_types::` and `juno_math::`
+- Always run `bun run lint:fix` before finishing a task
+- Ensure all tests pass with `bun test`
+- Fix TypeScript errors with `bun run typecheck`
+- Use descriptive variable and function names following TypeScript conventions
+- Document logic with comments in the code
+- When importing from our modules, use relative imports from `src/`
+- Prefer Bun's built-in APIs over Node.js equivalents when available
+- Handle errors gracefully with proper error types from `src/errors.ts`
 
 ## Configuration Files
 
-- **Workspace**: Defined in root `Cargo.toml`
-- **Formatting**: `rustfmt.toml` (edition 2024, max width 100)
-- **Linting**: `clippy.toml` (MSRV 1.87.0)
-- **Node data**: Default storage in `~/.aura/` directory
-- **Genesis**: Auto-downloads and converts Juno mainnet snapshot if not present
+- **Package Manager**: Bun (see `package.json`)
+- **TypeScript**: `tsconfig.json` (strict mode, ES2024 target)
+- **Formatting/Linting**: `biome.json` (tab indentation, 100 char width)
+- **Cache Storage**: Default in `~/.cache/mcp-docsrs/` directory
+- **Build Outputs**: Executables in `dist/` directory
 
 ## Available MCP Servers
 
-- mcp-interactive to ask questions about the task to the human supervisor
+- mcp-interactive to ask questions about the task to the user. Do not use interactive mode if the user is on macOS since it is currently broken.
 - context7 to retrieve in repository documentation files from many external repos. If its not there you can also ask the user to add it manually. Use it to answer questions about external dependencies first.
 - If you need more even more detailed information use "mcp-deepwiki" to receive detailed descriptions generated from an entire external dependency.
 
-To get a tree style overview of a git repository use this script:
+To understand the MCP protocol better, look up "modelcontextprotocol/servers" or "modelcontextprotocol/sdk" in context7.
 
-```bash
-REPO="cosmos/cosmos-sdk"
-TAG="v0.53.0"
+The implementation follows MCP server patterns for tool-based interactions.
 
-SHA=$(curl -s https://api.github.com/repos/$REPO/git/refs/tags/$TAG | jq -r '.object.sha')
+### Key components
 
-curl -s "<https://api.github.com/repos/$REPO/git/trees/$SHA?recursive=1>" \
-  | jq -r '.tree[] | select(.type=="blob") | .path' \
-  | sort
-```
+- `server.ts`: MCP server implementation with tool handlers
+- `cache.ts`: LRU cache with SQLite persistence for API responses
+- `docs-fetcher.ts`: HTTP client for docs.rs JSON API
+- `rustdoc-parser.ts`: Parser for rustdoc JSON format
+- `types.ts`: Zod schemas and TypeScript types
+- `errors.ts`: Error handling and logging
+- `cli.ts`: CLI entry point
+- `index.ts`: Entry point for the MCP server
 
-The implementation should be very close to the cosmos-sdk implementation structure wise.
-However go related syntax like keepers and context should replace with rust logic and syntax,
-as rust usually does not have a context and instead uses traits and generics as well as macros and builder patterns.
+Do not use any external MCP server packages unless explicitly required. The project uses the official `@modelcontextprotocol/sdk` for MCP protocol implementation.
 
-Look up "cosmos/cosmos-sdk" and "CosmosContracts/juno" for implementation details in context7 and deepwiki MCP servers.
+## Important Instruction Reminders
 
-Do not use any cosmos based external dependencies like cosmwasm_std or cosmossdk_types crates because we are generating our own types from proto files. Instead notify the user to add the required proto files. When the user adds the proto files run `cargo build -p juno-types` to regenerate the types then continue with the task.
+- Do what has been asked; nothing more, nothing less. Do not deviate from the instructions.
+- ALWAYS create a copy of the file you are editing before making changes and name it with the suffix `-copy`. Then ask the user if you should keep the copy or the original file. If you are keeping the copy, delete the original file and rename the copy to the original file name.
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
