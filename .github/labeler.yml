@@ -1,0 +1,101 @@
+# Configuration for GitHub labeler action
+# This file defines which labels to apply based on file paths
+
+# Language/Framework labels
+typescript:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.ts'
+      - '**/*.tsx'
+      - 'tsconfig.json'
+
+javascript:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.js'
+      - '**/*.jsx'
+
+bun:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'bun.lockb'
+      - 'bunfig.toml'
+      - '**/bun-*.ts'
+
+# Component labels
+cache:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/cache.ts'
+      - 'src/cache/**/*'
+      - 'test/cache.test.ts'
+
+mcp-server:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/server.ts'
+      - 'src/tools/**/*'
+      - 'src/index.ts'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'docs/**/*'
+      - '.github/*.md'
+
+# Infrastructure labels
+ci:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**/*'
+      - '.github/actions/**/*'
+      - '.github/labeler.yml'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'package.json'
+      - 'bun.lockb'
+      - '.github/dependabot.yml'
+
+build:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'scripts/build-*.ts'
+      - 'tsconfig.json'
+      - 'biome.json'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'test/**/*'
+      - '**/*.test.ts'
+      - '**/*.spec.ts'
+
+# Type labels
+bug:
+  - head-branch:
+    - '^fix/.*'
+    - '^bugfix/.*'
+    - '^hotfix/.*'
+
+feature:
+  - head-branch:
+    - '^feat/.*'
+    - '^feature/.*'
+
+enhancement:
+  - head-branch:
+    - '^enhance/.*'
+    - '^improvement/.*'
+
+chore:
+  - head-branch:
+    - '^chore/.*'
+    - '^maintenance/.*'
+
+refactor:
+  - head-branch:
+    - '^refactor/.*'
+    - '^cleanup/.*'

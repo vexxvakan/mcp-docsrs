@@ -1,0 +1,245 @@
+name: PR Automation
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited]
+  pull_request_target:
+    types: [opened]
+  issues:
+    types: [opened]
+  schedule:
+    # Run daily at 1 AM UTC for stale checks
+    - cron: '0 1 * * *'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  auto-label:
+    name: Auto Label PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+
+    steps:
+      - name: Label based on files changed
+        uses: actions/labeler@v5
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          sync-labels: true
+
+      - name: Label based on PR size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const total = additions + deletions;
+
+            let sizeLabel = '';
+            if (total < 10) {
+              sizeLabel = 'size/XS';
+            } else if (total < 50) {
+              sizeLabel = 'size/S';
+            } else if (total < 200) {
+              sizeLabel = 'size/M';
+            } else if (total < 500) {
+              sizeLabel = 'size/L';
+            } else {
+              sizeLabel = 'size/XL';
+            }
+
+            // Remove other size labels
+            const labels = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            for (const label of labels.data) {
+              if (label.name.startsWith('size/') && label.name !== sizeLabel) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: label.name
+                });
+              }
+            }
+
+            // Add the appropriate size label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [sizeLabel]
+            });
+
+  pr-description-check:
+    name: PR Description Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Check PR description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const description = pr.body || '';
+
+            // Check for required sections
+            const hasDescription = description.length > 50;
+            const hasTestingSteps = description.includes('## Testing') ||
+                                   description.includes('## Test') ||
+                                   description.includes('- [ ]');
+
+            if (!hasDescription || !hasTestingSteps) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `## PR Checklist Reminder 📝
+
+                Thank you for your contribution! Please ensure your PR includes:
+
+                - [ ] A clear description of the changes
+                - [ ] Testing steps or checklist
+                - [ ] Any breaking changes noted
+                - [ ] Related issue references (if applicable)
+
+                <details>
+                <summary>PR Description Template</summary>
+
+                \`\`\`markdown
+                ## Description
+                Brief description of what this PR does.
+
+                ## Changes
+                - Change 1
+                - Change 2
+
+                ## Testing
+                - [ ] Test case 1
+                - [ ] Test case 2
+
+                ## Related Issues
+                Fixes #XXX
+                \`\`\`
+                </details>`
+              });
+            }
+
+  welcome-first-time:
+    name: Welcome First Time Contributors
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request_target' && github.event.action == 'opened'
+
+    steps:
+      - name: Check if first contribution
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const creator = context.payload.pull_request.user.login;
+
+            // Check if this is their first PR
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              creator: creator
+            });
+
+            if (prs.length === 1) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `## Welcome, @${creator}! 🎉
+
+                Thank you for your first contribution to ${context.repo.repo}! We're excited to have you here.
+
+                A maintainer will review your PR soon. In the meantime:
+                - Make sure all CI checks pass
+                - Feel free to ask questions if you need help
+                - Join our discussions if you haven't already
+
+                We appreciate your contribution! 🚀`
+              });
+
+              // Add first-time contributor label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['first-time-contributor']
+              });
+            }
+
+  assign-reviewers:
+    name: Auto Assign Reviewers
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+
+    steps:
+      - name: Auto assign based on files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const reviewers = new Set();
+
+            // Add logic to assign reviewers based on files changed
+            for (const file of files.data) {
+              if (file.filename.startsWith('src/')) {
+                reviewers.add('vexxvakan'); // Add actual reviewers
+              }
+              if (file.filename.startsWith('.github/')) {
+                reviewers.add('vexxvakan');
+              }
+            }
+
+            // Don't assign the PR author as reviewer
+            const author = context.payload.pull_request.user.login;
+            reviewers.delete(author);
+
+            if (reviewers.size > 0) {
+              await github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                reviewers: Array.from(reviewers)
+              });
+            }
+
+  stale-check:
+    name: Mark Stale PRs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Mark stale issues and PRs
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: 'This issue has been inactive for 60 days. It will be closed in 7 days if there is no further activity.'
+          stale-pr-message: 'This PR has been inactive for 30 days. Please update or it will be closed in 7 days.'
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'
+          days-before-issue-stale: 60
+          days-before-pr-stale: 30
+          days-before-close: 7
+          exempt-pr-labels: 'pinned,security,work-in-progress'
+          exempt-issue-labels: 'pinned,security,bug'
