@@ -234,5 +234,3 @@ export const createDocsFetcher = (config: ServerConfig = {}) => {
 		queryCacheDb
 	}
 }
-
-export type DocsFetcher = ReturnType<typeof createDocsFetcher>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { createDocsFetcher } from './docs-fetcher';
 
 // Zod schemas for tool parameters - raw shapes
 export const lookupCrateShape = {
@@ -160,3 +161,5 @@ export type CacheEntry = {
   expiresAt: Date;
   size: number;
 }
+
+export type DocsFetcher = ReturnType<typeof createDocsFetcher>

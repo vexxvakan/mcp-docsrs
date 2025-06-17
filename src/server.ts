@@ -1,141 +1,46 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { z } from "zod"
 import { createDocsFetcher } from "./docs-fetcher.js"
+import { ErrorLogger } from "./errors.js"
 import {
-	ErrorLogger,
-	ItemNotFoundError,
-	isCrateNotFoundError,
-	isJSONParseError,
-	isMCPDocsRsError
-} from "./errors.js"
-import { findItem, parseCrateInfo } from "./rustdoc-parser.js"
-import type { DocsResponse, LookupCrateArgs, LookupItemArgs, ServerConfig } from "./types.js"
+	createLookupCrateHandler,
+	createLookupItemHandler,
+	createSearchCratesHandler,
+	lookupCrateInputSchema,
+	lookupCratePrompt,
+	lookupCrateTool,
+	lookupItemInputSchema,
+	lookupItemPrompt,
+	lookupItemTool,
+	searchCratesInputSchema,
+	searchCratesTool,
+	suggestSimilarCrates
+} from "./tools/index.js"
+import type { ServerConfig } from "./types.js"
 
 // Create MCP server handlers
 const createHandlers = (config: ServerConfig = {}) => {
 	const fetcher = createDocsFetcher(config)
 
-	// Handler for lookup_crate_docs
-	const handleLookupCrate = async (args: LookupCrateArgs): Promise<DocsResponse> => {
-		try {
-			const { data: json, fromCache } = await fetcher.fetchCrateJson(
-				args.crateName,
-				args.version,
-				args.target,
-				args.formatVersion
-			)
+	// Create tool handlers
+	const lookupCrateHandler = createLookupCrateHandler(fetcher)
+	const lookupItemHandler = createLookupItemHandler(fetcher)
+	const searchCratesHandler = createSearchCratesHandler()
 
-			// Log cache status internally for debugging
-			ErrorLogger.logInfo("Crate documentation retrieved", {
-				crateName: args.crateName,
-				fromCache
-			})
+	// Enhanced lookup crate handler with suggestions
+	const enhancedLookupCrateHandler = async (args: any) => {
+		const result = await lookupCrateHandler(args)
 
-			const content = parseCrateInfo(json)
-
-			return {
-				content: [
-					{
-						type: "text",
-						text: content
-					}
-				]
-			}
-		} catch (error) {
-			// Log the error with full context
-			if (error instanceof Error) {
-				ErrorLogger.log(error)
-			}
-
-			// Provide user-friendly error messages based on error type
-			let errorMessage: string
-			if (isJSONParseError(error)) {
-				errorMessage =
-					"Failed to parse JSON from docs.rs. The response may not be valid rustdoc JSON."
-			} else if (isCrateNotFoundError(error)) {
-				errorMessage = error.message
-			} else if (isMCPDocsRsError(error)) {
-				errorMessage = error.message
-			} else if (error instanceof Error) {
-				errorMessage = error.message
-			} else {
-				errorMessage = "Unknown error occurred"
-			}
-
-			return {
-				content: [
-					{
-						type: "text",
-						text: `Error: ${errorMessage}`
-					}
-				],
-				isError: true
+		// If crate not found, suggest similar crates
+		if (result.isError && result.content[0].text.includes("not found")) {
+			const suggestions = await suggestSimilarCrates(args.crateName)
+			// Only show suggestions if we found actual alternatives
+			if (suggestions.length > 0 && !suggestions.includes(args.crateName)) {
+				result.content[0].text += `\n\nDid you mean one of these crates?\n${suggestions.map((s) => `- ${s}`).join("\n")}`
 			}
 		}
-	}
 
-	// Handler for lookup_item_docs
-	const handleLookupItem = async (args: LookupItemArgs): Promise<DocsResponse> => {
-		try {
-			const { data: json, fromCache } = await fetcher.fetchCrateJson(
-				args.crateName,
-				args.version,
-				args.target
-			)
-
-			// Log cache status internally for debugging
-			ErrorLogger.logInfo("Item documentation retrieved", {
-				crateName: args.crateName,
-				itemPath: args.itemPath,
-				fromCache
-			})
-
-			const itemContent = findItem(json, args.itemPath)
-
-			if (!itemContent) {
-				throw new ItemNotFoundError(args.crateName, args.itemPath)
-			}
-
-			return {
-				content: [
-					{
-						type: "text",
-						text: itemContent
-					}
-				]
-			}
-		} catch (error) {
-			// Log the error with full context
-			if (error instanceof Error) {
-				ErrorLogger.log(error)
-			}
-
-			// Provide user-friendly error messages based on error type
-			let errorMessage: string
-			if (isJSONParseError(error)) {
-				errorMessage =
-					"Failed to parse JSON from docs.rs. The response may not be valid rustdoc JSON."
-			} else if (isCrateNotFoundError(error)) {
-				errorMessage = error.message
-			} else if (isMCPDocsRsError(error)) {
-				errorMessage = error.message
-			} else if (error instanceof Error) {
-				errorMessage = error.message
-			} else {
-				errorMessage = "Unknown error occurred"
-			}
-
-			return {
-				content: [
-					{
-						type: "text",
-						text: `Error: ${errorMessage}`
-					}
-				],
-				isError: true
-			}
-		}
+		return result
 	}
 
 	// Cache query functions
@@ -167,8 +72,9 @@ const createHandlers = (config: ServerConfig = {}) => {
 	}
 
 	return {
-		handleLookupCrate,
-		handleLookupItem,
+		handleLookupCrate: enhancedLookupCrateHandler,
+		handleLookupItem: lookupItemHandler,
+		handleSearchCrates: searchCratesHandler,
 		cleanup,
 		getCacheStats,
 		getCacheEntries,
@@ -186,107 +92,41 @@ export const createRustDocsServer = (config: ServerConfig = {}) => {
 
 	const handlers = createHandlers(config)
 
-	const crateAnnotations = {
-		title: "Lookup Rust Crate Documentation",
-		readOnlyHint: true,
-		destructiveHint: true,
-		idempotentHint: true,
-		openWorldHint: true
-	}
-
-	const itemAnnotations = {
-		title: "Lookup Rust Item Documentation",
-		readOnlyHint: true,
-		destructiveHint: true,
-		idempotentHint: true,
-		openWorldHint: true
-	}
-
-	// Define input schemas inline to avoid type compatibility issues
-	const crateInputSchema = {
-		crateName: z.string().describe("Name of the Rust crate to lookup documentation for"),
-		version: z
-			.string()
-			.optional()
-			.describe('Specific version (e.g., "1.0.0") or semver range (e.g., "~4")'),
-		target: z.string().optional().describe('Target platform (e.g., "i686-pc-windows-msvc")'),
-		formatVersion: z.number().optional().describe("Rustdoc JSON format version")
-	}
-
-	const itemInputSchema = {
-		crateName: z.string().describe("Name of the Rust crate"),
-		itemPath: z
-			.string()
-			.describe('Path to specific item (e.g., "struct.MyStruct" or "fn.my_function")'),
-		version: z.string().optional().describe("Specific version or semver range"),
-		target: z.string().optional().describe("Target platform")
-	}
-
+	// Register tools
 	server.registerTool(
-		"lookup_crate_docs",
+		lookupCrateTool.name,
 		{
-			annotations: crateAnnotations,
-			description: "Lookup documentation for a Rust crate from docs.rs",
-			inputSchema: crateInputSchema as any
+			annotations: lookupCrateTool.annotations,
+			description: lookupCrateTool.description,
+			inputSchema: lookupCrateInputSchema as any
 		},
 		handlers.handleLookupCrate as any
 	)
 
 	server.registerTool(
-		"lookup_item_docs",
+		lookupItemTool.name,
 		{
-			annotations: itemAnnotations,
-			description:
-				"Lookup documentation for a specific item (struct, function, etc.) in a Rust crate",
-			inputSchema: itemInputSchema as any
+			annotations: lookupItemTool.annotations,
+			description: lookupItemTool.description,
+			inputSchema: lookupItemInputSchema as any
 		},
 		handlers.handleLookupItem as any
 	)
 
-	// Setup prompts - Using simple overload without schema to avoid type issues
-	server.prompt(
-		"lookup_crate_docs",
-		"Analyze and summarize documentation for a Rust crate",
-		(_extra) => ({
-			messages: [
-				{
-					role: "user" as const,
-					content: {
-						type: "text" as const,
-						text: `Please analyze and summarize the documentation for the Rust crate. Focus on:
-1. The main purpose and features of the crate
-2. Key types and functions
-3. Common usage patterns
-4. Any important notes or warnings
-
-Documentation content will follow.`
-					}
-				}
-			]
-		})
+	server.registerTool(
+		searchCratesTool.name,
+		{
+			annotations: searchCratesTool.annotations,
+			description: searchCratesTool.description,
+			inputSchema: searchCratesInputSchema as any
+		},
+		handlers.handleSearchCrates as any
 	)
 
-	server.prompt(
-		"lookup_item_docs",
-		"Provide detailed information about a specific item from a Rust crate",
-		(_extra) => ({
-			messages: [
-				{
-					role: "user" as const,
-					content: {
-						type: "text" as const,
-						text: `Please provide detailed information about a specific item from a Rust crate. Include:
-1. Purpose and functionality
-2. Parameters/fields and their types
-3. Usage examples if available
-4. Related items
+	// Setup prompts
+	server.prompt(lookupCratePrompt.name, lookupCratePrompt.description, lookupCratePrompt.handler)
 
-Documentation content will follow.`
-					}
-				}
-			]
-		})
-	)
+	server.prompt(lookupItemPrompt.name, lookupItemPrompt.description, lookupItemPrompt.handler)
 
 	// Register cache query resources
 	server.resource(

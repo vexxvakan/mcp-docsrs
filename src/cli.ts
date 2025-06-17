@@ -6,9 +6,6 @@ import type { ServerConfig } from "./types.js"
 // Parse command line arguments
 const args = process.argv.slice(2)
 
-// Debug log the raw arguments
-console.error("[DEBUG] Raw args:", args)
-
 // Show help if requested
 if (args.includes("--help") || args.includes("-h")) {
 	// Get the current binary path
@@ -28,13 +25,13 @@ Options:
   --cache-ttl <ms>        Cache TTL in milliseconds (default: 3600000)
   --max-cache-size <n>    Maximum cache entries (default: 100)
   --request-timeout <ms>  Request timeout in milliseconds (default: 30000)
-  --db-path <path>        Path to SQLite database file (default: :memory:)
+  --db-path <path>        Path to cache directory (cache.db will be created inside) or ":memory:" (default: :memory:)
 
 Environment Variables:
   CACHE_TTL               Cache TTL in milliseconds
   MAX_CACHE_SIZE          Maximum cache entries
   REQUEST_TIMEOUT         Request timeout in milliseconds
-  DB_PATH                 Path to SQLite database file
+  DB_PATH                 Path to cache directory (cache.db will be created inside)
 
 Examples:
   # Run with default settings
@@ -44,7 +41,7 @@ Examples:
   mcp-docsrs --cache-ttl 7200000 --max-cache-size 200
 
   # Run with persistent database
-  mcp-docsrs --db-path /path/to/cache.db
+  mcp-docsrs --db-path /path/to/cache/directory
 
   # Run with environment variables
   CACHE_TTL=7200000 mcp-docsrs
@@ -80,7 +77,7 @@ const getArgValue = (argName: string): string | undefined => {
 			return arg.substring(argName.length + 1)
 		}
 	}
-	
+
 	// Then check for --arg value format
 	const index = args.findIndex((arg) => arg === argName)
 	if (index !== -1 && index + 1 < args.length) {
@@ -88,13 +85,6 @@ const getArgValue = (argName: string): string | undefined => {
 	}
 	return undefined
 }
-
-// Debug what getArgValue returns
-console.error("[DEBUG] getArgValue results:")
-console.error("  --cache-ttl:", getArgValue("--cache-ttl"))
-console.error("  --max-cache-size:", getArgValue("--max-cache-size"))
-console.error("  --request-timeout:", getArgValue("--request-timeout"))
-console.error("  --db-path:", getArgValue("--db-path"))
 
 // Configuration from command line and environment variables
 const cacheTtl = Number.parseInt(getArgValue("--cache-ttl") || process.env.CACHE_TTL || "3600000") // 1 hour default
@@ -129,9 +119,6 @@ const config: ServerConfig = {
 	requestTimeout,
 	dbPath
 }
-
-// Debug log the config
-console.error("[DEBUG] CLI Config:", JSON.stringify(config, null, 2))
 
 // Error handling
 process.on("uncaughtException", (error) => {

@@ -208,10 +208,10 @@ CACHE_TTL=7200000 MAX_CACHE_SIZE=200 npm start
 ./mcp-docsrs --cache-ttl 7200000 --max-cache-size 200
 
 # Use persistent database to cache documentation between sessions
-./mcp-docsrs --db-path ~/.mcp-docsrs/cache.db
+./mcp-docsrs --db-path ~/.mcp-docsrs
 
 # Or with environment variable
-DB_PATH=~/.mcp-docsrs/cache.db npm start
+DB_PATH=~/.mcp-docsrs npm start
 ```
 
 ### 🔌 MCP Configuration

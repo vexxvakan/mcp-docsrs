@@ -3,16 +3,32 @@ import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
 import { CacheError, ErrorLogger } from "./errors.js"
 
+// Convert directory path to cache database file path
+const toCacheDbPath = (dbPath: string | undefined): string | undefined => {
+	if (!dbPath || dbPath === ":memory:") {
+		return dbPath
+	}
+	// If it already ends with .db, assume it's a full file path
+	if (dbPath.endsWith(".db")) {
+		return dbPath
+	}
+	// Otherwise, treat it as a directory and append cache.db
+	return dbPath.endsWith("/") ? `${dbPath}cache.db` : `${dbPath}/cache.db`
+}
+
 // Create or get cache database
 const createCacheDb = (dbPath = ":memory:") => {
 	try {
+		// Convert directory path to cache.db file path
+		const normalizedPath = toCacheDbPath(dbPath) || dbPath
+
 		// Create directory if using file-based database
-		if (dbPath !== ":memory:") {
-			const dir = dirname(dbPath)
+		if (normalizedPath !== ":memory:") {
+			const dir = dirname(normalizedPath)
 			mkdirSync(dir, { recursive: true })
 		}
 
-		const db = new Database(dbPath)
+		const db = new Database(normalizedPath)
 
 		// Create cache table if it doesn't exist
 		db.run(`
@@ -35,7 +51,15 @@ const createCacheDb = (dbPath = ":memory:") => {
 
 // Create a cache with SQLite (in-memory or file-based)
 export const createCache = <T>(maxSize = 100, dbPath?: string) => {
-	const db = createCacheDb(dbPath)
+	// Convert directory path to cache.db file path
+	const normalizedPath = toCacheDbPath(dbPath)
+
+	// Log the cache path for clarity
+	if (normalizedPath && normalizedPath !== ":memory:") {
+		ErrorLogger.logInfo("Creating cache database", { path: normalizedPath })
+	}
+
+	const db = createCacheDb(normalizedPath)
 
 	// Prepare statements for better performance
 	const getStmt = db.prepare("SELECT data, timestamp, ttl FROM cache WHERE key = ?")

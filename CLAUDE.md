@@ -26,23 +26,20 @@ This is an MCP server implementation that provides access to Rust crate document
 - **Type check**: `bun run typecheck`
 - **Run specific test**: `bun test test_name`
 - **Run with verbose output**: `DEBUG=mcp:* bun run src/cli.ts`
-- **Clean cache**: `rm -rf ~/.cache/mcp-docsrs` (Adjust to the correct dbPath, this is just the default. Check possible ENV DB_PATH, .env files and if not present ask the user for one to set it. Recommend ":memory:" for in-memory cache)
+- **Clean cache**: `rm -rf ~/.mcp-docsrs/cache.db` (Adjust to the correct dbPath directory. The cache.db file will be created inside the specified directory. Check possible ENV DB_PATH, .env files and if not present ask the user for one to set it. Recommend ":memory:" for in-memory cache)
 
 ## Running the Application
 
 - **Development**: `bun run src/cli.ts`
 - **As MCP server**: Configure in your MCP client with the built executable
-- **Test cache**: `bun run scripts/test-persistent-cache.ts`
 - **Interactive testing**: run `bun inspector` and let the user test the server and report back to you. Use this ONLY if you are sure that you need the user to test the server and when you cannot test it yourself.
 
 ## Important Guidelines
 
-- Always run `bun run lint:fix` before finishing a task
 - Ensure all tests pass with `bun test`
 - Fix TypeScript errors with `bun run typecheck`
 - Use descriptive variable and function names following TypeScript conventions
 - Document logic with comments in the code
-- When importing from our modules, use relative imports from `src/`
 - Prefer Bun's built-in APIs over Node.js equivalents when available
 - Handle errors gracefully with proper error types from `src/errors.ts`
 
@@ -50,8 +47,8 @@ This is an MCP server implementation that provides access to Rust crate document
 
 - **Package Manager**: Bun (see `package.json`)
 - **TypeScript**: `tsconfig.json` (strict mode, ES2024 target)
-- **Formatting/Linting**: `biome.json` (tab indentation, 100 char width)
-- **Cache Storage**: Default in `~/.cache/mcp-docsrs/` directory
+- **Formatting/Linting**: `biome.json` (2 tabs indentation, 100 char width)
+- **Cache Storage**: Default in `~/.mcp-docsrs/cache.db` file (specify directory path, cache.db will be created automatically)
 - **Build Outputs**: Executables in `dist/` directory
 
 ## Available MCP Servers
@@ -66,7 +63,8 @@ The implementation follows MCP server patterns for tool-based interactions.
 
 ### Key components
 
-- `server.ts`: MCP server implementation with tool handlers
+- `tools/`: Tools for the MCP server
+- `server.ts`: MCP server implementation
 - `cache.ts`: LRU cache with SQLite persistence for API responses
 - `docs-fetcher.ts`: HTTP client for docs.rs JSON API
 - `rustdoc-parser.ts`: Parser for rustdoc JSON format
@@ -75,10 +73,11 @@ The implementation follows MCP server patterns for tool-based interactions.
 - `cli.ts`: CLI entry point
 - `index.ts`: Entry point for the MCP server
 
-Do not use any external MCP server packages unless explicitly required. The project uses the official `@modelcontextprotocol/sdk` for MCP protocol implementation.
+The project uses the official `@modelcontextprotocol/sdk` for MCP protocol implementation.
 
 ## Important Instruction Reminders
 
 - Do what has been asked; nothing more, nothing less. Do not deviate from the instructions.
-- ALWAYS create a copy of the file you are editing before making changes and name it with the suffix `-copy`. Then ask the user if you should keep the copy or the original file. If you are keeping the copy, delete the original file and rename the copy to the original file name.
+- ALWAYS create a copy of the file you are editing before making changes and name it with the suffix `-new.(ts, json, etc.)`. Then ask the user if you should keep the new or the original implementation and list the changes that you made. If you are keeping the new file, delete the original file and rename the new file to the original file name, essentially removing -new from the file name.
 - NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+- At the end of any task, make sure to lint, typecheck, run tests and finally build the code using `build:bytecode`.
