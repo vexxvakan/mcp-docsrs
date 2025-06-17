@@ -25,10 +25,18 @@ This repository uses a modular workflow structure for better maintainability:
 - **Purpose**: Orchestrates all CI jobs
 - **Jobs**: Test → Build → Quality → Integration → Status Check
 
-### Release Automation (`release.yml`) - Coming Soon
+### Release Automation (`release.yml`)
 
-- **Trigger**: Manual dispatch with version
-- **Purpose**: Create releases with changelogs and binaries
+- **Trigger**: Manual dispatch with version selection
+- **Purpose**: Automated releases with professional changelogs
+- **Features**:
+  - Semantic version bumping (major/minor/patch/custom)
+  - Beautiful changelog with categorized commits
+  - First-time contributor recognition
+  - Multi-platform binary builds
+  - SHA256 checksums for all artifacts
+  - GitHub Release creation with download links
+  - Pre-release support
 
 ## Reusable Workflows
 
@@ -72,3 +80,35 @@ This repository uses a modular workflow structure for better maintainability:
 ## Secrets Required
 
 - `CODECOV_TOKEN`: For coverage reporting (optional)
+- `GITHUB_TOKEN`: Automatically provided by GitHub Actions
+
+## Running a Release
+
+1. Go to Actions → Release Automation
+2. Click "Run workflow"
+3. Select release type:
+   - `patch`: Bug fixes (1.0.0 → 1.0.1)
+   - `minor`: New features (1.0.0 → 1.1.0)
+   - `major`: Breaking changes (1.0.0 → 2.0.0)
+   - `custom`: Specify exact version
+4. Optionally mark as pre-release
+5. Workflow will:
+   - Update version in package.json
+   - Generate comprehensive changelog
+   - Build all platform binaries
+   - Create GitHub Release with artifacts
+
+## Commit Message Format
+
+For best changelog generation, use conventional commits:
+
+- `feat:` New features
+- `fix:` Bug fixes
+- `docs:` Documentation changes
+- `perf:` Performance improvements
+- `refactor:` Code refactoring
+- `test:` Test additions/changes
+- `build:` Build system changes
+- `chore:` Maintenance tasks
+
+Add `!` for breaking changes: `feat!: new API`

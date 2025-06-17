@@ -5,5 +5,8 @@
     "biome.lsp.trace.server": "verbose",
     "biome.requireConfiguration": true,
     "biome.suggestInstallingGlobally": false,
-    "typescript.tsdk": "node_modules/typescript/lib"
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "[shellscript]": {
+        "editor.defaultFormatter": "foxundermoon.shell-format"
+    }
 }

@@ -1,0 +1,384 @@
+name: Release Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.2.0)'
+        required: true
+        type: string
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - custom
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ inputs.release_type }}" = "custom" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            # Get current version from package.json
+            CURRENT_VERSION=$(grep '"version"' package.json | cut -d'"' -f4)
+            
+            # Parse version components
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            
+            # Increment based on release type
+            case "${{ inputs.release_type }}" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+            
+            VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Update version in package.json
+        run: |
+          # Update package.json version
+          sed -i "s/\"version\": \".*\"/\"version\": \"${{ steps.version.outputs.version }}\"/" package.json
+          
+          # Commit version bump
+          git add package.json
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+          git push
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          # Create changelog file
+          cat > CHANGELOG_TEMP.md << 'EOF'
+          # 🎉 Release v${{ steps.version.outputs.version }}
+          
+          > Released on $(date +"%B %d, %Y")
+          
+          ## ✨ Highlights
+          
+          EOF
+          
+          # Get commit messages and categorize them
+          if [ -z "$PREVIOUS_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%H|%s|%an|%ae" --no-merges)
+          else
+            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"%H|%s|%an|%ae" --no-merges)
+          fi
+          
+          # Initialize arrays for different categories
+          declare -A FEATURES
+          declare -A FIXES
+          declare -A DOCS
+          declare -A CHORES
+          declare -A BREAKING
+          declare -A AUTHORS
+          declare -A FIRST_TIME_CONTRIBUTORS
+          
+          # Process commits
+          while IFS='|' read -r HASH MESSAGE AUTHOR EMAIL; do
+            # Track authors
+            AUTHORS["$AUTHOR"]="$EMAIL"
+            
+            # Check if this is author's first contribution
+            AUTHOR_COMMITS=$(git log --author="$EMAIL" --oneline | wc -l)
+            if [ "$AUTHOR_COMMITS" -eq 1 ]; then
+              FIRST_TIME_CONTRIBUTORS["$AUTHOR"]="$EMAIL"
+            fi
+            
+            # Categorize commits
+            if [[ "$MESSAGE" =~ ^feat(\(.*\))?!?:(.*)$ ]]; then
+              FEATURES["$HASH"]="$MESSAGE|$AUTHOR"
+              if [[ "$MESSAGE" =~ ! ]]; then
+                BREAKING["$HASH"]="$MESSAGE|$AUTHOR"
+              fi
+            elif [[ "$MESSAGE" =~ ^fix(\(.*\))?:(.*)$ ]]; then
+              FIXES["$HASH"]="$MESSAGE|$AUTHOR"
+            elif [[ "$MESSAGE" =~ ^docs(\(.*\))?:(.*)$ ]]; then
+              DOCS["$HASH"]="$MESSAGE|$AUTHOR"
+            elif [[ "$MESSAGE" =~ ^chore(\(.*\))?:(.*)$ ]]; then
+              CHORES["$HASH"]="$MESSAGE|$AUTHOR"
+            elif [[ "$MESSAGE" =~ BREAKING ]]; then
+              BREAKING["$HASH"]="$MESSAGE|$AUTHOR"
+            else
+              # Default to chore
+              CHORES["$HASH"]="$MESSAGE|$AUTHOR"
+            fi
+          done <<< "$COMMITS"
+          
+          # Add highlights (top 3 features or all if less)
+          if [ ${#FEATURES[@]} -gt 0 ]; then
+            echo "### Key Features" >> CHANGELOG_TEMP.md
+            COUNT=0
+            for HASH in "${!FEATURES[@]}"; do
+              IFS='|' read -r MSG AUTHOR <<< "${FEATURES[$HASH]}"
+              CLEAN_MSG=$(echo "$MSG" | sed 's/^feat(\(.*\))?!?:\s*//')
+              echo "- 🚀 $CLEAN_MSG" >> CHANGELOG_TEMP.md
+              COUNT=$((COUNT + 1))
+              if [ $COUNT -eq 3 ]; then break; fi
+            done
+            echo "" >> CHANGELOG_TEMP.md
+          fi
+          
+          # Add breaking changes warning
+          if [ ${#BREAKING[@]} -gt 0 ]; then
+            echo "## ⚠️ BREAKING CHANGES" >> CHANGELOG_TEMP.md
+            echo "" >> CHANGELOG_TEMP.md
+            for HASH in "${!BREAKING[@]}"; do
+              IFS='|' read -r MSG AUTHOR <<< "${BREAKING[$HASH]}"
+              CLEAN_MSG=$(echo "$MSG" | sed 's/^.*:\s*//')
+              SHORT_HASH=$(echo "$HASH" | cut -c1-7)
+              echo "- $CLEAN_MSG ([${SHORT_HASH}](https://github.com/${{ github.repository }}/commit/${HASH})) by @${AUTHOR}" >> CHANGELOG_TEMP.md
+            done
+            echo "" >> CHANGELOG_TEMP.md
+          fi
+          
+          # Add categorized changes
+          echo "## 🎯 What's Changed" >> CHANGELOG_TEMP.md
+          echo "" >> CHANGELOG_TEMP.md
+          
+          # Features
+          if [ ${#FEATURES[@]} -gt 0 ]; then
+            echo "### 🚀 Features" >> CHANGELOG_TEMP.md
+            for HASH in "${!FEATURES[@]}"; do
+              IFS='|' read -r MSG AUTHOR <<< "${FEATURES[$HASH]}"
+              CLEAN_MSG=$(echo "$MSG" | sed 's/^feat(\(.*\))?!?:\s*//')
+              SHORT_HASH=$(echo "$HASH" | cut -c1-7)
+              echo "- $CLEAN_MSG ([${SHORT_HASH}](https://github.com/${{ github.repository }}/commit/${HASH})) @${AUTHOR}" >> CHANGELOG_TEMP.md
+            done
+            echo "" >> CHANGELOG_TEMP.md
+          fi
+          
+          # Bug Fixes
+          if [ ${#FIXES[@]} -gt 0 ]; then
+            echo "### 🐛 Bug Fixes" >> CHANGELOG_TEMP.md
+            for HASH in "${!FIXES[@]}"; do
+              IFS='|' read -r MSG AUTHOR <<< "${FIXES[$HASH]}"
+              CLEAN_MSG=$(echo "$MSG" | sed 's/^fix(\(.*\))?:\s*//')
+              SHORT_HASH=$(echo "$HASH" | cut -c1-7)
+              echo "- $CLEAN_MSG ([${SHORT_HASH}](https://github.com/${{ github.repository }}/commit/${HASH})) @${AUTHOR}" >> CHANGELOG_TEMP.md
+            done
+            echo "" >> CHANGELOG_TEMP.md
+          fi
+          
+          # Documentation
+          if [ ${#DOCS[@]} -gt 0 ]; then
+            echo "### 📚 Documentation" >> CHANGELOG_TEMP.md
+            for HASH in "${!DOCS[@]}"; do
+              IFS='|' read -r MSG AUTHOR <<< "${DOCS[$HASH]}"
+              CLEAN_MSG=$(echo "$MSG" | sed 's/^docs(\(.*\))?:\s*//')
+              SHORT_HASH=$(echo "$HASH" | cut -c1-7)
+              echo "- $CLEAN_MSG ([${SHORT_HASH}](https://github.com/${{ github.repository }}/commit/${HASH})) @${AUTHOR}" >> CHANGELOG_TEMP.md
+            done
+            echo "" >> CHANGELOG_TEMP.md
+          fi
+          
+          # First Time Contributors
+          if [ ${#FIRST_TIME_CONTRIBUTORS[@]} -gt 0 ]; then
+            echo "## 🌟 First Time Contributors" >> CHANGELOG_TEMP.md
+            echo "" >> CHANGELOG_TEMP.md
+            echo "We'd like to welcome the following contributors who made their first contribution! 🎊" >> CHANGELOG_TEMP.md
+            echo "" >> CHANGELOG_TEMP.md
+            for AUTHOR in "${!FIRST_TIME_CONTRIBUTORS[@]}"; do
+              echo "- @${AUTHOR}" >> CHANGELOG_TEMP.md
+            done
+            echo "" >> CHANGELOG_TEMP.md
+          fi
+          
+          # Statistics
+          TOTAL_COMMITS=$(echo "$COMMITS" | wc -l)
+          TOTAL_AUTHORS=${#AUTHORS[@]}
+          FILES_CHANGED=$(git diff ${PREVIOUS_TAG}..HEAD --name-only 2>/dev/null | wc -l || echo "N/A")
+          
+          echo "## 📊 Release Stats" >> CHANGELOG_TEMP.md
+          echo "" >> CHANGELOG_TEMP.md
+          echo "- 📝 **$TOTAL_COMMITS** commits" >> CHANGELOG_TEMP.md
+          echo "- 👥 **$TOTAL_AUTHORS** contributors" >> CHANGELOG_TEMP.md
+          echo "- 📁 **$FILES_CHANGED** files changed" >> CHANGELOG_TEMP.md
+          echo "" >> CHANGELOG_TEMP.md
+          
+          # Save changelog for output
+          CHANGELOG=$(cat CHANGELOG_TEMP.md)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  build-release:
+    name: Build Release Artifacts
+    needs: prepare-release
+    uses: ./.github/workflows/jobs/build.yml
+    secrets: inherit
+
+  create-release:
+    name: Create GitHub Release
+    needs: [prepare-release, build-release]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create checksums
+        run: |
+          cd artifacts
+          
+          # Create checksums file
+          echo "## 📝 SHA256 Checksums" > checksums.txt
+          echo "" >> checksums.txt
+          echo '```' >> checksums.txt
+          
+          # Calculate checksums for each artifact
+          for dir in mcp-docsrs-*/; do
+            if [ -d "$dir" ]; then
+              cd "$dir"
+              for file in mcp-docsrs-*; do
+                if [ -f "$file" ]; then
+                  SHA256=$(sha256sum "$file" | cut -d' ' -f1)
+                  echo "$file: $SHA256" >> ../checksums.txt
+                fi
+              done
+              cd ..
+            fi
+          done
+          
+          echo '```' >> checksums.txt
+
+      - name: Prepare release body
+        run: |
+          VERSION="${{ needs.prepare-release.outputs.version }}"
+          
+          cat > release-body.md << 'EOF'
+          ${{ needs.prepare-release.outputs.changelog }}
+          
+          ## 📥 Downloads
+          
+          | Platform | Architecture | Download |
+          |----------|--------------|----------|
+          | 🐧 Linux | x64 | [mcp-docsrs-linux-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64) |
+          | 🍎 macOS | x64 | [mcp-docsrs-darwin-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-x64) |
+          | 🪟 Windows | x64 | [mcp-docsrs-win32-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-win32-x64.exe) |
+          | ⚡ Bytecode | All | [mcp-docsrs-bytecode](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-bytecode) |
+          
+          ### 🚀 Quick Install
+          
+          #### Linux/macOS
+          ```bash
+          # Download and install (replace PLATFORM with your platform)
+          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-PLATFORM -o mcp-docsrs
+          chmod +x mcp-docsrs
+          ./mcp-docsrs --version
+          ```
+          
+          #### Windows
+          ```powershell
+          # Download using PowerShell
+          Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-win32-x64.exe" -OutFile "mcp-docsrs.exe"
+          .\mcp-docsrs.exe --version
+          ```
+          
+          EOF
+          
+          # Append checksums
+          cat artifacts/checksums.txt >> release-body.md
+          
+          # Add footer
+          cat >> release-body.md << 'EOF'
+          
+          ---
+          
+          ### 🤝 Contributing
+          
+          Contributions are welcome! Please check our [contributing guidelines](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md) and feel free to submit issues or pull requests.
+          
+          ### 📖 Documentation
+          
+          For detailed documentation, visit our [GitHub repository](https://github.com/${{ github.repository }}).
+          
+          EOF
+
+      - name: Create release tag
+        run: |
+          git tag -a "v${{ needs.prepare-release.outputs.version }}" -m "Release v${{ needs.prepare-release.outputs.version }}"
+          git push origin "v${{ needs.prepare-release.outputs.version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.prepare-release.outputs.version }}
+          name: Release v${{ needs.prepare-release.outputs.version }}
+          body_path: release-body.md
+          draft: false
+          prerelease: ${{ inputs.prerelease }}
+          files: |
+            artifacts/mcp-docsrs-linux-x64/mcp-docsrs-linux-x64
+            artifacts/mcp-docsrs-darwin-x64/mcp-docsrs-darwin-x64
+            artifacts/mcp-docsrs-win32-x64/mcp-docsrs-win32-x64.exe
+            artifacts/mcp-docsrs-bytecode/mcp-docsrs-bytecode
+
+      - name: Post-release summary
+        run: |
+          echo "## 🎉 Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: v${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release URL**: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review the release notes" >> $GITHUB_STEP_SUMMARY
+          echo "2. Test the released binaries" >> $GITHUB_STEP_SUMMARY
+          echo "3. Announce the release" >> $GITHUB_STEP_SUMMARY
