@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod"
 import { createDocsFetcher } from "./docs-fetcher.js"
@@ -138,6 +138,29 @@ const createHandlers = (config: ServerConfig = {}) => {
 		}
 	}
 
+	// Cache query functions
+	const getCacheStats = () => {
+		return fetcher.getCacheStats()
+	}
+
+	const getCacheEntries = (limit: number, offset: number) => {
+		return fetcher.getCacheEntries(limit, offset)
+	}
+
+	const queryCacheDb = (sql: string) => {
+		return fetcher.queryCacheDb(sql)
+	}
+
+	// Get server configuration
+	const getServerConfig = () => {
+		return {
+			cacheTtl: config.cacheTtl || 3600000,
+			maxCacheSize: config.maxCacheSize || 100,
+			requestTimeout: config.requestTimeout || 30000,
+			dbPath: config.dbPath || ":memory:"
+		}
+	}
+
 	// Cleanup function
 	const cleanup = () => {
 		fetcher.close()
@@ -146,7 +169,11 @@ const createHandlers = (config: ServerConfig = {}) => {
 	return {
 		handleLookupCrate,
 		handleLookupItem,
-		cleanup
+		cleanup,
+		getCacheStats,
+		getCacheEntries,
+		queryCacheDb,
+		getServerConfig
 	}
 }
 
@@ -259,6 +286,176 @@ Documentation content will follow.`
 				}
 			]
 		})
+	)
+
+	// Register cache query resources
+	server.resource(
+		"cache-stats",
+		new ResourceTemplate("cache://stats", {
+			list: async () => ({
+				resources: [
+					{
+						name: "Cache Statistics",
+						uri: "cache://stats",
+						description: "Get cache statistics including total entries and size"
+					}
+				]
+			})
+		}),
+		(uri) => {
+			try {
+				const stats = handlers.getCacheStats()
+				return {
+					contents: [
+						{
+							uri: uri.href,
+							mimeType: "application/json",
+							text: JSON.stringify(stats, null, 2)
+						}
+					]
+				}
+			} catch (error) {
+				ErrorLogger.log(error as Error)
+				return {
+					contents: [
+						{
+							uri: uri.href,
+							mimeType: "text/plain",
+							text: `Error retrieving cache statistics: ${(error as Error).message}`
+						}
+					]
+				}
+			}
+		}
+	)
+
+	server.resource(
+		"cache-entries",
+		new ResourceTemplate("cache://entries?limit={limit}&offset={offset}", {
+			list: async () => ({
+				resources: [
+					{
+						name: "Cache Entries",
+						uri: "cache://entries?limit=10&offset=0",
+						description: "List cached documentation entries"
+					}
+				]
+			})
+		}),
+		(uri, args) => {
+			try {
+				const limit = args.limit ? Number.parseInt(args.limit as string) : 100
+				const offset = args.offset ? Number.parseInt(args.offset as string) : 0
+				const entries = handlers.getCacheEntries(limit, offset)
+				return {
+					contents: [
+						{
+							uri: uri.href,
+							mimeType: "application/json",
+							text: JSON.stringify(entries, null, 2)
+						}
+					]
+				}
+			} catch (error) {
+				ErrorLogger.log(error as Error)
+				return {
+					contents: [
+						{
+							uri: uri.href,
+							mimeType: "text/plain",
+							text: `Error retrieving cache entries: ${(error as Error).message}`
+						}
+					]
+				}
+			}
+		}
+	)
+
+	server.resource(
+		"cache-query",
+		new ResourceTemplate("cache://query?sql={sql}", {
+			list: async () => ({
+				resources: [
+					{
+						name: "Cache Query",
+						uri: "cache://query?sql=SELECT key FROM cache LIMIT 10",
+						description:
+							"Execute SELECT queries on the cache database. Example: SELECT key, LENGTH(data) as size FROM cache WHERE key LIKE '%serde%'"
+					}
+				]
+			})
+		}),
+		(uri, args) => {
+			try {
+				// Only allow SELECT queries for safety
+				const sql = decodeURIComponent(args.sql as string)
+				if (!sql || !sql.trim().toUpperCase().startsWith("SELECT")) {
+					throw new Error("Only SELECT queries are allowed for safety")
+				}
+				const results = handlers.queryCacheDb(sql)
+				return {
+					contents: [
+						{
+							uri: uri.href,
+							mimeType: "application/json",
+							text: JSON.stringify(results, null, 2)
+						}
+					]
+				}
+			} catch (error) {
+				ErrorLogger.log(error as Error)
+				return {
+					contents: [
+						{
+							uri: uri.href,
+							mimeType: "text/plain",
+							text: `Error executing query: ${(error as Error).message}`
+						}
+					]
+				}
+			}
+		}
+	)
+
+	server.resource(
+		"server-config",
+		new ResourceTemplate("cache://config", {
+			list: async () => ({
+				resources: [
+					{
+						name: "Server Configuration",
+						uri: "cache://config",
+						description:
+							"Get current server configuration (cache TTL, max size, DB path, etc.)"
+					}
+				]
+			})
+		}),
+		(uri) => {
+			try {
+				const config = handlers.getServerConfig()
+				return {
+					contents: [
+						{
+							uri: uri.href,
+							mimeType: "application/json",
+							text: JSON.stringify(config, null, 2)
+						}
+					]
+				}
+			} catch (error) {
+				ErrorLogger.log(error as Error)
+				return {
+					contents: [
+						{
+							uri: uri.href,
+							mimeType: "text/plain",
+							text: `Error retrieving server configuration: ${(error as Error).message}`
+						}
+					]
+				}
+			}
+		}
 	)
 
 	// Start the server

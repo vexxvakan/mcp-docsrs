@@ -129,6 +129,76 @@ export const createCache = <T>(maxSize = 100, dbPath?: string) => {
 		}
 	}
 
+	// Execute a raw SQL query
+	const query = (sql: string, params: any[] = []): any[] => {
+		try {
+			cleanupExpired()
+			return db.prepare(sql).all(...params)
+		} catch (error) {
+			ErrorLogger.log(error as Error)
+			throw new CacheError("query", `Failed to execute query: ${(error as Error).message}`)
+		}
+	}
+
+	// Get cache statistics
+	const getStats = (): { totalEntries: number; totalSize: number; oldestEntry: Date | null } => {
+		try {
+			const count = (countStmt.get() as { count: number }).count
+			const sizeResult = db
+				.prepare("SELECT SUM(LENGTH(data)) as totalSize FROM cache")
+				.get() as { totalSize: number | null }
+			const oldestResult = db.prepare("SELECT MIN(timestamp) as oldest FROM cache").get() as {
+				oldest: number | null
+			}
+
+			return {
+				totalEntries: count,
+				totalSize: sizeResult.totalSize || 0,
+				oldestEntry: oldestResult.oldest ? new Date(oldestResult.oldest) : null
+			}
+		} catch (error) {
+			ErrorLogger.log(error as Error)
+			throw new CacheError(
+				"stats",
+				`Failed to get cache statistics: ${(error as Error).message}`
+			)
+		}
+	}
+
+	// List all cache entries with metadata
+	const listEntries = (
+		limit = 100,
+		offset = 0
+	): Array<{ key: string; timestamp: Date; ttl: number; expiresAt: Date; size: number }> => {
+		try {
+			cleanupExpired()
+			const entries = db
+				.prepare(
+					`SELECT key, timestamp, ttl, LENGTH(data) as size 
+					FROM cache 
+					ORDER BY timestamp DESC 
+					LIMIT ? OFFSET ?`
+				)
+				.all(limit, offset) as Array<{
+				key: string
+				timestamp: number
+				ttl: number
+				size: number
+			}>
+
+			return entries.map((entry) => ({
+				key: entry.key,
+				timestamp: new Date(entry.timestamp),
+				ttl: entry.ttl,
+				expiresAt: new Date(entry.timestamp + entry.ttl),
+				size: entry.size
+			}))
+		} catch (error) {
+			ErrorLogger.log(error as Error)
+			throw new CacheError("list", `Failed to list cache entries: ${(error as Error).message}`)
+		}
+	}
+
 	// Close the database
 	const close = (): void => {
 		try {
@@ -148,7 +218,10 @@ export const createCache = <T>(maxSize = 100, dbPath?: string) => {
 		set,
 		delete: remove,
 		clear,
-		close
+		close,
+		query,
+		getStats,
+		listEntries
 	}
 }
 

@@ -34,7 +34,7 @@ export type DocsResponse = {
 }
 
 // Cache types
-export type CacheEntry = {
+export type CacheData = {
   data: any;
   timestamp: number;
   ttl: number;
@@ -142,4 +142,21 @@ export type RustdocJson = {
       html_root_url?: string;
     }
   >;
+}
+
+// Cache query types
+export type CacheQueryType = "stats" | "list" | "query"
+
+export type CacheStats = {
+  totalEntries: number;
+  totalSize: number;
+  oldestEntry: Date | null;
+}
+
+export type CacheEntry = {
+  key: string;
+  timestamp: Date;
+  ttl: number;
+  expiresAt: Date;
+  size: number;
 }

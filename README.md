@@ -124,6 +124,69 @@ Fetches documentation for a specific item within a crate.
 }
 ```
 
+### 📊 Resources
+
+The server provides resources for querying and inspecting the cache database:
+
+#### `cache://stats`
+
+Returns cache statistics including total entries, size, and oldest entry.
+
+**Example:**
+```json
+{
+  "totalEntries": 42,
+  "totalSize": 1048576,
+  "oldestEntry": "2024-01-15T10:30:00.000Z"
+}
+```
+
+#### `cache://entries?limit={limit}&offset={offset}`
+
+Lists cached entries with metadata. Supports pagination.
+
+**Parameters:**
+- `limit` - Number of entries to return (default: 100)
+- `offset` - Number of entries to skip (default: 0)
+
+**Example:**
+```json
+[
+  {
+    "key": "serde/latest/x86_64-unknown-linux-gnu",
+    "timestamp": "2024-01-15T14:20:00.000Z",
+    "ttl": 3600000,
+    "expiresAt": "2024-01-15T15:20:00.000Z",
+    "size": 524288
+  }
+]
+```
+
+#### `cache://query?sql={sql}`
+
+Execute SQL queries on the cache database (SELECT queries only for safety).
+
+**Example:**
+```
+cache://query?sql=SELECT key, timestamp FROM cache WHERE key LIKE '%tokio%' ORDER BY timestamp DESC
+```
+
+**Note:** SQL queries in the URI should be URL-encoded. The server will automatically decode them.
+
+#### `cache://config`
+
+Returns the current server configuration including all runtime parameters.
+
+**Example response:**
+```json
+{
+  "cacheTtl": 7200000,
+  "maxCacheSize": 200,
+  "requestTimeout": 30000,
+  "dbPath": "/Users/vexx/Repos/mcp-docsrs/.cache"
+}
+```
+
 ### ⚙️ Configuration
 
 Configure the server using environment variables or command-line arguments:

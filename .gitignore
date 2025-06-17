@@ -7,4 +7,3 @@ dist/
 *.sqlite
 *.sqlite3
 *.db
-test-claude-config.json

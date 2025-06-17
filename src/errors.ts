@@ -170,9 +170,12 @@ export class DecompressionError extends MCPDocsRsError {
  * Error thrown when cache operations fail
  */
 export class CacheError extends MCPDocsRsError {
-	readonly operation: "get" | "set" | "delete" | "clear" | "close"
+	readonly operation: "get" | "set" | "delete" | "clear" | "close" | "query" | "stats" | "list"
 
-	constructor(operation: "get" | "set" | "delete" | "clear" | "close", details?: string) {
+	constructor(
+		operation: "get" | "set" | "delete" | "clear" | "close" | "query" | "stats" | "list",
+		details?: string
+	) {
 		const message = `Cache operation '${operation}' failed: ${details || "Unknown error"}`
 
 		super(message, {

@@ -206,10 +206,32 @@ export const createDocsFetcher = (config: ServerConfig = {}) => {
 		cache.close()
 	}
 
+	// Get cache statistics
+	const getCacheStats = () => {
+		return cache.getStats()
+	}
+
+	// Get cache entries
+	const getCacheEntries = (limit: number, offset: number) => {
+		return cache.listEntries(limit, offset)
+	}
+
+	// Query cache database
+	const queryCacheDb = (sql: string) => {
+		// Only allow SELECT queries for safety
+		if (!sql || !sql.trim().toUpperCase().startsWith("SELECT")) {
+			throw new Error("Only SELECT queries are allowed for safety")
+		}
+		return cache.query(sql)
+	}
+
 	return {
 		fetchCrateJson: fetchCrateJsonWithStatus,
 		clearCache,
-		close
+		close,
+		getCacheStats,
+		getCacheEntries,
+		queryCacheDb
 	}
 }
 
