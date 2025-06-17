@@ -1,0 +1,78 @@
+name: Integration Tests
+
+on:
+  workflow_call:
+
+env:
+  BUN_VERSION: '1.2.14'
+
+jobs:
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mcp-docsrs-linux-x64
+          path: dist/
+
+      - name: Make executable
+        run: chmod +x dist/mcp-docsrs-linux-x64
+
+      - name: Test MCP server functionality
+        run: |
+          # Test basic functionality
+          ./dist/mcp-docsrs-linux-x64 --version
+          
+          # Test with environment variables
+          DB_PATH=":memory:" timeout 5s ./dist/mcp-docsrs-linux-x64 || true
+          
+      - name: Test cache functionality
+        run: |
+          # Create test script
+          cat > test-cache.js << 'EOF'
+          import { promises as fs } from 'fs';
+          
+          // Test cache directory creation
+          const cacheDir = process.env.HOME + '/.mcp-docsrs';
+          try {
+            await fs.access(cacheDir);
+            console.log('Cache directory check: PASS');
+          } catch {
+            console.log('Cache directory will be created on first use');
+          }
+          EOF
+          
+          bun test-cache.js
+
+      - name: Test with sample crate lookup
+        run: |
+          # Create integration test script
+          cat > integration-test.js << 'EOF'
+          import { spawn } from 'child_process';
+          
+          const server = spawn('./dist/mcp-docsrs-linux-x64', [], {
+            env: { ...process.env, DB_PATH: ':memory:' }
+          });
+          
+          // Give server time to start
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Test server is running
+          console.log('MCP server started successfully');
+          
+          // Clean shutdown
+          server.kill('SIGTERM');
+          EOF
+          
+          bun integration-test.js

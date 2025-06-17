@@ -1,0 +1,94 @@
+name: Build Executables
+
+on:
+  workflow_call:
+
+env:
+  BUN_VERSION: '1.2.14'
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            build-cmd: bun run build:linux
+          - os: macos-latest
+            target: darwin-x64
+            build-cmd: bun run build:mac
+          - os: windows-latest
+            target: win32-x64
+            build-cmd: bun run build:windows
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-build-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-build-
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build executable
+        run: ${{ matrix.build-cmd }}
+
+      - name: Build bytecode version
+        run: bun run build:bytecode
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Test executable
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            ./dist/mcp-docsrs-${{ matrix.target }}.exe --version
+          else
+            ./dist/mcp-docsrs-${{ matrix.target }} --version
+          fi
+        shell: bash
+
+      - name: Calculate binary size
+        id: binary-size
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            SIZE=$(stat -c%s "./dist/mcp-docsrs-${{ matrix.target }}.exe" 2>/dev/null || stat -f%z "./dist/mcp-docsrs-${{ matrix.target }}.exe")
+            echo "size=$SIZE" >> $GITHUB_OUTPUT
+            echo "Binary size: $((SIZE / 1024 / 1024)) MB"
+          else
+            SIZE=$(stat -c%s "./dist/mcp-docsrs-${{ matrix.target }}" 2>/dev/null || stat -f%z "./dist/mcp-docsrs-${{ matrix.target }}")
+            echo "size=$SIZE" >> $GITHUB_OUTPUT
+            echo "Binary size: $((SIZE / 1024 / 1024)) MB"
+          fi
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-docsrs-${{ matrix.target }}
+          path: |
+            dist/mcp-docsrs-${{ matrix.target }}*
+          retention-days: 7
+
+      - name: Upload bytecode artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-docsrs-bytecode
+          path: dist/mcp-docsrs-bytecode
+          retention-days: 7

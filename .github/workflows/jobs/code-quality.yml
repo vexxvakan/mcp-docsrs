@@ -1,0 +1,66 @@
+name: Code Quality
+
+on:
+  workflow_call:
+
+env:
+  BUN_VERSION: '1.2.14'
+
+jobs:
+  quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-quality-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-quality-
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check formatting
+        run: bun run lint
+
+      - name: Run type check with strict mode
+        run: bun run typecheck
+
+      - name: Check for security vulnerabilities
+        run: |
+          bunx audit-ci --moderate
+        continue-on-error: true
+
+      - name: Bundle size analysis
+        run: |
+          echo "Analyzing bundle size..."
+          bun run build
+          ls -lah dist/
+          
+          # Calculate and report sizes
+          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------|" >> $GITHUB_STEP_SUMMARY
+          
+          for file in dist/mcp-docsrs-*; do
+            if [ -f "$file" ]; then
+              SIZE=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file")
+              SIZE_MB=$((SIZE / 1024 / 1024))
+              FILENAME=$(basename "$file")
+              echo "| $FILENAME | ${SIZE_MB} MB |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done

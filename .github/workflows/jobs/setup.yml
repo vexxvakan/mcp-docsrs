@@ -1,0 +1,43 @@
+name: Setup Environment
+
+on:
+  workflow_call:
+    inputs:
+      bun-version:
+        description: 'Bun version to use'
+        required: false
+        default: '1.2.14'
+        type: string
+      cache-key-prefix:
+        description: 'Cache key prefix'
+        required: false
+        default: 'bun'
+        type: string
+
+jobs:
+  setup:
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ inputs.bun-version }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-${{ inputs.cache-key-prefix }}-${{ inputs.bun-version }}-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ inputs.cache-key-prefix }}-${{ inputs.bun-version }}-
+            ${{ runner.os }}-${{ inputs.cache-key-prefix }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
