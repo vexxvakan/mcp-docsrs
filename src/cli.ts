@@ -6,6 +6,9 @@ import type { ServerConfig } from "./types.js"
 // Parse command line arguments
 const args = process.argv.slice(2)
 
+// Debug log the raw arguments
+console.error("[DEBUG] Raw args:", args)
+
 // Show help if requested
 if (args.includes("--help") || args.includes("-h")) {
 	// Get the current binary path
@@ -71,12 +74,27 @@ if (args.includes("--version") || args.includes("-v")) {
 
 // Parse command line options
 const getArgValue = (argName: string): string | undefined => {
+	// First check for --arg=value format
+	for (const arg of args) {
+		if (arg.startsWith(`${argName}=`)) {
+			return arg.substring(argName.length + 1)
+		}
+	}
+	
+	// Then check for --arg value format
 	const index = args.findIndex((arg) => arg === argName)
 	if (index !== -1 && index + 1 < args.length) {
 		return args[index + 1]
 	}
 	return undefined
 }
+
+// Debug what getArgValue returns
+console.error("[DEBUG] getArgValue results:")
+console.error("  --cache-ttl:", getArgValue("--cache-ttl"))
+console.error("  --max-cache-size:", getArgValue("--max-cache-size"))
+console.error("  --request-timeout:", getArgValue("--request-timeout"))
+console.error("  --db-path:", getArgValue("--db-path"))
 
 // Configuration from command line and environment variables
 const cacheTtl = Number.parseInt(getArgValue("--cache-ttl") || process.env.CACHE_TTL || "3600000") // 1 hour default
@@ -111,6 +129,9 @@ const config: ServerConfig = {
 	requestTimeout,
 	dbPath
 }
+
+// Debug log the config
+console.error("[DEBUG] CLI Config:", JSON.stringify(config, null, 2))
 
 // Error handling
 process.on("uncaughtException", (error) => {

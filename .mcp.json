@@ -25,12 +25,9 @@
     "mcp-docsrs": {
       "command": "/Users/vexx/Repos/mcp-docsrs/dist/mcp-docsrs",
       "args": [
-        "--cache-ttl",
-        "7200000",
-        "--max-cache-size",
-        "200",
-        "--db-path",
-        "/Users/vexx/Repos/mcp-docsrs/.cache"
+        "--cache-ttl=7200000",
+        "--max-cache-size=200",
+        "--db-path=/Users/vexx/Repos/mcp-docsrs/.cache"
       ]
     }
   }
