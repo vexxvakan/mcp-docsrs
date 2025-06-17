@@ -79,7 +79,7 @@ export const createDocsFetcher = (config: ServerConfig = {}) => {
 			const response = await fetch(url, {
 				signal: controller.signal,
 				headers: {
-					"User-Agent": "mcp-rust-docs/1.0.0",
+					"User-Agent": "mcp-docsrs/1.0.0",
 					"Accept-Encoding": "gzip, deflate, br"
 				}
 			})

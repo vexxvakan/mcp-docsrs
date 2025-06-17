@@ -216,57 +216,50 @@ export const createRustDocsServer = (config: ServerConfig = {}) => {
 		handlers.handleLookupItem as any
 	)
 
-	// 	// Setup prompts
-	// 	server.prompt(
-	// 		"lookup_crate_docs",
-	// 		"Analyze and summarize documentation for a Rust crate",
-	// 		{
-	// 			crateName: z.string().describe("Name of the Rust crate")
-	// 		},
-	// 		({ crateName }: { crateName: string }) => ({
-	// 			messages: [
-	// 				{
-	// 					role: "user",
-	// 					content: {
-	// 						type: "text",
-	// 						text: `Please analyze and summarize the documentation for the Rust crate '${crateName}'. Focus on:
-	// 1. The main purpose and features of the crate
-	// 2. Key types and functions
-	// 3. Common usage patterns
-	// 4. Any important notes or warnings
+	// Setup prompts - Using simple overload without schema to avoid type issues
+	server.prompt(
+		"lookup_crate_docs",
+		"Analyze and summarize documentation for a Rust crate",
+		(_extra) => ({
+			messages: [
+				{
+					role: "user" as const,
+					content: {
+						type: "text" as const,
+						text: `Please analyze and summarize the documentation for the Rust crate. Focus on:
+1. The main purpose and features of the crate
+2. Key types and functions
+3. Common usage patterns
+4. Any important notes or warnings
 
-	// Documentation content will follow.`
-	// 					}
-	// 				}
-	// 			]
-	// 		})
-	// 	)
+Documentation content will follow.`
+					}
+				}
+			]
+		})
+	)
 
-	// 	server.prompt(
-	// 		"lookup_item_docs",
-	// 		"Provide detailed information about a specific item from a Rust crate",
-	// 		{
-	// 			crateName: z.string().describe("Name of the Rust crate"),
-	// 			itemPath: z.string().describe("Path to the item (e.g., 'struct.MyStruct')")
-	// 		},
-	// 		({ crateName, itemPath }: { crateName: string; itemPath: string }) => ({
-	// 			messages: [
-	// 				{
-	// 					role: "user",
-	// 					content: {
-	// 						type: "text",
-	// 						text: `Please provide detailed information about '${itemPath}' from the Rust crate '${crateName}'. Include:
-	// 1. Purpose and functionality
-	// 2. Parameters/fields and their types
-	// 3. Usage examples if available
-	// 4. Related items
+	server.prompt(
+		"lookup_item_docs",
+		"Provide detailed information about a specific item from a Rust crate",
+		(_extra) => ({
+			messages: [
+				{
+					role: "user" as const,
+					content: {
+						type: "text" as const,
+						text: `Please provide detailed information about a specific item from a Rust crate. Include:
+1. Purpose and functionality
+2. Parameters/fields and their types
+3. Usage examples if available
+4. Related items
 
-	// Documentation content will follow.`
-	// 					}
-	// 				}
-	// 			]
-	// 		})
-	// 	)
+Documentation content will follow.`
+					}
+				}
+			]
+		})
+	)
 
 	// Start the server
 	const start = async (): Promise<void> => {

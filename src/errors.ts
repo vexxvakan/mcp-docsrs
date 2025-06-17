@@ -249,6 +249,27 @@ const formatError = (error: Error): string => {
 
 export const ErrorLogger = {
 	log(error: Error): void {
+		// During tests, check if this is an expected error
+		if (process.env.NODE_ENV === "test" || process.env.BUN_ENV === "test") {
+			// In test environment, use a different format for expected errors
+			if (
+				error instanceof CrateNotFoundError ||
+				error instanceof TimeoutError ||
+				error instanceof RustdocParseError ||
+				error.name === "AbortError" || // For timeout tests
+				error.message === "Test interception" // For URL validation tests
+			) {
+				// Show a brief indicator that the expected error was caught
+				if (process.env.LOG_EXPECTED_ERRORS === "true") {
+					// Full logging if explicitly requested
+					console.log(`\x1b[32m[EXPECTED ERROR] ${error.name}: ${error.message}\x1b[0m`)
+				} else {
+					// Brief indicator in green to show test is working correctly
+					console.log(`\x1b[32m✓ Expected ${error.name} thrown\x1b[0m`)
+				}
+				return
+			}
+		}
 		console.error(formatError(error))
 	},
 

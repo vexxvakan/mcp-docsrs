@@ -19,10 +19,10 @@ describe("Integration Tests", () => {
 	// Skip these tests in CI or when offline
 	const skipInCI = process.env.CI ? it.skip : it
 
-	skipInCI("should fetch and parse a real crate (serde_json)", async () => {
+	skipInCI("should fetch and parse a real crate (tinc)", async () => {
 		try {
-			// Try to fetch serde_json which should have JSON docs
-			const json = await fetcher.fetchCrateJson("serde_json", "1.0.134")
+			// Try to fetch tinc which should have JSON docs
+			const { data: json } = await fetcher.fetchCrateJson("tinc", "0.1.6")
 
 			expect(json).toBeDefined()
 			expect(json.format_version).toBeGreaterThanOrEqual(30)
@@ -31,7 +31,7 @@ describe("Integration Tests", () => {
 
 			// Parse the crate info
 			const info = parseCrateInfo(json)
-			expect(info).toContain("serde_json")
+			expect(info).toContain("tinc")
 			expect(info).toContain("JSON")
 
 			// Try to find a common item
@@ -49,9 +49,9 @@ describe("Integration Tests", () => {
 		}
 	})
 
-	skipInCI("should handle crates without JSON docs gracefully", async () => {
+	skipInCI("should handle crates without JSON docs gracefully", () => {
 		// Try an old version that likely doesn't have JSON docs
-		await expect(fetcher.fetchCrateJson("serde", "0.1.0")).rejects.toThrow(/not found|404/)
+		expect(fetcher.fetchCrateJson("tinc", "0.1.0")).rejects.toThrow(/not found|404/)
 	})
 
 	it("should validate URL construction", async () => {

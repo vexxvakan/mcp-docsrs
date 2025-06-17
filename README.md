@@ -25,23 +25,20 @@
 ## 📦 Installation
 <a id="installation"></a>
 
-### Using npm/Bun
+### Using Bun
 
 ```bash
-# Using npm
-npm install
-
-# Using Bun (recommended)
 bun install
+bun run build:bytecode # or bun run build:all for all platforms
 ```
 
 ### Using Pre-built Executables
 
-Download the latest release for your platform from the [Releases](https://github.com/your-repo/releases) page:
+Download the latest release for your platform from the [Releases](https://github.com/vexxvaka/mcp-docsrs/releases) page:
 
-- **Linux**: `mcp-rust-docs-linux-x64`
-- **macOS**: `mcp-rust-docs-darwin-x64`
-- **Windows**: `mcp-rust-docs-windows-x64.exe`
+- **Linux**: `mcp-docsrs-linux-x64`
+- **macOS**: `mcp-docsrs-darwin-x64`
+- **Windows**: `mcp-docsrs-windows-x64.exe`
 
 ## 🚀 Usage
 <a id="usage"></a>
@@ -66,13 +63,13 @@ bun run dev
 
 ```bash
 # Show help
-./mcp-rust-docs --help
+mcp-docsrs --help
 
 # Run with default settings
-./mcp-rust-docs
+mcp-docsrs
 
 # Run with custom configuration
-./mcp-rust-docs --cache-ttl 7200000 --max-cache-size 200
+mcp-docsrs --cache-ttl 7200000 --max-cache-size 200
 ```
 
 ### 🛠️ Available Tools
@@ -145,13 +142,13 @@ Configure the server using environment variables or command-line arguments:
 CACHE_TTL=7200000 MAX_CACHE_SIZE=200 npm start
 
 # Command-line arguments (executable)
-./mcp-rust-docs --cache-ttl 7200000 --max-cache-size 200
+./mcp-docsrs --cache-ttl 7200000 --max-cache-size 200
 
 # Use persistent database to cache documentation between sessions
-./mcp-rust-docs --db-path ~/.mcp-rust-docs/cache.db
+./mcp-docsrs --db-path ~/.mcp-docsrs/cache.db
 
 # Or with environment variable
-DB_PATH=~/.mcp-rust-docs/cache.db npm start
+DB_PATH=~/.mcp-docsrs/cache.db npm start
 ```
 
 ### 🔌 MCP Configuration
@@ -163,7 +160,7 @@ Add to your MCP configuration file:
   "mcpServers": {
     "rust-docs": {
       "command": "node",
-      "args": ["/path/to/mcp-rust-docs/dist/index.js"]
+      "args": ["/path/to/mcp-docsrs/dist/index.js"]
     }
   }
 }
@@ -175,7 +172,7 @@ Or using the executable:
 {
   "mcpServers": {
     "rust-docs": {
-      "command": "/path/to/mcp-rust-docs"
+      "command": "/path/to/mcp-docsrs"
     }
   }
 }
@@ -215,10 +212,10 @@ All executables are created in the `dist/` directory:
 
 | File | Platform | Size |
 |------|----------|------|
-| `mcp-rust-docs` | Current platform | ~56MB |
-| `mcp-rust-docs-linux-x64` | Linux x64 | ~56MB |
-| `mcp-rust-docs-darwin-x64` | macOS x64 | ~56MB |
-| `mcp-rust-docs-windows-x64.exe` | Windows x64 | ~57MB |
+| `mcp-docsrs` | Current platform | ~56MB |
+| `mcp-docsrs-linux-x64` | Linux x64 | ~56MB |
+| `mcp-docsrs-darwin-x64` | macOS x64 | ~56MB |
+| `mcp-docsrs-windows-x64.exe` | Windows x64 | ~57MB |
 
 <a id="development"></a>
 
@@ -244,10 +241,43 @@ bun run lint
 bun run typecheck
 ```
 
+### Testing
+
+The project includes comprehensive tests for all major components:
+
+```bash
+# Run all tests
+bun test
+
+# Run tests in watch mode
+bun test --watch
+
+# Run specific test file
+bun test cache.test.ts
+
+# Run tests with full error logging (including expected errors)
+LOG_EXPECTED_ERRORS=true bun test
+```
+
+#### Test Output
+
+Tests are configured to provide clean output by default:
+
+- ✅ Expected errors (like `CrateNotFoundError` in 404 tests) show as green checkmarks: `✓ Expected CrateNotFoundError thrown`
+- ❌ Unexpected errors are shown with full stack traces in red
+- ℹ️ Info logs are shown to track test execution
+
+This makes it easy to distinguish between:
+
+- Tests that verify error handling (expected errors)
+- Actual test failures (unexpected errors)
+
+To see full error details for debugging, set `LOG_EXPECTED_ERRORS=true`.
+
 ### Project Structure
 
 ```text
-mcp-rust-docs/
+mcp-docsrs/
 ├── src/
 │   ├── index.ts        # Main entry point
 │   ├── server.ts       # MCP server implementation

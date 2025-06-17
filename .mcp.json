@@ -23,7 +23,7 @@
       "env": {}
     },
     "mcp-docsrs": {
-      "command": "/Users/vexx/Repos/mcp-docsrs-rustdoc/dist/mcp-docsrs",
+      "command": "/Users/vexx/Repos/mcp-docsrs/dist/mcp-docsrs",
       "args": [
         "--cache-ttl",
         "7200000",

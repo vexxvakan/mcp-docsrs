@@ -8,7 +8,7 @@ async function testMCPServer() {
 	console.log("Starting MCP server test...")
 
 	// Spawn the server
-	const server = spawn("./dist/mcp-rust-docs", [], {
+	const server = spawn("./dist/mcp-docsrs", [], {
 		stdio: ["pipe", "pipe", "pipe"]
 	})
 

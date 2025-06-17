@@ -17,7 +17,7 @@ MCP Rust Docs Server
 A Model Context Protocol server for fetching Rust crate documentation from docs.rs
 
 Usage:
-  mcp-rust-docs [options]
+  mcp-docsrs [options]
 
 Options:
   -h, --help              Show this help message
@@ -35,23 +35,23 @@ Environment Variables:
 
 Examples:
   # Run with default settings
-  mcp-rust-docs
+  mcp-docsrs
 
   # Run with custom cache settings
-  mcp-rust-docs --cache-ttl 7200000 --max-cache-size 200
+  mcp-docsrs --cache-ttl 7200000 --max-cache-size 200
 
   # Run with persistent database
-  mcp-rust-docs --db-path /path/to/cache.db
+  mcp-docsrs --db-path /path/to/cache.db
 
   # Run with environment variables
-  CACHE_TTL=7200000 mcp-rust-docs
+  CACHE_TTL=7200000 mcp-docsrs
 
 MCP Integration:
   To use with Claude Desktop, add to your claude_desktop_config.json:
   {
     "mcpServers": {
       "rust-docs": {
-        "command": "mcp-rust-docs"
+        "command": "mcp-docsrs"
       }
     }
   }
