@@ -93,8 +93,10 @@ jobs:
             if [[ "${{ matrix.os }}" == "ubuntu-latest"* ]] && [[ "${{ matrix.target }}" == *"linux"* ]]; then
               # Test MUSL binaries in Alpine container
               if [[ "${{ matrix.target }}" == *"musl"* ]]; then
+                # Make binary executable before mounting
+                chmod +x ./dist/mcp-docsrs-${{ matrix.target }}
                 # All MUSL builds now run on native architecture, so we can test them
-                docker run --rm -v $PWD:/workspace:ro -w /workspace alpine:latest sh -c "chmod +x /workspace/dist/mcp-docsrs-${{ matrix.target }} && /workspace/dist/mcp-docsrs-${{ matrix.target }} --version"
+                docker run --rm -v $PWD/dist:/workspace:ro -w /workspace alpine:latest /workspace/mcp-docsrs-${{ matrix.target }} --version
               else
                 # Test GLIBC binaries directly
                 ./dist/mcp-docsrs-${{ matrix.target }} --version
