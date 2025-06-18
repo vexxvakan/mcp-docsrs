@@ -14,24 +14,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux GLIBC builds
+          # Linux x64 GLIBC builds
           - os: ubuntu-latest
             target: linux-x64
             build-cmd: bun run build:linux-x64
-          - os: ubuntu-latest
+          # Linux ARM64 GLIBC builds (native ARM64 runner)
+          - os: ubuntu-latest-arm64
             target: linux-arm64
             build-cmd: bun run build:linux-arm64
-          # Linux MUSL builds (for Alpine, containers, static linking)
+          # Linux x64 MUSL builds (for Alpine, containers, static linking)
           - os: ubuntu-latest
             target: linux-x64-musl
             build-cmd: bun run build:linux-x64-musl
-          - os: ubuntu-latest
+          # Linux ARM64 MUSL builds (native ARM64 runner)
+          - os: ubuntu-latest-arm64
             target: linux-arm64-musl
             build-cmd: bun run build:linux-arm64-musl
-          # macOS builds
-          - os: macos-latest
+          # macOS x64 builds (Intel-based runner)
+          - os: macos-13
             target: darwin-x64
             build-cmd: bun run build:darwin-x64
+          # macOS ARM64 builds (Apple Silicon runner - latest)
           - os: macos-latest
             target: darwin-arm64
             build-cmd: bun run build:darwin-arm64
@@ -69,23 +72,60 @@ jobs:
 
       - name: Test executable
         run: |
+          # First check if the binary exists
+          if [ "${{ matrix.target }}" == "windows-x64" ]; then
+            BINARY_PATH="./dist/mcp-docsrs-${{ matrix.target }}.exe"
+          else
+            BINARY_PATH="./dist/mcp-docsrs-${{ matrix.target }}"
+          fi
+
+          if [ ! -f "$BINARY_PATH" ]; then
+            echo "Error: Binary not found at $BINARY_PATH"
+            ls -la ./dist/
+            exit 1
+          fi
+
+          # Now test the binary
           if [ "${{ matrix.target }}" == "windows-x64" ]; then
             ./dist/mcp-docsrs-${{ matrix.target }}.exe --version
           else
-            # For cross-compiled binaries, we can only test on matching architecture
-            if [ "${{ matrix.os }}" == "ubuntu-latest" ] && [[ "${{ matrix.target }}" == *"linux"* ]]; then
-              # Skip ARM64 tests on x64 runner
-              if [[ "${{ matrix.target }}" != *"arm64"* ]]; then
-                ./dist/mcp-docsrs-${{ matrix.target }} --version
+            # Test binaries on their native architecture
+            if [[ "${{ matrix.os }}" == "ubuntu-latest"* ]] && [[ "${{ matrix.target }}" == *"linux"* ]]; then
+              # Test MUSL binaries in Alpine container
+              if [[ "${{ matrix.target }}" == *"musl"* ]]; then
+                # All MUSL builds now run on native architecture, so we can test them
+                docker run --rm -v $PWD:/workspace:ro -w /workspace alpine:latest sh -c "chmod +x /workspace/dist/mcp-docsrs-${{ matrix.target }} && /workspace/dist/mcp-docsrs-${{ matrix.target }} --version"
               else
-                echo "Skipping ARM64 binary test on x64 runner"
+                # Test GLIBC binaries directly
+                ./dist/mcp-docsrs-${{ matrix.target }} --version
               fi
-            elif [ "${{ matrix.os }}" == "macos-latest" ] && [[ "${{ matrix.target }}" == *"darwin"* ]]; then
-              # macOS runners can test both x64 and arm64 binaries (Rosetta)
+            elif [[ "${{ matrix.os }}" == "macos-"* ]] && [[ "${{ matrix.target }}" == *"darwin"* ]]; then
+              # Test on native architecture (no Rosetta)
               ./dist/mcp-docsrs-${{ matrix.target }} --version
-            elif [ "${{ matrix.os }}" == "windows-latest" ]; then
-              ./dist/mcp-docsrs-${{ matrix.target }}.exe --version
+            else
+              echo "Unexpected combination: ${{ matrix.target }} on ${{ matrix.os }}"
+              ./dist/mcp-docsrs-${{ matrix.target }} --version
             fi
+          fi
+        shell: bash
+
+      - name: Run tests on native architecture
+        run: |
+          # Only run full tests on native architecture builds
+          if [[ "${{ matrix.os }}" == "ubuntu-latest-arm64" ]] && [[ "${{ matrix.target }}" == *"arm64"* ]]; then
+            echo "Running tests on native ARM64..."
+            bun test
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]] && [[ "${{ matrix.target }}" == "linux-x64" ]]; then
+            echo "Running tests on native x64..."
+            bun test
+          elif [[ "${{ matrix.os }}" == "macos-"* ]] && [[ "${{ matrix.target }}" == "darwin-"* ]]; then
+            echo "Running tests on macOS..."
+            bun test
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            echo "Running tests on Windows..."
+            bun test
+          else
+            echo "Skipping full test suite for cross-compiled target"
           fi
         shell: bash
 
@@ -109,5 +149,4 @@ jobs:
           name: mcp-docsrs-${{ matrix.target }}
           path: |
             dist/mcp-docsrs-${{ matrix.target }}*
-          retention-days: 7
-
+          retention-days: 30
