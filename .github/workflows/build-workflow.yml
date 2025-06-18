@@ -19,7 +19,7 @@ jobs:
             build-cmd: bun run build:linux
           - os: macos-latest
             target: darwin-x64
-            build-cmd: bun run build:mac
+            build-cmd: bun run build:macos
           - os: windows-latest
             target: win32-x64
             build-cmd: bun run build:windows
