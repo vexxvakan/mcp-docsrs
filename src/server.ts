@@ -13,6 +13,7 @@ import {
 	lookupItemPrompt,
 	lookupItemTool,
 	searchCratesInputSchema,
+	searchCratesPrompt,
 	searchCratesTool,
 	suggestSimilarCrates
 } from "./tools/index.js"
@@ -123,10 +124,27 @@ export const createRustDocsServer = (config: ServerConfig = {}) => {
 		handlers.handleSearchCrates as any
 	)
 
-	// Setup prompts
-	server.prompt(lookupCratePrompt.name, lookupCratePrompt.description, lookupCratePrompt.handler)
+	// Setup prompts with argument schemas
+	server.prompt(
+		lookupCratePrompt.name,
+		lookupCratePrompt.description,
+		lookupCratePrompt.argsSchema as any,
+		lookupCratePrompt.handler as any
+	)
 
-	server.prompt(lookupItemPrompt.name, lookupItemPrompt.description, lookupItemPrompt.handler)
+	server.prompt(
+		lookupItemPrompt.name,
+		lookupItemPrompt.description,
+		lookupItemPrompt.argsSchema as any,
+		lookupItemPrompt.handler as any
+	)
+
+	server.prompt(
+		searchCratesPrompt.name,
+		searchCratesPrompt.description,
+		searchCratesPrompt.argsSchema as any,
+		searchCratesPrompt.handler as any
+	)
 
 	// Register cache query resources
 	server.resource(

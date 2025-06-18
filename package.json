@@ -11,7 +11,7 @@
         "start": "./dist/mcp-docsrs",
         "dev": "bun run src/cli.ts",
         "build": "bun build ./src/cli.ts --compile --minify --sourcemap --outfile dist/mcp-docsrs",
-        "build:bytecode": "bun build ./src/cli.ts --compile --minify --sourcemap --bytecode --outfile dist/mcp-docsrs-bytecode",
+        "build:bytecode": "bun build ./src/cli.ts --compile --minify --sourcemap --bytecode --outfile dist/mcp-docsrs",
         "build:all": "bun run build:linux-x64 && bun run build:linux-arm64 && bun run build:linux-x64-musl && bun run build:linux-arm64-musl && bun run build:darwin-x64 && bun run build:darwin-arm64 && bun run build:windows-x64",
         "build:linux-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-x64 --outfile dist/mcp-docsrs-linux-x64",
         "build:linux-arm64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-arm64 --outfile dist/mcp-docsrs-linux-arm64",

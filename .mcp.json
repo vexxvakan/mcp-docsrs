@@ -23,11 +23,12 @@
       "env": {}
     },
     "mcp-docsrs": {
-      "command": "/Users/vexx/Repos/mcp-docsrs/dist/mcp-docsrs",
+      "type": "stdio",
+      "command": "./dist/mcp-docsrs",
       "args": [
         "--cache-ttl=7200000",
         "--max-cache-size=200",
-        "--db-path=/Users/vexx/Repos/mcp-docsrs/.cache"
+        "--db-path=./.cache"
       ]
     }
   }

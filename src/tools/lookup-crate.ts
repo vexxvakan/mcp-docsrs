@@ -88,25 +88,62 @@ export const createLookupCrateHandler = (fetcher: DocsFetcher) => {
 	}
 }
 
-// Prompt for lookup_crate_docs
+// Prompt arguments schema for lookup_crate_docs
+export const lookupCratePromptSchema = {
+	crateName: z.string().optional().describe("Name of the Rust crate to lookup documentation for"),
+	version: z
+		.string()
+		.optional()
+		.describe('Specific version (e.g., "1.0.0") or semver range (e.g., "~4")'),
+	target: z.string().optional().describe('Target platform (e.g., "i686-pc-windows-msvc")')
+}
+
+// Prompt for lookup_crate_docs with dynamic argument handling
 export const lookupCratePrompt = {
 	name: "lookup_crate_docs",
 	description: "Analyze and summarize documentation for a Rust crate",
-	handler: (_extra: any) => ({
-		messages: [
-			{
-				role: "user" as const,
-				content: {
-					type: "text" as const,
-					text: `Please analyze and summarize the documentation for the Rust crate. Focus on:
+	argsSchema: lookupCratePromptSchema,
+	handler: (args: any) => {
+		// Check if required arguments are missing
+		if (!args?.crateName) {
+			return {
+				messages: [
+					{
+						role: "user" as const,
+						content: {
+							type: "text" as const,
+							text: "Which Rust crate would you like me to look up documentation for? Please provide the crate name."
+						}
+					}
+				]
+			}
+		}
+
+		// Build the prompt text with the provided arguments
+		let promptText = `Please analyze and summarize the documentation for the Rust crate "${args.crateName}"`
+
+		if (args.version) {
+			promptText += ` version ${args.version}`
+		}
+
+		promptText += `. Focus on:
 1. The main purpose and features of the crate
 2. Key types and functions
 3. Common usage patterns
 4. Any important notes or warnings
 
-Documentation content will follow.`
+I'll fetch the documentation for you.`
+
+		return {
+			messages: [
+				{
+					role: "user" as const,
+					content: {
+						type: "text" as const,
+						text: promptText
+					}
 				}
-			}
-		]
-	})
+			]
+		}
+	}
 }

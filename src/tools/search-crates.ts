@@ -164,3 +164,53 @@ export const suggestSimilarCrates = async (crateName: string, limit = 5): Promis
 		return []
 	}
 }
+
+// Prompt arguments schema for search_crates
+export const searchCratesPromptSchema = {
+	query: z.string().optional().describe("Search query for crate names (supports partial matches)"),
+	limit: z.number().optional().describe("Maximum number of results to return")
+}
+
+// Prompt for search_crates with dynamic argument handling
+export const searchCratesPrompt = {
+	name: "search_crates",
+	description: "Search for Rust crates on crates.io",
+	argsSchema: searchCratesPromptSchema,
+	handler: (args: any) => {
+		// Check if required arguments are missing
+		if (!args?.query) {
+			return {
+				messages: [
+					{
+						role: "user" as const,
+						content: {
+							type: "text" as const,
+							text: "What would you like to search for on crates.io? Please provide a search query (e.g., 'serde', 'async', 'web framework')."
+						}
+					}
+				]
+			}
+		}
+
+		// Build the prompt text with the provided arguments
+		let promptText = `Search for Rust crates matching "${args.query}" on crates.io`
+
+		if (args.limit) {
+			promptText += ` (limiting to ${args.limit} results)`
+		}
+
+		promptText += `. I'll search for matching crates and show you the results.`
+
+		return {
+			messages: [
+				{
+					role: "user" as const,
+					content: {
+						type: "text" as const,
+						text: promptText
+					}
+				}
+			]
+		}
+	}
+}

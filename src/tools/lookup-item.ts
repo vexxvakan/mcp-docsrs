@@ -97,25 +97,91 @@ export const createLookupItemHandler = (fetcher: DocsFetcher) => {
 	}
 }
 
-// Prompt for lookup_item_docs
+// Prompt arguments schema for lookup_item_docs
+export const lookupItemPromptSchema = {
+	crateName: z.string().optional().describe("Name of the Rust crate"),
+	itemPath: z
+		.string()
+		.optional()
+		.describe('Path to specific item (e.g., "struct.MyStruct" or "fn.my_function")'),
+	version: z.string().optional().describe("Specific version or semver range"),
+	target: z.string().optional().describe("Target platform")
+}
+
+// Prompt for lookup_item_docs with dynamic argument handling
 export const lookupItemPrompt = {
 	name: "lookup_item_docs",
 	description: "Provide detailed information about a specific item from a Rust crate",
-	handler: (_extra: any) => ({
-		messages: [
-			{
-				role: "user" as const,
-				content: {
-					type: "text" as const,
-					text: `Please provide detailed information about a specific item from a Rust crate. Include:
+	argsSchema: lookupItemPromptSchema,
+	handler: (args: any) => {
+		// Check if required arguments are missing
+		if (!args?.crateName && !args?.itemPath) {
+			return {
+				messages: [
+					{
+						role: "user" as const,
+						content: {
+							type: "text" as const,
+							text: "I need to know which Rust crate and item you'd like documentation for. Please provide:\n1. The crate name (e.g., 'tokio', 'serde')\n2. The item path (e.g., 'struct.Runtime', 'fn.spawn')"
+						}
+					}
+				]
+			}
+		}
+
+		if (!args?.crateName) {
+			return {
+				messages: [
+					{
+						role: "user" as const,
+						content: {
+							type: "text" as const,
+							text: `Which Rust crate contains the item "${args.itemPath}"? Please provide the crate name.`
+						}
+					}
+				]
+			}
+		}
+
+		if (!args?.itemPath) {
+			return {
+				messages: [
+					{
+						role: "user" as const,
+						content: {
+							type: "text" as const,
+							text: `What specific item from the "${args.crateName}" crate would you like documentation for? Please provide the item path (e.g., 'struct.MyStruct', 'fn.my_function', 'trait.MyTrait').`
+						}
+					}
+				]
+			}
+		}
+
+		// Build the prompt text with the provided arguments
+		let promptText = `Please provide detailed information about the "${args.itemPath}" from the Rust crate "${args.crateName}"`
+
+		if (args.version) {
+			promptText += ` version ${args.version}`
+		}
+
+		promptText += `. Include:
 1. Purpose and functionality
 2. Parameters/fields and their types
 3. Usage examples if available
 4. Related items
 
-Documentation content will follow.`
+I'll fetch the documentation for you.`
+
+		return {
+			messages: [
+				{
+					role: "user" as const,
+					content: {
+						type: "text" as const,
+						text: promptText
+					}
 				}
-			}
-		]
-	})
+			]
+		}
+	}
 }
