@@ -117,13 +117,16 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 
 ### Test Suite (`test-workflow.yml`)
 
-- Runs tests on Ubuntu Linux only
+- Runs tests on Ubuntu, macOS, and Windows
 - Tests with Bun 1.2.14 and latest
 - Uploads coverage to Codecov
 
 ### Build (`build-workflow.yml`)
 
-- Builds platform-specific executables
+- Builds executables for all 7 platforms:
+  - Linux x64/ARM64 (GLIBC and MUSL variants)
+  - macOS x64/ARM64 (Intel and Apple Silicon)
+  - Windows x64
 - Creates bytecode version for faster startup
 - Uploads artifacts for 7 days
 
@@ -136,8 +139,9 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 
 ### Integration Tests (`integration-test-workflow.yml`)
 
-- Tests built executables
+- Tests built executables on their native platforms
 - Validates MCP server functionality
+- Tests all 7 platform builds + bytecode
 - Runs on main branch and PRs with full-ci label
 
 ## Key Differences: pr-ci.yml vs ci.yml
@@ -156,6 +160,7 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 - **Scope**: Full test matrix and integration tests
 - **Platforms**: Ubuntu, macOS, Windows
 - **Jobs**: Parallel test/build/quality jobs, then integration tests
+- **Runtime**: ~15-20 minutes (all platforms)
 - **When**: Push to main OR PRs with "full-ci" label
 
 ## Adding New Workflows

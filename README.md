@@ -4,7 +4,7 @@
 [![Rust Docs](https://img.shields.io/badge/docs.rs-Documentation-orange?style=for-the-badge&logo=rust)](https://docs.rs)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Bun](https://img.shields.io/badge/Bun-1.2.14%2B-black?style=for-the-badge&logo=bun)](https://bun.sh)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?style=for-the-badge?logo=apache)](https://opensource.org/licenses/Apache-2.0)
 
 >A **Model Context Protocol** (MCP) server for **fetching Rust crate documentation** from [docs.rs](https://docs.rs) using the **rustdoc JSON API**
 
@@ -36,9 +36,25 @@ bun run build:bytecode # or bun run build:all for all platforms
 
 Download the latest release for your platform from the [Releases](https://github.com/vexxvaka/mcp-docsrs/releases) page:
 
-- **Linux**: `mcp-docsrs-linux-x64`
-- **macOS**: `mcp-docsrs-darwin-x64`
-- **Windows**: `mcp-docsrs-windows-x64.exe`
+#### Linux
+
+- **x64/AMD64 (GLIBC)**: `mcp-docsrs-linux-x64` - For Ubuntu, Debian, Fedora, etc.
+- **ARM64 (GLIBC)**: `mcp-docsrs-linux-arm64` - For ARM64 systems, AWS Graviton
+- **x64/AMD64 (MUSL)**: `mcp-docsrs-linux-x64-musl` - For Alpine Linux, Docker containers
+- **ARM64 (MUSL)**: `mcp-docsrs-linux-arm64-musl` - For Alpine on ARM64, minimal containers
+
+#### macOS
+
+- **Intel**: `mcp-docsrs-darwin-x64` - For Intel-based Macs
+- **Apple Silicon**: `mcp-docsrs-darwin-arm64` - For M1/M2/M3 Macs
+
+#### Windows
+
+- **x64**: `mcp-docsrs-windows-x64.exe` - For 64-bit Windows
+
+#### Universal
+
+- **Bytecode**: `mcp-docsrs-bytecode` - Platform-agnostic, requires Bun runtime
 
 ## 🚀 Usage
 <a id="usage"></a>
@@ -133,6 +149,7 @@ The server provides resources for querying and inspecting the cache database:
 Returns cache statistics including total entries, size, and oldest entry.
 
 **Example:**
+
 ```json
 {
   "totalEntries": 42,
@@ -146,10 +163,12 @@ Returns cache statistics including total entries, size, and oldest entry.
 Lists cached entries with metadata. Supports pagination.
 
 **Parameters:**
+
 - `limit` - Number of entries to return (default: 100)
 - `offset` - Number of entries to skip (default: 0)
 
 **Example:**
+
 ```json
 [
   {
@@ -167,6 +186,7 @@ Lists cached entries with metadata. Supports pagination.
 Execute SQL queries on the cache database (SELECT queries only for safety).
 
 **Example:**
+
 ```
 cache://query?sql=SELECT key, timestamp FROM cache WHERE key LIKE '%tokio%' ORDER BY timestamp DESC
 ```
@@ -178,6 +198,7 @@ cache://query?sql=SELECT key, timestamp FROM cache WHERE key LIKE '%tokio%' ORDE
 Returns the current server configuration including all runtime parameters.
 
 **Example response:**
+
 ```json
 {
   "cacheTtl": 7200000,
@@ -260,25 +281,39 @@ bun run build
 # Build with bytecode compilation (faster startup)
 bun run build:bytecode
 
-# Build for all platforms
+# Build for all platforms (7 targets + bytecode)
 bun run build:all
 
-# Platform-specific builds
-bun run build:linux    # Linux x64
-bun run build:macos    # macOS x64
-bun run build:windows  # Windows x64
+# Linux builds (GLIBC - standard)
+bun run build:linux-x64      # Linux x64/AMD64
+bun run build:linux-arm64    # Linux ARM64
+
+# Linux builds (MUSL - static, Alpine)
+bun run build:linux-x64-musl    # Linux x64/AMD64 (static)
+bun run build:linux-arm64-musl  # Linux ARM64 (static)
+
+# macOS builds
+bun run build:darwin-x64     # macOS Intel
+bun run build:darwin-arm64   # macOS Apple Silicon
+
+# Windows build
+bun run build:windows-x64    # Windows x64
 ```
 
 ### Build Output
 
 All executables are created in the `dist/` directory:
 
-| File | Platform | Size |
-|------|----------|------|
-| `mcp-docsrs` | Current platform | ~56MB |
-| `mcp-docsrs-linux-x64` | Linux x64 | ~56MB |
-| `mcp-docsrs-darwin-x64` | macOS x64 | ~56MB |
-| `mcp-docsrs-windows-x64.exe` | Windows x64 | ~57MB |
+| File | Platform | Type | Size |
+|------|----------|------|------|
+| `mcp-docsrs-linux-x64` | Linux x64/AMD64 | GLIBC | ~56MB |
+| `mcp-docsrs-linux-arm64` | Linux ARM64 | GLIBC | ~56MB |
+| `mcp-docsrs-linux-x64-musl` | Linux x64/AMD64 | MUSL (static) | ~56MB |
+| `mcp-docsrs-linux-arm64-musl` | Linux ARM64 | MUSL (static) | ~56MB |
+| `mcp-docsrs-darwin-x64` | macOS Intel | - | ~56MB |
+| `mcp-docsrs-darwin-arm64` | macOS Apple Silicon | - | ~56MB |
+| `mcp-docsrs-windows-x64.exe` | Windows x64 | - | ~57MB |
+| `mcp-docsrs-bytecode` | All platforms | Bytecode | ~16MB |
 
 <a id="development"></a>
 

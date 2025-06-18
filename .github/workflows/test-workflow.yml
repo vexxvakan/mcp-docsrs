@@ -14,11 +14,12 @@ env:
 
 jobs:
   test:
-    name: Test on Linux
-    runs-on: ubuntu-latest
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         bun-version: ['1.2.14', 'latest']
 
     steps:
@@ -48,7 +49,7 @@ jobs:
 
       - name: Run linter
         run: bun run lint
-        if: matrix.bun-version == '1.2.14'
+        if: matrix.os == 'ubuntu-latest' && matrix.bun-version == '1.2.14'
 
       - name: Run type check
         run: bun run typecheck
@@ -59,7 +60,7 @@ jobs:
           LOG_EXPECTED_ERRORS: ${{ inputs.debug_enabled }}
 
       - name: Upload coverage reports
-        if: matrix.bun-version == '1.2.14'
+        if: matrix.os == 'ubuntu-latest' && matrix.bun-version == '1.2.14'
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

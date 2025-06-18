@@ -57,7 +57,7 @@ jobs:
 
       - name: Test build
         id: build
-        run: bun run build:linux
+        run: bun run build:linux-x64
 
       - name: Summary
         if: always()

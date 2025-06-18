@@ -14,15 +14,31 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Linux GLIBC builds
           - os: ubuntu-latest
             target: linux-x64
-            build-cmd: bun run build:linux
+            build-cmd: bun run build:linux-x64
+          - os: ubuntu-latest
+            target: linux-arm64
+            build-cmd: bun run build:linux-arm64
+          # Linux MUSL builds (for Alpine, containers, static linking)
+          - os: ubuntu-latest
+            target: linux-x64-musl
+            build-cmd: bun run build:linux-x64-musl
+          - os: ubuntu-latest
+            target: linux-arm64-musl
+            build-cmd: bun run build:linux-arm64-musl
+          # macOS builds
           - os: macos-latest
             target: darwin-x64
-            build-cmd: bun run build:macos
+            build-cmd: bun run build:darwin-x64
+          - os: macos-latest
+            target: darwin-arm64
+            build-cmd: bun run build:darwin-arm64
+          # Windows build
           - os: windows-latest
-            target: win32-x64
-            build-cmd: bun run build:windows
+            target: windows-x64
+            build-cmd: bun run build:windows-x64
 
     steps:
       - name: Checkout code
@@ -52,21 +68,34 @@ jobs:
 
       - name: Build bytecode version
         run: bun run build:bytecode
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.target == 'linux-x64'
 
       - name: Test executable
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          if [ "${{ matrix.target }}" == "windows-x64" ]; then
             ./dist/mcp-docsrs-${{ matrix.target }}.exe --version
           else
-            ./dist/mcp-docsrs-${{ matrix.target }} --version
+            # For cross-compiled binaries, we can only test on matching architecture
+            if [ "${{ matrix.os }}" == "ubuntu-latest" ] && [[ "${{ matrix.target }}" == *"linux"* ]]; then
+              # Skip ARM64 tests on x64 runner
+              if [[ "${{ matrix.target }}" != *"arm64"* ]]; then
+                ./dist/mcp-docsrs-${{ matrix.target }} --version
+              else
+                echo "Skipping ARM64 binary test on x64 runner"
+              fi
+            elif [ "${{ matrix.os }}" == "macos-latest" ] && [[ "${{ matrix.target }}" == *"darwin"* ]]; then
+              # macOS runners can test both x64 and arm64 binaries (Rosetta)
+              ./dist/mcp-docsrs-${{ matrix.target }} --version
+            elif [ "${{ matrix.os }}" == "windows-latest" ]; then
+              ./dist/mcp-docsrs-${{ matrix.target }}.exe --version
+            fi
           fi
         shell: bash
 
       - name: Calculate binary size
         id: binary-size
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          if [ "${{ matrix.target }}" == "windows-x64" ]; then
             SIZE=$(stat -c%s "./dist/mcp-docsrs-${{ matrix.target }}.exe" 2>/dev/null || stat -f%z "./dist/mcp-docsrs-${{ matrix.target }}.exe")
             echo "size=$SIZE" >> $GITHUB_OUTPUT
             echo "Binary size: $((SIZE / 1024 / 1024)) MB"
@@ -86,7 +115,7 @@ jobs:
           retention-days: 7
 
       - name: Upload bytecode artifact
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.target == 'linux-x64'
         uses: actions/upload-artifact@v4
         with:
           name: mcp-docsrs-bytecode

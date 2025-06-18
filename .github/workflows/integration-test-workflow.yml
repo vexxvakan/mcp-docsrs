@@ -8,8 +8,32 @@ env:
 
 jobs:
   integration:
-    name: Integration Tests
-    runs-on: ubuntu-latest
+    name: Integration Tests - ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Test native binaries on their respective platforms
+          - os: ubuntu-latest
+            target: linux-x64
+            artifact: mcp-docsrs-linux-x64
+          - os: ubuntu-latest
+            target: linux-x64-musl
+            artifact: mcp-docsrs-linux-x64-musl
+          - os: macos-latest
+            target: darwin-x64
+            artifact: mcp-docsrs-darwin-x64
+          - os: macos-latest
+            target: darwin-arm64
+            artifact: mcp-docsrs-darwin-arm64
+          - os: windows-latest
+            target: windows-x64
+            artifact: mcp-docsrs-windows-x64
+          # Test bytecode on Linux
+          - os: ubuntu-latest
+            target: bytecode
+            artifact: mcp-docsrs-bytecode
 
     steps:
       - name: Checkout code
@@ -20,22 +44,31 @@ jobs:
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
-      - name: Download Linux artifact
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: mcp-docsrs-linux-x64
+          name: ${{ matrix.artifact }}
           path: dist/
 
       - name: Make executable
-        run: chmod +x dist/mcp-docsrs-linux-x64
+        if: matrix.os != 'windows-latest'
+        run: chmod +x dist/${{ matrix.artifact }}
 
       - name: Test MCP server functionality
         run: |
+          # Set executable name based on platform
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            EXECUTABLE="./dist/${{ matrix.artifact }}.exe"
+          else
+            EXECUTABLE="./dist/${{ matrix.artifact }}"
+          fi
+          
           # Test basic functionality
-          ./dist/mcp-docsrs-linux-x64 --version
-
+          $EXECUTABLE --version
+          
           # Test with environment variables
-          DB_PATH=":memory:" timeout 5s ./dist/mcp-docsrs-linux-x64 || true
+          DB_PATH=":memory:" timeout 5s $EXECUTABLE || true
+        shell: bash
 
       - name: Test cache functionality
         run: |
@@ -57,11 +90,19 @@ jobs:
 
       - name: Test with sample crate lookup
         run: |
+          # Set executable name based on platform
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            EXECUTABLE="./dist/${{ matrix.artifact }}.exe"
+          else
+            EXECUTABLE="./dist/${{ matrix.artifact }}"
+          fi
+          
           # Create integration test script
           cat > integration-test.js << 'EOF'
           import { spawn } from 'child_process';
 
-          const server = spawn('./dist/mcp-docsrs-linux-x64', [], {
+          const executable = process.env.EXECUTABLE;
+          const server = spawn(executable, [], {
             env: { ...process.env, DB_PATH: ':memory:' }
           });
 
@@ -75,4 +116,5 @@ jobs:
           server.kill('SIGTERM');
           EOF
 
-          bun integration-test.js
+          EXECUTABLE=$EXECUTABLE bun integration-test.js
+        shell: bash

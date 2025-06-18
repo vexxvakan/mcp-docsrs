@@ -308,19 +308,48 @@ jobs:
 
           ## 📥 Downloads
 
-          | Platform | Architecture | Download |
-          |----------|--------------|----------|
-          | 🐧 Linux | x64 | [mcp-docsrs-linux-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64) |
-          | 🍎 macOS | x64 | [mcp-docsrs-darwin-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-x64) |
-          | 🪟 Windows | x64 | [mcp-docsrs-win32-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-win32-x64.exe) |
-          | ⚡ Bytecode | All | [mcp-docsrs-bytecode](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-bytecode) |
+          | Platform | Architecture | Type | Download |
+          |----------|--------------|------|----------|
+          | 🐧 Linux | x64 | GLIBC | [mcp-docsrs-linux-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64) |
+          | 🐧 Linux | ARM64 | GLIBC | [mcp-docsrs-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-arm64) |
+          | 🐧 Linux | x64 | MUSL | [mcp-docsrs-linux-x64-musl](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64-musl) |
+          | 🐧 Linux | ARM64 | MUSL | [mcp-docsrs-linux-arm64-musl](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-arm64-musl) |
+          | 🍎 macOS | x64 | Intel | [mcp-docsrs-darwin-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-x64) |
+          | 🍎 macOS | ARM64 | Apple Silicon | [mcp-docsrs-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-arm64) |
+          | 🪟 Windows | x64 | - | [mcp-docsrs-windows-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-windows-x64.exe) |
+          | ⚡ Bytecode | All | Universal | [mcp-docsrs-bytecode](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-bytecode) |
 
           ### 🚀 Quick Install
 
-          #### Linux/macOS
+          #### Linux (GLIBC - Ubuntu, Debian, Fedora, etc.)
           ```bash
-          # Download and install (replace PLATFORM with your platform)
-          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-PLATFORM -o mcp-docsrs
+          # x64/AMD64
+          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64 -o mcp-docsrs
+          # ARM64 (AWS Graviton, Raspberry Pi 4+)
+          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-arm64 -o mcp-docsrs
+          
+          chmod +x mcp-docsrs
+          ./mcp-docsrs --version
+          ```
+
+          #### Linux (MUSL - Alpine, Docker, Static)
+          ```bash
+          # x64/AMD64
+          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64-musl -o mcp-docsrs
+          # ARM64
+          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-arm64-musl -o mcp-docsrs
+          
+          chmod +x mcp-docsrs
+          ./mcp-docsrs --version
+          ```
+
+          #### macOS
+          ```bash
+          # Intel Macs
+          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-x64 -o mcp-docsrs
+          # Apple Silicon (M1/M2/M3)
+          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-arm64 -o mcp-docsrs
+          
           chmod +x mcp-docsrs
           ./mcp-docsrs --version
           ```
@@ -328,7 +357,7 @@ jobs:
           #### Windows
           ```powershell
           # Download using PowerShell
-          Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-win32-x64.exe" -OutFile "mcp-docsrs.exe"
+          Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-windows-x64.exe" -OutFile "mcp-docsrs.exe"
           .\mcp-docsrs.exe --version
           ```
 
@@ -367,8 +396,12 @@ jobs:
           prerelease: ${{ inputs.prerelease }}
           files: |
             artifacts/mcp-docsrs-linux-x64/mcp-docsrs-linux-x64
+            artifacts/mcp-docsrs-linux-arm64/mcp-docsrs-linux-arm64
+            artifacts/mcp-docsrs-linux-x64-musl/mcp-docsrs-linux-x64-musl
+            artifacts/mcp-docsrs-linux-arm64-musl/mcp-docsrs-linux-arm64-musl
             artifacts/mcp-docsrs-darwin-x64/mcp-docsrs-darwin-x64
-            artifacts/mcp-docsrs-win32-x64/mcp-docsrs-win32-x64.exe
+            artifacts/mcp-docsrs-darwin-arm64/mcp-docsrs-darwin-arm64
+            artifacts/mcp-docsrs-windows-x64/mcp-docsrs-windows-x64.exe
             artifacts/mcp-docsrs-bytecode/mcp-docsrs-bytecode
 
       - name: Post-release summary
