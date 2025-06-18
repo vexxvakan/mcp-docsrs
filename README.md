@@ -40,8 +40,8 @@ Download the latest release for your platform from the [Releases](https://github
 
 - **x64/AMD64 (GLIBC)**: `mcp-docsrs-linux-x64` - For Ubuntu, Debian, Fedora, etc.
 - **ARM64 (GLIBC)**: `mcp-docsrs-linux-arm64` - For ARM64 systems, AWS Graviton
-- **x64/AMD64 (MUSL)**: `mcp-docsrs-linux-x64-musl` - For Alpine Linux, Docker containers
-- **ARM64 (MUSL)**: `mcp-docsrs-linux-arm64-musl` - For Alpine on ARM64, minimal containers
+- **x64/AMD64 (MUSL)**: `mcp-docsrs-linux-x64-musl` - For Alpine Linux, Docker containers (requires libstdc++)
+- **ARM64 (MUSL)**: `mcp-docsrs-linux-arm64-musl` - For Alpine on ARM64, minimal containers (requires libstdc++)
 
 #### macOS
 
@@ -284,9 +284,9 @@ bun run build:all
 bun run build:linux-x64      # Linux x64/AMD64
 bun run build:linux-arm64    # Linux ARM64
 
-# Linux builds (MUSL - static, Alpine)
-bun run build:linux-x64-musl    # Linux x64/AMD64 (static)
-bun run build:linux-arm64-musl  # Linux ARM64 (static)
+# Linux builds (MUSL - for Alpine/containers)
+bun run build:linux-x64-musl    # Linux x64/AMD64 (Alpine)
+bun run build:linux-arm64-musl  # Linux ARM64 (Alpine)
 
 # macOS builds
 bun run build:darwin-x64     # macOS Intel
@@ -426,6 +426,7 @@ mcp-docsrs/
 - 🔄 The server automatically handles redirects and format version compatibility
 - ⚡ Cached responses significantly improve performance for repeated lookups
 - 📦 Built executables include all dependencies - no runtime installation required
+- ⚠️ **MUSL builds limitation**: Due to a [known Bun issue](https://github.com/oven-sh/bun/issues/16056), MUSL builds are not fully static and require `libstdc++` to run. For Docker/Alpine deployments, install `libstdc++` with: `apk add libstdc++`
 
 ## 🤝 Contributing
 <a id="contributing"></a>

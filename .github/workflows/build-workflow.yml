@@ -95,8 +95,10 @@ jobs:
               if [[ "${{ matrix.target }}" == *"musl"* ]]; then
                 # Make binary executable before mounting
                 chmod +x ./dist/mcp-docsrs-${{ matrix.target }}
-                # All MUSL builds now run on native architecture, so we can test them
-                docker run --rm -v $PWD/dist:/workspace:ro -w /workspace alpine:latest /workspace/mcp-docsrs-${{ matrix.target }} --version
+                # IMPORTANT: Bun's MUSL builds are NOT fully static - they dynamically link libstdc++
+                # This is a known limitation: https://github.com/oven-sh/bun/issues/16056
+                # Test using oven/bun:alpine which has all necessary libraries
+                docker run --rm -v $PWD/dist:/workspace:ro -w /workspace oven/bun:alpine /workspace/mcp-docsrs-${{ matrix.target }} --version
               else
                 # Test GLIBC binaries directly
                 ./dist/mcp-docsrs-${{ matrix.target }} --version
