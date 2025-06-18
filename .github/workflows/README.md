@@ -23,26 +23,25 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 ```text
 .github/
 ├── workflows/
-│   ├── pr-ci.yml             # Fast PR validation (Linux only)
-│   ├── ci.yml                # Full CI/CD pipeline (main + labeled PRs)
-│   ├── release.yml           # Release automation with changelogs
-│   ├── security.yml          # Security scanning (scheduled + main)
-│   ├── codeql.yml            # CodeQL analysis (weekly schedule)
-│   ├── dependency-update.yml # Bun lockfile updates
-│   ├── pr-automation.yml     # PR labeling and stale checks
-│   ├── jobs/                 # Reusable workflow components
-│   │   ├── test.yml         # Test suite across platforms
-│   │   ├── build.yml        # Build executables for all platforms
-│   │   ├── code-quality.yml # Linting, type checking
-│   │   └── integration-test.yml # Integration testing
-│   └── README.md            # This file
+│   ├── pr-ci.yml                    # Fast PR validation (Linux only)
+│   ├── ci.yml                       # Full CI/CD pipeline (main + labeled PRs)
+│   ├── release.yml                  # Release automation with changelogs
+│   ├── security.yml                 # Security scanning (scheduled + main)
+│   ├── codeql.yml                   # CodeQL analysis (weekly schedule)
+│   ├── dependency-update.yml        # Bun lockfile updates
+│   ├── pr-automation.yml            # PR labeling and stale checks
+│   ├── test-workflow.yml            # Reusable: Test suite across platforms
+│   ├── build-workflow.yml           # Reusable: Build executables
+│   ├── code-quality-workflow.yml    # Reusable: Linting, type checking
+│   ├── integration-test-workflow.yml # Reusable: Integration testing
+│   └── README.md                    # This file
 ├── codeql/
-│   └── codeql-config.yml    # CodeQL configuration
-├── dependabot.yml           # Automated dependency updates
-├── labeler.yml              # PR auto-labeling rules
-├── secret-scanning.yml      # Secret scanning config
+│   └── codeql-config.yml           # CodeQL configuration
+├── dependabot.yml                  # Automated dependency updates
+├── labeler.yml                     # PR auto-labeling rules
+├── secret-scanning.yml             # Secret scanning config
 └── scripts/
-    └── generate-changelog.sh # Changelog generation script
+    └── generate-changelog.sh       # Changelog generation script
 ```
 
 ## Main Workflows
@@ -116,36 +115,56 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 
 ## Reusable Workflows
 
-### Test Suite (`jobs/test.yml`)
+### Test Suite (`test-workflow.yml`)
 
 - Runs tests across Ubuntu, macOS, Windows
 - Tests with Bun 1.2.14 and latest
 - Uploads coverage to Codecov
 
-### Build (`jobs/build.yml`)
+### Build (`build-workflow.yml`)
 
 - Builds platform-specific executables
 - Creates bytecode version for faster startup
 - Uploads artifacts for 7 days
 
-### Code Quality (`jobs/code-quality.yml`)
+### Code Quality (`code-quality-workflow.yml`)
 
 - Runs Biome linter
 - TypeScript type checking
 - Security vulnerability scanning
 - Bundle size analysis
 
-### Integration Tests (`jobs/integration-test.yml`)
+### Integration Tests (`integration-test-workflow.yml`)
 
 - Tests built executables
 - Validates MCP server functionality
-- Runs only on main branch
+- Runs on main branch and PRs with full-ci label
+
+## Key Differences: pr-ci.yml vs ci.yml
+
+### pr-ci.yml (Quick Checks)
+
+- **Purpose**: Fast feedback for every PR
+- **Scope**: Minimal validation
+- **Platform**: Ubuntu Linux only
+- **Jobs**: Single job with lint, typecheck, test, build
+- **Runtime**: ~2-3 minutes
+- **When**: Every PR automatically
+
+### ci.yml (Full Pipeline)
+
+- **Purpose**: Comprehensive validation
+- **Scope**: Full test matrix and integration tests
+- **Platforms**: Ubuntu, macOS, Windows
+- **Jobs**: Parallel test/build/quality jobs, then integration tests
+- **Runtime**: ~10-15 minutes
+- **When**: Push to main OR PRs with "full-ci" label
 
 ## Adding New Workflows
 
-1. Create new reusable workflow in `jobs/` directory
-2. Use `workflow_call` trigger
-3. Reference from main workflows using `uses: ./.github/workflows/jobs/name.yml`
+1. Create new reusable workflow with `workflow_call` trigger
+2. Place in main `workflows/` directory with `-workflow` suffix
+3. Reference from main workflows using `uses: ./.github/workflows/name-workflow.yml`
 4. Pass secrets with `secrets: inherit`
 
 ## Environment Variables
@@ -229,3 +248,12 @@ For best changelog generation, use conventional commits:
 - `chore:` Maintenance tasks
 
 Add `!` for breaking changes: `feat!: new API`
+
+## Workflow Issues Fixed
+
+Recent improvements to the workflow structure:
+
+1. **Fixed workflow references**: Moved all reusable workflows to top-level directory (GitHub Actions requirement)
+2. **Fixed label detection**: Changed from `github.event.label.name` to `github.event.pull_request.labels.*.name` for proper PR label checking
+3. **Fixed job dependencies**: Added `integration-test` to `status-check` dependencies
+4. **Improved status checks**: Handle skipped jobs properly in CI status validation
