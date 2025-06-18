@@ -117,7 +117,7 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 
 ### Test Suite (`test-workflow.yml`)
 
-- Runs tests across Ubuntu, macOS, Windows
+- Runs tests on Ubuntu Linux only
 - Tests with Bun 1.2.14 and latest
 - Uploads coverage to Codecov
 
@@ -148,7 +148,6 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 - **Scope**: Minimal validation
 - **Platform**: Ubuntu Linux only
 - **Jobs**: Single job with lint, typecheck, test, build
-- **Runtime**: ~2-3 minutes
 - **When**: Every PR automatically
 
 ### ci.yml (Full Pipeline)
@@ -157,7 +156,6 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 - **Scope**: Full test matrix and integration tests
 - **Platforms**: Ubuntu, macOS, Windows
 - **Jobs**: Parallel test/build/quality jobs, then integration tests
-- **Runtime**: ~10-15 minutes
 - **When**: Push to main OR PRs with "full-ci" label
 
 ## Adding New Workflows
