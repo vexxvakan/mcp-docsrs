@@ -254,7 +254,7 @@ jobs:
   build-release:
     name: Build Release Artifacts
     needs: prepare-release
-    uses: ./.github/workflows/jobs/build.yml
+    uses: ./.github/workflows/build-workflow.yml
     secrets: inherit
 
   create-release:

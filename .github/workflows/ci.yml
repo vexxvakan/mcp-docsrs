@@ -21,7 +21,7 @@ jobs:
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && contains(github.event.label.name, 'full-ci'))
-    uses: ./.github/workflows/jobs/test.yml
+    uses: ./.github/workflows/test-workflow.yml
     secrets: inherit
     with:
       debug_enabled: ${{ inputs.debug_enabled || false }}
@@ -29,20 +29,20 @@ jobs:
   build:
     name: Build
     needs: test
-    uses: ./.github/workflows/jobs/build.yml
+    uses: ./.github/workflows/build-workflow.yml
     secrets: inherit
 
   code-quality:
     name: Quality
     needs: test
-    uses: ./.github/workflows/jobs/code-quality.yml
+    uses: ./.github/workflows/code-quality-workflow.yml
     secrets: inherit
 
   integration-test:
     name: Integration
     needs: build
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/jobs/integration-test.yml
+    uses: ./.github/workflows/integration-test-workflow.yml
     secrets: inherit
 
   status-check:
