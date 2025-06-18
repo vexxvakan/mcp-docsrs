@@ -34,7 +34,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       changelog: ${{ steps.changelog.outputs.changelog }}
-      
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,10 +55,10 @@ jobs:
           else
             # Get current version from package.json
             CURRENT_VERSION=$(grep '"version"' package.json | cut -d'"' -f4)
-            
+
             # Parse version components
             IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-            
+
             # Increment based on release type
             case "${{ inputs.release_type }}" in
               major)
@@ -74,10 +74,10 @@ jobs:
                 PATCH=$((PATCH + 1))
                 ;;
             esac
-            
+
             VERSION="$MAJOR.$MINOR.$PATCH"
           fi
-          
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
@@ -85,7 +85,7 @@ jobs:
         run: |
           # Update package.json version
           sed -i "s/\"version\": \".*\"/\"version\": \"${{ steps.version.outputs.version }}\"/" package.json
-          
+
           # Commit version bump
           git add package.json
           git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
@@ -96,24 +96,24 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
+
           # Create changelog file
           cat > CHANGELOG_TEMP.md << 'EOF'
           # 🎉 Release v${{ steps.version.outputs.version }}
-          
+
           > Released on $(date +"%B %d, %Y")
-          
+
           ## ✨ Highlights
-          
+
           EOF
-          
+
           # Get commit messages and categorize them
           if [ -z "$PREVIOUS_TAG" ]; then
             COMMITS=$(git log --pretty=format:"%H|%s|%an|%ae" --no-merges)
           else
             COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"%H|%s|%an|%ae" --no-merges)
           fi
-          
+
           # Initialize arrays for different categories
           declare -A FEATURES
           declare -A FIXES
@@ -122,18 +122,18 @@ jobs:
           declare -A BREAKING
           declare -A AUTHORS
           declare -A FIRST_TIME_CONTRIBUTORS
-          
+
           # Process commits
           while IFS='|' read -r HASH MESSAGE AUTHOR EMAIL; do
             # Track authors
             AUTHORS["$AUTHOR"]="$EMAIL"
-            
+
             # Check if this is author's first contribution
             AUTHOR_COMMITS=$(git log --author="$EMAIL" --oneline | wc -l)
             if [ "$AUTHOR_COMMITS" -eq 1 ]; then
               FIRST_TIME_CONTRIBUTORS["$AUTHOR"]="$EMAIL"
             fi
-            
+
             # Categorize commits
             if [[ "$MESSAGE" =~ ^feat(\(.*\))?!?:(.*)$ ]]; then
               FEATURES["$HASH"]="$MESSAGE|$AUTHOR"
@@ -153,7 +153,7 @@ jobs:
               CHORES["$HASH"]="$MESSAGE|$AUTHOR"
             fi
           done <<< "$COMMITS"
-          
+
           # Add highlights (top 3 features or all if less)
           if [ ${#FEATURES[@]} -gt 0 ]; then
             echo "### Key Features" >> CHANGELOG_TEMP.md
@@ -167,7 +167,7 @@ jobs:
             done
             echo "" >> CHANGELOG_TEMP.md
           fi
-          
+
           # Add breaking changes warning
           if [ ${#BREAKING[@]} -gt 0 ]; then
             echo "## ⚠️ BREAKING CHANGES" >> CHANGELOG_TEMP.md
@@ -180,11 +180,11 @@ jobs:
             done
             echo "" >> CHANGELOG_TEMP.md
           fi
-          
+
           # Add categorized changes
           echo "## 🎯 What's Changed" >> CHANGELOG_TEMP.md
           echo "" >> CHANGELOG_TEMP.md
-          
+
           # Features
           if [ ${#FEATURES[@]} -gt 0 ]; then
             echo "### 🚀 Features" >> CHANGELOG_TEMP.md
@@ -196,7 +196,7 @@ jobs:
             done
             echo "" >> CHANGELOG_TEMP.md
           fi
-          
+
           # Bug Fixes
           if [ ${#FIXES[@]} -gt 0 ]; then
             echo "### 🐛 Bug Fixes" >> CHANGELOG_TEMP.md
@@ -208,7 +208,7 @@ jobs:
             done
             echo "" >> CHANGELOG_TEMP.md
           fi
-          
+
           # Documentation
           if [ ${#DOCS[@]} -gt 0 ]; then
             echo "### 📚 Documentation" >> CHANGELOG_TEMP.md
@@ -220,7 +220,7 @@ jobs:
             done
             echo "" >> CHANGELOG_TEMP.md
           fi
-          
+
           # First Time Contributors
           if [ ${#FIRST_TIME_CONTRIBUTORS[@]} -gt 0 ]; then
             echo "## 🌟 First Time Contributors" >> CHANGELOG_TEMP.md
@@ -232,19 +232,19 @@ jobs:
             done
             echo "" >> CHANGELOG_TEMP.md
           fi
-          
+
           # Statistics
           TOTAL_COMMITS=$(echo "$COMMITS" | wc -l)
           TOTAL_AUTHORS=${#AUTHORS[@]}
           FILES_CHANGED=$(git diff ${PREVIOUS_TAG}..HEAD --name-only 2>/dev/null | wc -l || echo "N/A")
-          
+
           echo "## 📊 Release Stats" >> CHANGELOG_TEMP.md
           echo "" >> CHANGELOG_TEMP.md
           echo "- 📝 **$TOTAL_COMMITS** commits" >> CHANGELOG_TEMP.md
           echo "- 👥 **$TOTAL_AUTHORS** contributors" >> CHANGELOG_TEMP.md
           echo "- 📁 **$FILES_CHANGED** files changed" >> CHANGELOG_TEMP.md
           echo "" >> CHANGELOG_TEMP.md
-          
+
           # Save changelog for output
           CHANGELOG=$(cat CHANGELOG_TEMP.md)
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
@@ -261,7 +261,7 @@ jobs:
     name: Create GitHub Release
     needs: [prepare-release, build-release]
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -277,12 +277,12 @@ jobs:
       - name: Create checksums
         run: |
           cd artifacts
-          
+
           # Create checksums file
           echo "## 📝 SHA256 Checksums" > checksums.txt
           echo "" >> checksums.txt
           echo '```' >> checksums.txt
-          
+
           # Calculate checksums for each artifact
           for dir in mcp-docsrs-*/; do
             if [ -d "$dir" ]; then
@@ -296,27 +296,27 @@ jobs:
               cd ..
             fi
           done
-          
+
           echo '```' >> checksums.txt
 
       - name: Prepare release body
         run: |
           VERSION="${{ needs.prepare-release.outputs.version }}"
-          
+
           cat > release-body.md << 'EOF'
           ${{ needs.prepare-release.outputs.changelog }}
-          
+
           ## 📥 Downloads
-          
+
           | Platform | Architecture | Download |
           |----------|--------------|----------|
           | 🐧 Linux | x64 | [mcp-docsrs-linux-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64) |
           | 🍎 macOS | x64 | [mcp-docsrs-darwin-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-x64) |
           | 🪟 Windows | x64 | [mcp-docsrs-win32-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-win32-x64.exe) |
           | ⚡ Bytecode | All | [mcp-docsrs-bytecode](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-bytecode) |
-          
+
           ### 🚀 Quick Install
-          
+
           #### Linux/macOS
           ```bash
           # Download and install (replace PLATFORM with your platform)
@@ -324,32 +324,32 @@ jobs:
           chmod +x mcp-docsrs
           ./mcp-docsrs --version
           ```
-          
+
           #### Windows
           ```powershell
           # Download using PowerShell
           Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-win32-x64.exe" -OutFile "mcp-docsrs.exe"
           .\mcp-docsrs.exe --version
           ```
-          
+
           EOF
-          
+
           # Append checksums
           cat artifacts/checksums.txt >> release-body.md
-          
+
           # Add footer
           cat >> release-body.md << 'EOF'
-          
+
           ---
-          
+
           ### 🤝 Contributing
-          
+
           Contributions are welcome! Please check our [contributing guidelines](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md) and feel free to submit issues or pull requests.
-          
+
           ### 📖 Documentation
-          
+
           For detailed documentation, visit our [GitHub repository](https://github.com/${{ github.repository }}).
-          
+
           EOF
 
       - name: Create release tag
@@ -358,7 +358,7 @@ jobs:
           git push origin "v${{ needs.prepare-release.outputs.version }}"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.prepare-release.outputs.version }}
           name: Release v${{ needs.prepare-release.outputs.version }}
