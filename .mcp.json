@@ -22,6 +22,20 @@
       ],
       "env": {}
     },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    },
     "mcp-docsrs": {
       "type": "stdio",
       "command": "./dist/mcp-docsrs",

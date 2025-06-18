@@ -17,11 +17,27 @@ describe("Cache Status Tracking", () => {
 		})
 	})
 
-	afterEach(() => {
+	afterEach(async () => {
 		// Clean up
 		fetcher.close()
+
+		// Add a small delay on Windows to ensure file handles are released
+		if (process.platform === "win32") {
+			await new Promise((resolve) => setTimeout(resolve, 100))
+		}
+
 		if (existsSync(testDbPath)) {
-			rmSync(testDbPath, { force: true })
+			try {
+				rmSync(testDbPath, { force: true })
+			} catch (error) {
+				// If still locked, try again after a longer delay
+				if ((error as any).code === "EBUSY" && process.platform === "win32") {
+					await new Promise((resolve) => setTimeout(resolve, 500))
+					rmSync(testDbPath, { force: true })
+				} else {
+					throw error
+				}
+			}
 		}
 	})
 
@@ -140,6 +156,11 @@ describe("Cache Status Tracking", () => {
 		expect(secondResult.fromCache).toBe(false)
 
 		shortTtlFetcher.close()
+
+		// Clean up with delay on Windows
+		if (process.platform === "win32") {
+			await new Promise((resolve) => setTimeout(resolve, 100))
+		}
 		rmSync(join(tmpdir(), `test-ttl-${Date.now()}.db`), { force: true })
 	})
 })

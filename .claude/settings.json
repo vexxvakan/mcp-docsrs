@@ -10,10 +10,18 @@
       "Bash(mkdir:*)",
       "Bash(ls:*)",
       "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(diff:*)",
       "Bash(./dist/mcp-docsrs:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:bun.sh)",
       "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:modelcontextprotocol.io)",
+      "WebFetch(domain:docs.rs)",
+      "mcp__mcp-docsrs__lookup_crate_docs",
+      "mcp__mcp-docsrs__search_crates",
+      "mcp__mcp-interactive__request_user_input",
       "mcp__mcp-interactive__message_complete_notification",
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
@@ -25,6 +33,8 @@
     "context7",
     "mcp-deepwiki",
     "mcp-interactive",
-    "mcp-docsrs"
+    "mcp-docsrs",
+    "sequential-thinking",
+    "memory"
   ]
 }

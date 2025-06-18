@@ -64,7 +64,7 @@ export const createCache = <T>(maxSize = 100, dbPath?: string) => {
 	// Prepare statements for better performance
 	const getStmt = db.prepare("SELECT data, timestamp, ttl FROM cache WHERE key = ?")
 	const setStmt = db.prepare(`
-		INSERT OR REPLACE INTO cache (key, data, timestamp, ttl) 
+		INSERT OR REPLACE INTO cache (key, data, timestamp, ttl)
 		VALUES (?, ?, ?, ?)
 	`)
 	const deleteStmt = db.prepare("DELETE FROM cache WHERE key = ?")
@@ -198,9 +198,9 @@ export const createCache = <T>(maxSize = 100, dbPath?: string) => {
 			cleanupExpired()
 			const entries = db
 				.prepare(
-					`SELECT key, timestamp, ttl, LENGTH(data) as size 
-					FROM cache 
-					ORDER BY timestamp DESC 
+					`SELECT key, timestamp, ttl, LENGTH(data) as size
+					FROM cache
+					ORDER BY timestamp DESC
 					LIMIT ? OFFSET ?`
 				)
 				.all(limit, offset) as Array<{
@@ -226,6 +226,15 @@ export const createCache = <T>(maxSize = 100, dbPath?: string) => {
 	// Close the database
 	const close = (): void => {
 		try {
+			// Finalize all prepared statements first
+			getStmt.finalize()
+			setStmt.finalize()
+			deleteStmt.finalize()
+			clearStmt.finalize()
+			countStmt.finalize()
+			oldestStmt.finalize()
+
+			// Then close the database connection
 			db.close()
 		} catch (error) {
 			ErrorLogger.log(error as Error)

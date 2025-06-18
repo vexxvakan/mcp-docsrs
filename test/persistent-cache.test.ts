@@ -7,10 +7,25 @@ import { createCache } from "../src/cache.js"
 describe("Persistent Cache", () => {
 	const testDbPath = join(tmpdir(), `test-cache-${Date.now()}.db`)
 
-	afterEach(() => {
+	afterEach(async () => {
+		// Add a small delay on Windows to ensure file handles are released
+		if (process.platform === "win32") {
+			await new Promise((resolve) => setTimeout(resolve, 100))
+		}
+
 		// Clean up test database
 		if (existsSync(testDbPath)) {
-			rmSync(testDbPath, { force: true })
+			try {
+				rmSync(testDbPath, { force: true })
+			} catch (error) {
+				// If still locked, try again after a longer delay
+				if ((error as any).code === "EBUSY" && process.platform === "win32") {
+					await new Promise((resolve) => setTimeout(resolve, 500))
+					rmSync(testDbPath, { force: true })
+				} else {
+					throw error
+				}
+			}
 		}
 	})
 
@@ -41,7 +56,7 @@ describe("Persistent Cache", () => {
 		cache2.close()
 	})
 
-	it("should handle nested directory creation", () => {
+	it("should handle nested directory creation", async () => {
 		const nestedPath = join(tmpdir(), "nested", "dirs", `test-cache-${Date.now()}.db`)
 
 		const cache = createCache(10, nestedPath)
@@ -51,8 +66,22 @@ describe("Persistent Cache", () => {
 
 		cache.close()
 
+		// Add delay on Windows before cleanup
+		if (process.platform === "win32") {
+			await new Promise((resolve) => setTimeout(resolve, 100))
+		}
+
 		// Clean up nested directories
-		rmSync(join(tmpdir(), "nested"), { recursive: true, force: true })
+		try {
+			rmSync(join(tmpdir(), "nested"), { recursive: true, force: true })
+		} catch (error) {
+			if ((error as any).code === "EBUSY" && process.platform === "win32") {
+				await new Promise((resolve) => setTimeout(resolve, 500))
+				rmSync(join(tmpdir(), "nested"), { recursive: true, force: true })
+			} else {
+				throw error
+			}
+		}
 	})
 
 	it("should use in-memory database when dbPath is not provided", () => {
