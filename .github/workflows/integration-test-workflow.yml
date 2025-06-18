@@ -30,10 +30,6 @@ jobs:
           - os: windows-latest
             target: windows-x64
             artifact: mcp-docsrs-windows-x64
-          # Test bytecode on Linux
-          - os: ubuntu-latest
-            target: bytecode
-            artifact: mcp-docsrs-bytecode
 
     steps:
       - name: Checkout code

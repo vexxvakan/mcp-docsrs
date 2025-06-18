@@ -66,9 +66,6 @@ jobs:
       - name: Build executable
         run: ${{ matrix.build-cmd }}
 
-      - name: Build bytecode version
-        run: bun run build:bytecode
-        if: matrix.target == 'linux-x64'
 
       - name: Test executable
         run: |
@@ -114,10 +111,3 @@ jobs:
             dist/mcp-docsrs-${{ matrix.target }}*
           retention-days: 7
 
-      - name: Upload bytecode artifact
-        if: matrix.target == 'linux-x64'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mcp-docsrs-bytecode
-          path: dist/mcp-docsrs-bytecode
-          retention-days: 7

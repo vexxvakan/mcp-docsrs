@@ -13,7 +13,9 @@ const colors = {
 }
 
 async function testCratesSearch() {
-	console.log(`\n${colors.blue}${colors.bold}🔍 Testing Crates.io Search Functionality${colors.reset}\n`)
+	console.log(
+		`\n${colors.blue}${colors.bold}🔍 Testing Crates.io Search Functionality${colors.reset}\n`
+	)
 
 	const searchHandler = createSearchCratesHandler()
 
@@ -25,7 +27,7 @@ async function testCratesSearch() {
 			console.log(`${colors.red}   ❌ Error: ${result1.content[0].text}${colors.reset}`)
 		} else {
 			console.log(`${colors.green}   ✅ Found results:${colors.reset}`)
-			console.log(result1.content[0].text.split('\n').slice(0, 15).join('\n'))
+			console.log(result1.content[0].text.split("\n").slice(0, 15).join("\n"))
 		}
 	} catch (error) {
 		console.log(`${colors.red}   ❌ Exception: ${error}${colors.reset}`)
@@ -39,9 +41,9 @@ async function testCratesSearch() {
 			console.log(`${colors.red}   ❌ Error: ${result2.content[0].text}${colors.reset}`)
 		} else {
 			console.log(`${colors.green}   ✅ Found results:${colors.reset}`)
-			const lines = result2.content[0].text.split('\n')
+			const lines = result2.content[0].text.split("\n")
 			console.log(lines[0]) // Header
-			console.log(lines.slice(1, 6).join('\n')) // First result
+			console.log(lines.slice(1, 6).join("\n")) // First result
 		}
 	} catch (error) {
 		console.log(`${colors.red}   ❌ Exception: ${error}${colors.reset}`)
@@ -50,12 +52,14 @@ async function testCratesSearch() {
 	// Test 3: Search for non-existent crate
 	console.log(`\n${colors.yellow}3️⃣  Searching for non-existent crate...${colors.reset}`)
 	try {
-		const result3 = await searchHandler({ 
-			query: "this-definitely-does-not-exist-xyz123", 
-			limit: 10 
+		const result3 = await searchHandler({
+			query: "this-definitely-does-not-exist-xyz123",
+			limit: 10
 		})
 		if (result3.content[0].text.includes("No crates found")) {
-			console.log(`${colors.green}   ✅ Correctly handled: ${result3.content[0].text}${colors.reset}`)
+			console.log(
+				`${colors.green}   ✅ Correctly handled: ${result3.content[0].text}${colors.reset}`
+			)
 		} else {
 			console.log(`${colors.red}   ❌ Unexpected result${colors.reset}`)
 		}
@@ -65,8 +69,10 @@ async function testCratesSearch() {
 
 	// Test 4: Suggest similar crates
 	console.log(`\n${colors.yellow}4️⃣  Testing crate suggestions...${colors.reset}`)
-	
-	console.log(`   ${colors.blue}Searching for suggestions for "servr" (typo of "server")${colors.reset}`)
+
+	console.log(
+		`   ${colors.blue}Searching for suggestions for "servr" (typo of "server")${colors.reset}`
+	)
 	try {
 		const suggestions1 = await suggestSimilarCrates("servr", 5)
 		console.log(`   Found ${suggestions1.length} suggestions: ${suggestions1.join(", ")}`)
@@ -74,7 +80,9 @@ async function testCratesSearch() {
 		console.log(`${colors.red}   ❌ Exception: ${error}${colors.reset}`)
 	}
 
-	console.log(`\n   ${colors.blue}Searching for suggestions for "asyn" (typo of "async")${colors.reset}`)
+	console.log(
+		`\n   ${colors.blue}Searching for suggestions for "asyn" (typo of "async")${colors.reset}`
+	)
 	try {
 		const suggestions2 = await suggestSimilarCrates("asyn", 5)
 		console.log(`   Found ${suggestions2.length} suggestions: ${suggestions2.join(", ")}`)
@@ -89,9 +97,9 @@ async function testCratesSearch() {
 		if (result5.isError) {
 			console.log(`${colors.red}   ❌ Error: ${result5.content[0].text}${colors.reset}`)
 		} else {
-			const lines = result5.content[0].text.split('\n')
+			const lines = result5.content[0].text.split("\n")
 			console.log(`${colors.green}   ✅ ${lines[0]}${colors.reset}`) // Header with count
-			console.log(`   Showing first 2 results only...`)
+			console.log("   Showing first 2 results only...")
 		}
 	} catch (error) {
 		console.log(`${colors.red}   ❌ Exception: ${error}${colors.reset}`)
@@ -105,14 +113,16 @@ async function testCratesSearch() {
 			console.log(`${colors.red}   ❌ Error: ${result6.content[0].text}${colors.reset}`)
 		} else {
 			console.log(`${colors.green}   ✅ Successfully handled hyphenated search${colors.reset}`)
-			const lines = result6.content[0].text.split('\n')
+			const lines = result6.content[0].text.split("\n")
 			console.log(`   ${lines[0]}`) // Header
 		}
 	} catch (error) {
 		console.log(`${colors.red}   ❌ Exception: ${error}${colors.reset}`)
 	}
 
-	console.log(`\n${colors.green}${colors.bold}✅ All crates.io search tests completed!${colors.reset}\n`)
+	console.log(
+		`\n${colors.green}${colors.bold}✅ All crates.io search tests completed!${colors.reset}\n`
+	)
 }
 
 // Run the tests

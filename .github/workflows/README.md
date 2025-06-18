@@ -124,10 +124,10 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 ### Build (`build-workflow.yml`)
 
 - Builds executables for all 7 platforms:
-  - Linux x64/ARM64 (GLIBC and MUSL variants)
+  - Linux x64/ARM64 (GLIBC and MUSL variants) 
   - macOS x64/ARM64 (Intel and Apple Silicon)
   - Windows x64
-- Creates bytecode version for faster startup
+- All builds include bytecode compilation for faster startup
 - Uploads artifacts for 7 days
 
 ### Code Quality (`code-quality-workflow.yml`)
@@ -141,7 +141,7 @@ This repository uses optimized GitHub Actions workflows designed for open-source
 
 - Tests built executables on their native platforms
 - Validates MCP server functionality
-- Tests all 7 platform builds + bytecode
+- Tests all 7 platform builds
 - Runs on main branch and PRs with full-ci label
 
 ## Key Differences: pr-ci.yml vs ci.yml

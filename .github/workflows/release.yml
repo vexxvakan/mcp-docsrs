@@ -317,7 +317,6 @@ jobs:
           | 🍎 macOS | x64 | Intel | [mcp-docsrs-darwin-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-x64) |
           | 🍎 macOS | ARM64 | Apple Silicon | [mcp-docsrs-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-arm64) |
           | 🪟 Windows | x64 | - | [mcp-docsrs-windows-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-windows-x64.exe) |
-          | ⚡ Bytecode | All | Universal | [mcp-docsrs-bytecode](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-bytecode) |
 
           ### 🚀 Quick Install
 
@@ -402,7 +401,6 @@ jobs:
             artifacts/mcp-docsrs-darwin-x64/mcp-docsrs-darwin-x64
             artifacts/mcp-docsrs-darwin-arm64/mcp-docsrs-darwin-arm64
             artifacts/mcp-docsrs-windows-x64/mcp-docsrs-windows-x64.exe
-            artifacts/mcp-docsrs-bytecode/mcp-docsrs-bytecode
 
       - name: Post-release summary
         run: |

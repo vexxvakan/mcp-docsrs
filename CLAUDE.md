@@ -22,15 +22,18 @@ This is an MCP server implementation that provides access to Rust crate document
 - **Format code**: `bun run lint:fix`
 - **Build project**:
   - `bun run build` (current platform)
-  - `bun run build:all` (all 7 platforms + bytecode)
-  - `bun run build:bytecode` (universal bytecode, fastest startup)
-  - Platform-specific: `bun run build:linux-x64`, `build:linux-arm64`, `build:linux-x64-musl`, `build:linux-arm64-musl`, `build:darwin-x64`, `build:darwin-arm64`, `build:windows-x64`
+  - `bun run build:all` (all 7 platforms, all with bytecode for fast startup)
+  - `bun run build:bytecode` (standalone bytecode build, requires Bun runtime - for development only)
+  - Platform-specific: `bun run build:linux-x64`, `build:linux-arm64`, `build:linux-x64-musl`, `build:linux-arm64-musl`, `build:darwin-x64`, `build:darwin-arm64`, `build:windows-x64` (all include bytecode)
 - **Run tests**: `bun test` or `bun test --watch`
 - **Run linter**: `bun run lint`
 - **Type check**: `bun run typecheck`
 - **Run specific test**: `bun test test_name`
 - **Run with verbose output**: `DEBUG=mcp:* bun run src/cli.ts`
 - **Clean cache**: `rm -rf ~/.mcp-docsrs/cache.db` (Adjust to the correct dbPath directory. The cache.db file will be created inside the specified directory. Check possible ENV DB_PATH, .env files and if not present ask the user for one to set it. Recommend ":memory:" for in-memory cache)
+- **Check build sizes**: `bun run check:sizes` (run after `bun run build:all`)
+  - Use this to update the Build Output table in README.md with accurate sizes
+  - Follow the tip in the output: copy the generated table and replace the existing one in README.md's "Build Output" section
 
 ## Running the Application
 
@@ -84,11 +87,9 @@ The project uses the official `@modelcontextprotocol/sdk` for MCP protocol imple
 - Do what has been asked; nothing more, nothing less. Do not deviate from the instructions.
 - ALWAYS create a copy of the file you are editing before making changes and name it with the suffix `-new.(ts, json, etc.)`. Then ask the user if you should keep the new or the original implementation and list the changes that you made. If you are keeping the new file, delete the original file and rename the new file to the original file name, essentially removing -new from the file name.
 - NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
-- At the end of any task, make sure to lint, typecheck, run tests and finally build the code using `build:bytecode`.
+- At the end of any task, make sure to lint, typecheck, run tests and finally build the code using `build:all`.
 
 ## Platform Support
-
-The project supports building for 7 different platforms plus a universal bytecode version:
 
 ### Linux Targets
 
@@ -106,12 +107,8 @@ The project supports building for 7 different platforms plus a universal bytecod
 
 - **windows-x64**: 64-bit Windows
 
-### Universal Target
-
-- **bytecode**: Platform-agnostic bytecode that runs on any system with Bun installed
-
 When building, prefer MUSL variants for Docker containers and maximum compatibility. Use GLIBC variants for standard Linux distributions where performance is critical.
 
 ## Memories
 
-- Bun uses bun.lock now not bun.lockb anymore
+- Bun uses bun.lock now, not bun.lockb anymore

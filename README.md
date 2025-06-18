@@ -52,10 +52,6 @@ Download the latest release for your platform from the [Releases](https://github
 
 - **x64**: `mcp-docsrs-windows-x64.exe` - For 64-bit Windows
 
-#### Universal
-
-- **Bytecode**: `mcp-docsrs-bytecode` - Platform-agnostic, requires Bun runtime
-
 ## 🚀 Usage
 <a id="usage"></a>
 
@@ -187,7 +183,7 @@ Execute SQL queries on the cache database (SELECT queries only for safety).
 
 **Example:**
 
-```
+```sql
 cache://query?sql=SELECT key, timestamp FROM cache WHERE key LIKE '%tokio%' ORDER BY timestamp DESC
 ```
 
@@ -278,10 +274,10 @@ Or using the executable:
 # Build for current platform
 bun run build
 
-# Build with bytecode compilation (faster startup)
+# Build with bytecode compilation (standalone, requires Bun runtime)
 bun run build:bytecode
 
-# Build for all platforms (7 targets + bytecode)
+# Build for all platforms (7 targets, all with bytecode for fast startup)
 bun run build:all
 
 # Linux builds (GLIBC - standard)
@@ -302,18 +298,17 @@ bun run build:windows-x64    # Windows x64
 
 ### Build Output
 
-All executables are created in the `dist/` directory:
+All executables are created in the `dist/` directory with bytecode compilation for fast startup:
 
 | File | Platform | Type | Size |
 |------|----------|------|------|
-| `mcp-docsrs-linux-x64` | Linux x64/AMD64 | GLIBC | ~56MB |
-| `mcp-docsrs-linux-arm64` | Linux ARM64 | GLIBC | ~56MB |
-| `mcp-docsrs-linux-x64-musl` | Linux x64/AMD64 | MUSL (static) | ~56MB |
-| `mcp-docsrs-linux-arm64-musl` | Linux ARM64 | MUSL (static) | ~56MB |
-| `mcp-docsrs-darwin-x64` | macOS Intel | - | ~56MB |
-| `mcp-docsrs-darwin-arm64` | macOS Apple Silicon | - | ~56MB |
-| `mcp-docsrs-windows-x64.exe` | Windows x64 | - | ~57MB |
-| `mcp-docsrs-bytecode` | All platforms | Bytecode | ~16MB |
+| `mcp-docsrs-linux-x64` | Linux x64/AMD64 | GLIBC + Bytecode | ~99MB |
+| `mcp-docsrs-linux-arm64` | Linux ARM64 | GLIBC + Bytecode | ~93MB |
+| `mcp-docsrs-linux-x64-musl` | Linux x64/AMD64 | MUSL (static) + Bytecode | ~92MB |
+| `mcp-docsrs-linux-arm64-musl` | Linux ARM64 | MUSL (static) + Bytecode | ~88MB |
+| `mcp-docsrs-darwin-x64` | macOS Intel | Bytecode | ~64MB |
+| `mcp-docsrs-darwin-arm64` | macOS Apple Silicon | Bytecode | ~58MB |
+| `mcp-docsrs-windows-x64.exe` | Windows x64 | Bytecode | ~113MB |
 
 <a id="development"></a>
 
@@ -337,6 +332,9 @@ bun run lint
 
 # Type checking
 bun run typecheck
+
+# Check build sizes (updates README table)
+bun run check:sizes  # Run after building
 ```
 
 ### Testing
@@ -376,15 +374,47 @@ To see full error details for debugging, set `LOG_EXPECTED_ERRORS=true`.
 
 ```text
 mcp-docsrs/
-├── src/
-│   ├── index.ts        # Main entry point
-│   ├── server.ts       # MCP server implementation
-│   ├── tools.ts        # Tool definitions
-│   ├── cache.ts        # Caching logic
-│   └── types.ts        # TypeScript type definitions
-├── dist/               # Build output
-├── package.json        # Project configuration
-└── tsconfig.json       # TypeScript configuration
+├── src/                        # Source code
+│   ├── cli.ts                  # CLI entry point with argument parsing
+│   ├── index.ts                # MCP server entry point
+│   ├── server.ts               # MCP server implementation with tool/resource handlers
+│   ├── cache.ts                # LRU cache with SQLite persistence
+│   ├── docs-fetcher.ts         # HTTP client for docs.rs JSON API
+│   ├── rustdoc-parser.ts       # Parser for rustdoc JSON format
+│   ├── errors.ts               # Custom error types and error handling
+│   ├── types.ts                # TypeScript types and Zod schemas
+│   └── tools/                  # MCP tool implementations
+│       ├── index.ts            # Tool exports and registration
+│       ├── lookup-crate.ts     # Fetch complete crate documentation
+│       ├── lookup-item.ts      # Fetch specific item documentation
+│       └── search-crates.ts    # Search crates on crates.io
+├── test/                       # Test files
+│   ├── cache.test.ts           # Cache functionality tests
+│   ├── cache-status.test.ts    # Cache status and metrics tests
+│   ├── docs-fetcher.test.ts    # API client tests
+│   ├── integration.test.ts     # End-to-end integration tests
+│   ├── persistent-cache.test.ts # SQLite cache persistence tests
+│   ├── rustdoc-parser.test.ts  # JSON parser tests
+│   └── search-crates.test.ts   # Crate search tests
+├── scripts/                    # Development and testing scripts
+│   ├── test-crates-search.ts   # Manual crate search testing
+│   ├── test-mcp.ts             # MCP server testing
+│   ├── test-persistent-cache.ts # Cache persistence testing
+│   ├── test-resources.ts       # Resource endpoint testing
+│   └── test-zstd.ts            # Zstandard compression testing
+├── plans/                      # Project planning documents
+│   └── feature-recommendations.md # Future feature ideas
+├── dist/                       # Build output (platform executables)
+├── .github/                    # GitHub Actions workflows
+│   ├── workflows/              # CI/CD pipeline definitions
+│   └── ...                     # Various automation configs
+├── CLAUDE.md                   # AI assistant instructions
+├── README.md                   # Project documentation
+├── LICENSE                     # Apache 2.0 license
+├── package.json                # Project dependencies and scripts
+├── tsconfig.json               # TypeScript configuration
+├── biome.json                  # Code formatter/linter config
+└── bun.lock                    # Bun package lock file
 ```
 
 <a id="notes"></a>
