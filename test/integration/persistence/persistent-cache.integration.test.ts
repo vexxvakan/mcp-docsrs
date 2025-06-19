@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test"
 import { existsSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { createCache } from "../src/cache.js"
+import { createCache } from "../../../src/cache.js"
 
 describe("Persistent Cache", () => {
 	const testDbPath = join(tmpdir(), `test-cache-${Date.now()}.db`)

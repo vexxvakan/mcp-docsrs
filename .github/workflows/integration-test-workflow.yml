@@ -59,48 +59,17 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: chmod +x dist/${{ matrix.artifact }}
 
-      - name: Test MCP server functionality
+      - name: Run integration tests (MUSL)
+        if: matrix.needs-docker == true
         run: |
-          # Set executable name based on platform
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            EXECUTABLE="./dist/${{ matrix.artifact }}.exe"
-          else
-            EXECUTABLE="./dist/${{ matrix.artifact }}"
-          fi
-          
-          # Test basic functionality
-          if [ "${{ matrix.needs-docker }}" == "true" ]; then
-            # Test MUSL binaries in Alpine container
-            docker run --rm -v $PWD/dist:/workspace:ro -w /workspace alpine:latest sh -c "
-              apk add --no-cache libstdc++ libgcc && 
-              /workspace/${{ matrix.artifact }} --version
-            "
-          else
-            # Test native binaries directly
-            $EXECUTABLE --version
-          fi
-          
-          # Test with environment variables is now handled in the Docker script for MUSL
-        shell: bash
+          docker run --rm -v $PWD:/workspace alpine:latest sh -c "
+            apk add --no-cache libstdc++ libgcc &&
+            chmod +x /workspace/test/integration/test-musl.sh &&
+            /workspace/test/integration/test-musl.sh /workspace/dist/${{ matrix.artifact }} ${{ matrix.target }}
+          "
 
-      - name: Test cache functionality
-        shell: bash
-        run: |
-          # Create test script with proper escaping
-          echo "import { promises as fs } from 'fs';" > test-cache.js
-          echo "" >> test-cache.js
-          echo "// Test cache directory creation" >> test-cache.js
-          echo "const cacheDir = process.env.HOME + '/.mcp-docsrs';" >> test-cache.js
-          echo "try {" >> test-cache.js
-          echo "  await fs.access(cacheDir);" >> test-cache.js
-          echo "  console.log('Cache directory check: PASS');" >> test-cache.js
-          echo "} catch {" >> test-cache.js
-          echo "  console.log('Cache directory will be created on first use');" >> test-cache.js
-          echo "}" >> test-cache.js
-
-          bun test-cache.js
-
-      - name: Test with sample crate lookup
+      - name: Run integration tests (Native)
+        if: matrix.needs-docker != true
         shell: bash
         run: |
           # Set executable name based on platform
@@ -109,36 +78,14 @@ jobs:
           else
             EXECUTABLE="./dist/${{ matrix.artifact }}"
           fi
-          
-          if [ "${{ matrix.needs-docker }}" == "true" ]; then
-            # For MUSL builds, test in Alpine container
-            docker run --rm -v $PWD/dist:/workspace:ro alpine:latest sh -c "
-              apk add --no-cache libstdc++ libgcc nodejs npm && \
-              npm install -g bun && \
-              echo 'Testing binary version...' && \
-              /workspace/${{ matrix.artifact }} --version && \
-              echo 'Testing server startup...' && \
-              DB_PATH=':memory:' timeout 5s /workspace/${{ matrix.artifact }} || true && \
-              echo 'Basic MUSL tests completed successfully'
-            "
-          else
-            # Native testing for non-MUSL builds
-            # Create integration test script using echo commands
-            echo "import { spawn } from 'child_process';" > integration-test.js
-            echo "" >> integration-test.js
-            echo "const executable = process.env.EXECUTABLE;" >> integration-test.js
-            echo "const server = spawn(executable, [], {" >> integration-test.js
-            echo "  env: { ...process.env, DB_PATH: ':memory:' }" >> integration-test.js
-            echo "});" >> integration-test.js
-            echo "" >> integration-test.js
-            echo "// Give server time to start" >> integration-test.js
-            echo "await new Promise(resolve => setTimeout(resolve, 2000));" >> integration-test.js
-            echo "" >> integration-test.js
-            echo "// Test server is running" >> integration-test.js
-            echo "console.log('MCP server started successfully');" >> integration-test.js
-            echo "" >> integration-test.js
-            echo "// Clean shutdown" >> integration-test.js
-            echo "server.kill('SIGTERM');" >> integration-test.js
 
-            EXECUTABLE=$EXECUTABLE bun integration-test.js
+          # Run integration test suite
+          FLAGS=""
+          if [[ "${{ matrix.target }}" == *"-musl" ]]; then
+            FLAGS="--musl"
           fi
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            FLAGS="$FLAGS --windows"
+          fi
+          
+          bun test/integration/test-binary.ts "$EXECUTABLE" "${{ matrix.target }}" $FLAGS

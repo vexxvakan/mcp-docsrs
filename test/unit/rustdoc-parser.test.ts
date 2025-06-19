@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test"
-import { RustdocParseError } from "../src/errors.js"
-import { findItem, parseCrateInfo } from "../src/rustdoc-parser.js"
-import type { RustdocJson } from "../src/types.js"
+import { RustdocParseError } from "../../src/errors.js"
+import { findItem, parseCrateInfo } from "../../src/rustdoc-parser.js"
+import type { RustdocJson } from "../../src/types.js"
 
 describe("RustdocParser", () => {
 	// Sample rustdoc JSON structure for testing

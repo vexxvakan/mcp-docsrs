@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test"
-import { createDocsFetcher } from "../src/docs-fetcher.js"
+import { createDocsFetcher } from "../../../src/docs-fetcher.js"
 
 describe("DocsFetcher", () => {
 	let fetcher: ReturnType<typeof createDocsFetcher>

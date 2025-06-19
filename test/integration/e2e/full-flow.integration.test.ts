@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test"
-import { createDocsFetcher } from "../src/docs-fetcher.js"
-import { findItem, parseCrateInfo } from "../src/rustdoc-parser.js"
+import { createDocsFetcher } from "../../../src/docs-fetcher.js"
+import { findItem, parseCrateInfo } from "../../../src/rustdoc-parser.js"
 
 describe("Integration Tests", () => {
 	let fetcher: ReturnType<typeof createDocsFetcher>

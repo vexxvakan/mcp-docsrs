@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test"
 import { existsSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { createDocsFetcher } from "../src/docs-fetcher.js"
+import { createDocsFetcher } from "../../../src/docs-fetcher.js"
 
 describe("Cache Status Tracking", () => {
 	const testDbPath = join(tmpdir(), `test-cache-status-${Date.now()}.db`)
@@ -42,7 +42,7 @@ describe("Cache Status Tracking", () => {
 	})
 
 	it("should return fromCache: false on first fetch", async () => {
-		const result = await fetcher.fetchCrateJson("tinc")
+		const result = await fetcher.fetchCrateJson("tinc", "0.1.6")
 
 		expect(result.fromCache).toBe(false)
 		expect(result.data).toBeDefined()
@@ -51,11 +51,11 @@ describe("Cache Status Tracking", () => {
 
 	it("should return fromCache: true on subsequent fetch", async () => {
 		// First fetch - should hit the network
-		const firstResult = await fetcher.fetchCrateJson("tinc")
+		const firstResult = await fetcher.fetchCrateJson("tinc", "0.1.6")
 		expect(firstResult.fromCache).toBe(false)
 
 		// Second fetch - should hit the cache
-		const secondResult = await fetcher.fetchCrateJson("tinc")
+		const secondResult = await fetcher.fetchCrateJson("tinc", "0.1.6")
 		expect(secondResult.fromCache).toBe(true)
 
 		// Data should be identical
@@ -64,7 +64,7 @@ describe("Cache Status Tracking", () => {
 
 	it("should persist cache across fetcher instances", async () => {
 		// First fetcher instance
-		const result1 = await fetcher.fetchCrateJson("tinc")
+		const result1 = await fetcher.fetchCrateJson("tinc", "0.1.6")
 		expect(result1.fromCache).toBe(false)
 		fetcher.close()
 
@@ -76,7 +76,7 @@ describe("Cache Status Tracking", () => {
 		})
 
 		// Should get cached result
-		const result2 = await fetcher2.fetchCrateJson("tinc")
+		const result2 = await fetcher2.fetchCrateJson("tinc", "0.1.6")
 		expect(result2.fromCache).toBe(true)
 		expect(result2.data).toEqual(result1.data)
 

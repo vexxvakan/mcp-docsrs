@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test"
-import { createCache } from "../src/cache.js"
+import { createCache } from "../../src/cache.js"
 
 describe("Cache", () => {
 	let cache: ReturnType<typeof createCache<any>>

@@ -38,17 +38,18 @@ This is an MCP server implementation that provides access to Rust crate document
 ## Running the Application
 
 - **Development**: `bun run src/cli.ts`
-- **As MCP server**: Configure in your MCP client with the built executable
 - **Interactive testing**: run `bun inspector` and let the user test the server and report back to you. Use this ONLY if you are sure that you need the user to test the server and when you cannot test it yourself.
 
 ## Important Guidelines
 
-- Ensure all tests pass with `bun test`
-- Fix TypeScript errors with `bun run typecheck`
+- Ensure EVERY and ALL tests pass with `bun test` not just the ones you are working on.
+- Fix IDE errors and warnings by using the IDE Diagnostics MCP
 - Use descriptive variable and function names following TypeScript conventions
 - Document logic with comments in the code
 - Prefer Bun's built-in APIs over Node.js equivalents when available
 - Handle errors gracefully with proper error types from `src/errors.ts`
+- Use functional programming style with arrow functions instead of classes
+- Use TypeScript types instead of interfaces
 
 ## Configuration Files
 
@@ -88,26 +89,6 @@ The project uses the official `@modelcontextprotocol/sdk` for MCP protocol imple
 - ALWAYS create a copy of the file you are editing before making changes and name it with the suffix `-new.(ts, json, etc.)`. Then ask the user if you should keep the new or the original implementation and list the changes that you made. If you are keeping the new file, delete the original file and rename the new file to the original file name, essentially removing -new from the file name.
 - NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 - At the end of any task, make sure to lint, typecheck, run tests and finally build the code using `build:all`.
-
-## Platform Support
-
-### Linux Targets
-
-- **linux-x64**: Standard x64 Linux with GLIBC (Ubuntu, Debian, Fedora)
-- **linux-arm64**: ARM64 Linux with GLIBC (AWS Graviton, modern ARM servers)
-- **linux-x64-musl**: x64 Linux with MUSL for static linking (Alpine, containers)
-- **linux-arm64-musl**: ARM64 Linux with MUSL for static linking
-
-### macOS Targets
-
-- **darwin-x64**: Intel-based Macs
-- **darwin-arm64**: Apple Silicon Macs (M1/M2/M3)
-
-### Windows Target
-
-- **windows-x64**: 64-bit Windows
-
-When building, prefer MUSL variants for Docker containers and maximum compatibility. Use GLIBC variants for standard Linux distributions where performance is critical.
 
 ## Memories
 

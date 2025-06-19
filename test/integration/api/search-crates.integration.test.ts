@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test"
-import { createSearchCratesHandler, suggestSimilarCrates } from "../src/tools/search-crates.js"
+import {
+	createSearchCratesHandler,
+	suggestSimilarCrates
+} from "../../../src/tools/search-crates.js"
 
 describe("Search Crates Tool", () => {
 	const searchHandler = createSearchCratesHandler()

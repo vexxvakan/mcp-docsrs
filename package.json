@@ -25,8 +25,13 @@
         "lint": "biome check ./src && biome check ./test",
         "lint:fix": "biome check ./src --fix && biome check ./test --fix",
         "lint:fixunsafe": "biome check ./src --fix --unsafe && biome check ./test --fix --unsafe",
-        "test": "BUN_ENV=test bun test",
-        "test:watch": "BUN_ENV=test bun test --watch",
+        "test": "BUN_ENV=test bun test test/unit",
+        "test:unit": "BUN_ENV=test bun test test/unit",
+        "test:integration": "BUN_ENV=test bun test test/integration/api test/integration/persistence test/integration/e2e",
+        "test:integration:api": "BUN_ENV=test bun test test/integration/api",
+        "test:integration:binary": "BUN_ENV=test bun test test/integration/binary/runner.test.ts",
+        "test:all": "bun run test:unit && bun run test:integration",
+        "test:watch": "BUN_ENV=test bun test test/unit --watch",
         "check:sizes": "bun run scripts/check-build-sizes.ts"
     },
     "keywords": [
