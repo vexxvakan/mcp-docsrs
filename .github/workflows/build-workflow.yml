@@ -108,7 +108,7 @@ jobs:
             ./dist/mcp-docsrs-${{ matrix.target }}.exe --version
           else
             # Test binaries on their native architecture
-            if [[ "${{ matrix.os }}" == "ubuntu-latest"* ]] && [[ "${{ matrix.target }}" == *"linux"* ]]; then
+            if [[ "${{ matrix.os }}" == "ubuntu-"* ]] && [[ "${{ matrix.target }}" == *"linux"* ]]; then
               # Test MUSL binaries in Alpine container
               if [[ "${{ matrix.target }}" == *"musl"* ]]; then
                 # Make binary executable before mounting
