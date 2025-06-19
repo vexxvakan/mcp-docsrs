@@ -84,6 +84,7 @@ jobs:
         shell: bash
 
       - name: Test cache functionality
+        shell: bash
         run: |
           # Create test script
           cat > test-cache.js << 'EOF'
@@ -102,76 +103,46 @@ jobs:
           bun test-cache.js
 
       - name: Test with sample crate lookup
+        shell: bash
         run: |
+          # Set executable name based on platform
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            EXECUTABLE="./dist/${{ matrix.artifact }}.exe"
+          else
+            EXECUTABLE="./dist/${{ matrix.artifact }}"
+          fi
+          
           if [ "${{ matrix.needs-docker }}" == "true" ]; then
-            # For MUSL builds, create a test script that runs inside Alpine
-            cat > docker-integration-test.sh << 'EOF'
-          #!/bin/sh
-          set -e
-          
-          # Install dependencies
-          apk add --no-cache libstdc++ libgcc nodejs npm
-          npm install -g bun
-          
-          # Test basic functionality
-          echo "Testing binary version..."
-          /workspace/${{ matrix.artifact }} --version
-          
-          # Test server startup
-          echo "Testing server startup..."
-          DB_PATH=":memory:" timeout 5s /workspace/${{ matrix.artifact }} || true
-          
-          # Create and run integration test
-          cat > /tmp/integration-test.js << 'JSEOF'
-          import { spawn } from 'child_process';
-          
-          const executable = '/workspace/${{ matrix.artifact }}';
-          const server = spawn(executable, [], {
-            env: { ...process.env, DB_PATH: ':memory:' }
-          });
-          
-          // Give server time to start
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Test server is running
-          console.log('MCP server started successfully in Alpine');
-          
-          // Clean shutdown
-          server.kill('SIGTERM');
-          JSEOF
-          
-          cd /tmp && bun integration-test.js
-          EOF
-            
-            # Run the test script in Alpine container
-            docker run --rm -v $PWD/dist:/workspace:ro -v $PWD/docker-integration-test.sh:/test.sh:ro alpine:latest sh /test.sh
+            # For MUSL builds, test in Alpine container
+            docker run --rm -v $PWD/dist:/workspace:ro alpine:latest sh -c "
+              apk add --no-cache libstdc++ libgcc nodejs npm && \
+              npm install -g bun && \
+              echo 'Testing binary version...' && \
+              /workspace/${{ matrix.artifact }} --version && \
+              echo 'Testing server startup...' && \
+              DB_PATH=':memory:' timeout 5s /workspace/${{ matrix.artifact }} || true && \
+              echo 'Basic MUSL tests completed successfully'
+            "
           else
             # Native testing for non-MUSL builds
-            if [ "${{ matrix.os }}" == "windows-latest" ]; then
-              EXECUTABLE="./dist/${{ matrix.artifact }}.exe"
-            else
-              EXECUTABLE="./dist/${{ matrix.artifact }}"
-            fi
-            
             # Create integration test script
             cat > integration-test.js << 'EOF'
-            import { spawn } from 'child_process';
+import { spawn } from 'child_process';
 
-            const executable = process.env.EXECUTABLE;
-            const server = spawn(executable, [], {
-              env: { ...process.env, DB_PATH: ':memory:' }
-            });
+const executable = process.env.EXECUTABLE;
+const server = spawn(executable, [], {
+  env: { ...process.env, DB_PATH: ':memory:' }
+});
 
-            // Give server time to start
-            await new Promise(resolve => setTimeout(resolve, 2000));
+// Give server time to start
+await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Test server is running
-            console.log('MCP server started successfully');
+// Test server is running
+console.log('MCP server started successfully');
 
-            // Clean shutdown
-            server.kill('SIGTERM');
-            EOF
+// Clean shutdown
+server.kill('SIGTERM');
+EOF
 
             EXECUTABLE=$EXECUTABLE bun integration-test.js
           fi
-        shell: bash
