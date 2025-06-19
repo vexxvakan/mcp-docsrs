@@ -32,6 +32,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ matrix.bun-version }}
+          no-cache: ${{ runner.os == 'Windows' }}  # Disable cache on Windows due to issues
 
       - name: Cache dependencies
         uses: actions/cache@v4
