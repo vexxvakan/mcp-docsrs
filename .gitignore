@@ -7,3 +7,15 @@ dist/
 *.sqlite
 *.sqlite3
 *.db
+
+# Act testing
+.secrets
+event.json
+event-*.json
+.github/workflows/*-test.yml
+
+# Test artifacts
+test-artifacts/
+
+# Test scripts
+test-*.sh

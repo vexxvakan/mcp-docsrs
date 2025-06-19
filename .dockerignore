@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build outputs (except the ones we need)
+dist/*
+!dist/mcp-docsrs-linux-*-musl
+
+# Development files
+.github/
+test/
+scripts/
+plans/
+src/
+*.ts
+*.test.ts
+
+# Configuration files
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+LICENSE
+
+# CI/CD
+.github/
+bun.lock
+package.json
+tsconfig.json
+biome.json

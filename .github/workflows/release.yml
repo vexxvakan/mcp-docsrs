@@ -26,6 +26,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: read
+  packages: write
 
 jobs:
   prepare-release:
@@ -257,9 +258,119 @@ jobs:
     uses: ./.github/workflows/build-workflow.yml
     secrets: inherit
 
+  build-docker:
+    name: Build Docker Images
+    needs: [prepare-release, build-release]
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+    
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: x64
+          - platform: linux/arm64
+            arch: arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download binary artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mcp-docsrs-linux-${{ matrix.arch }}-musl
+          path: dist/
+
+      - name: Make binary executable
+        run: chmod +x dist/mcp-docsrs-linux-${{ matrix.arch }}-musl
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.prepare-release.outputs.version }}
+            type=raw,value=${{ matrix.arch }}
+            type=raw,value=latest,enable=${{ matrix.arch == 'x64' }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BINARY_NAME=mcp-docsrs-linux-${{ matrix.arch }}-musl
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-docker-manifest:
+    name: Create Docker Multi-Arch Manifest
+    needs: [prepare-release, build-docker]
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest
+        run: |
+          VERSION="${{ needs.prepare-release.outputs.version }}"
+          
+          # Create version-specific manifest
+          docker manifest create ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:x64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64
+          
+          # Create latest manifest
+          docker manifest create ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:x64 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64
+          
+          # Annotate manifests with architecture info
+          docker manifest annotate ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:x64 --arch amd64
+          docker manifest annotate ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64 --arch arm64
+          
+          docker manifest annotate ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:x64 --arch amd64
+          docker manifest annotate ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64 --arch arm64
+          
+          # Push manifests
+          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION}
+          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
   create-release:
     name: Create GitHub Release
-    needs: [prepare-release, build-release]
+    needs: [prepare-release, build-release, create-docker-manifest]
     runs-on: ubuntu-latest
 
     steps:
@@ -317,6 +428,27 @@ jobs:
           | 🍎 macOS | x64 | Intel | [mcp-docsrs-darwin-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-x64) |
           | 🍎 macOS | ARM64 | Apple Silicon | [mcp-docsrs-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-arm64) |
           | 🪟 Windows | x64 | - | [mcp-docsrs-windows-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-windows-x64.exe) |
+
+          ### 🐳 Docker Images
+
+          Multi-architecture Docker images are available on GitHub Container Registry:
+
+          ```bash
+          # Pull the latest image (multi-arch: x64 and ARM64)
+          docker pull ghcr.io/${{ github.repository }}:latest
+          
+          # Or use a specific version
+          docker pull ghcr.io/${{ github.repository }}:${VERSION}
+          
+          # Run the server
+          docker run --rm -i ghcr.io/${{ github.repository }}:latest
+          ```
+
+          Available tags:
+          - `latest` - Latest stable release (multi-arch)
+          - `${VERSION}` - This specific version (multi-arch)
+          - `x64` - Latest x64/AMD64 build
+          - `arm64` - Latest ARM64 build
 
           ### 🚀 Quick Install
 
@@ -409,7 +541,12 @@ jobs:
           echo "**Version**: v${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Release URL**: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🐳 Docker Images" >> $GITHUB_STEP_SUMMARY
+          echo "Multi-arch images published to GitHub Container Registry:" >> $GITHUB_STEP_SUMMARY
+          echo "- `ghcr.io/${{ github.repository }}:latest`" >> $GITHUB_STEP_SUMMARY
+          echo "- `ghcr.io/${{ github.repository }}:${{ needs.prepare-release.outputs.version }}`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
           echo "1. Review the release notes" >> $GITHUB_STEP_SUMMARY
-          echo "2. Test the released binaries" >> $GITHUB_STEP_SUMMARY
+          echo "2. Test the released binaries and Docker images" >> $GITHUB_STEP_SUMMARY
           echo "3. Announce the release" >> $GITHUB_STEP_SUMMARY

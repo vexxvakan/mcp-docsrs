@@ -34,7 +34,7 @@ bun run build:bytecode # or bun run build:all for all platforms
 
 ### Using Pre-built Executables
 
-Download the latest release for your platform from the [Releases](https://github.com/vexxvaka/mcp-docsrs/releases) page:
+Download the latest release for your platform from the [Releases](https://github.com/vexxvakan/mcp-docsrs/releases) page:
 
 #### Linux
 
@@ -51,6 +51,28 @@ Download the latest release for your platform from the [Releases](https://github
 #### Windows
 
 - **x64**: `mcp-docsrs-windows-x64.exe` - For 64-bit Windows
+
+### Using Docker
+
+Pull and run the latest multi-arch image (supports both x64 and ARM64):
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/vexxvakan/mcp-docsrs:latest
+
+# Run the server
+docker run --rm -i ghcr.io/vexxvakan/mcp-docsrs:latest
+
+# Run with custom configuration
+docker run --rm -i ghcr.io/vexxvakan/mcp-docsrs:latest \
+  --cache-ttl 7200000 --max-cache-size 200
+```
+
+Available tags:
+- `latest` - Latest stable release (multi-arch)
+- `v1.0.0` - Specific version (multi-arch)
+- `x64` - Latest x64/AMD64 build
+- `arm64` - Latest ARM64 build
 
 ## 🚀 Usage
 <a id="usage"></a>
@@ -253,6 +275,19 @@ Or using the executable:
   "mcpServers": {
     "rust-docs": {
       "command": "/path/to/mcp-docsrs"
+    }
+  }
+}
+```
+
+Or using Docker:
+
+```json
+{
+  "mcpServers": {
+    "rust-docs": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "ghcr.io/vexxvakan/mcp-docsrs:latest"]
     }
   }
 }
