@@ -58,10 +58,8 @@ jobs:
           echo "Target: ${{ matrix.target }}"
           echo "Current time: $(date)"
           echo "Waiting for runner: This step confirms the runner has started"
-          uname -a
-          echo "CPU info:"
-          lscpu 2>/dev/null || sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "CPU info not available"
           echo "::endgroup::"
+        shell: bash
 
       - name: Checkout code
         uses: actions/checkout@v4
