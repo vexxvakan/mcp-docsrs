@@ -21,10 +21,18 @@ jobs:
           - os: ubuntu-latest
             target: linux-x64-musl
             artifact: mcp-docsrs-linux-x64-musl
-          - os: macos-latest
+            needs-docker: true
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+            artifact: mcp-docsrs-linux-arm64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64-musl
+            artifact: mcp-docsrs-linux-arm64-musl
+            needs-docker: true
+          - os: macos-13  # Intel Mac for x64 binary
             target: darwin-x64
             artifact: mcp-docsrs-darwin-x64
-          - os: macos-latest
+          - os: macos-latest  # Apple Silicon for ARM64 binary
             target: darwin-arm64
             artifact: mcp-docsrs-darwin-arm64
           - os: windows-latest
@@ -39,6 +47,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
+          no-cache: ${{ runner.os == 'Windows' }}  # Disable cache on Windows due to issues
 
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -60,10 +69,18 @@ jobs:
           fi
           
           # Test basic functionality
-          $EXECUTABLE --version
+          if [ "${{ matrix.needs-docker }}" == "true" ]; then
+            # Test MUSL binaries in Alpine container
+            docker run --rm -v $PWD/dist:/workspace:ro -w /workspace alpine:latest sh -c "
+              apk add --no-cache libstdc++ libgcc && 
+              /workspace/${{ matrix.artifact }} --version
+            "
+          else
+            # Test native binaries directly
+            $EXECUTABLE --version
+          fi
           
-          # Test with environment variables
-          DB_PATH=":memory:" timeout 5s $EXECUTABLE || true
+          # Test with environment variables is now handled in the Docker script for MUSL
         shell: bash
 
       - name: Test cache functionality
@@ -86,31 +103,75 @@ jobs:
 
       - name: Test with sample crate lookup
         run: |
-          # Set executable name based on platform
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            EXECUTABLE="./dist/${{ matrix.artifact }}.exe"
-          else
-            EXECUTABLE="./dist/${{ matrix.artifact }}"
-          fi
+          if [ "${{ matrix.needs-docker }}" == "true" ]; then
+            # For MUSL builds, create a test script that runs inside Alpine
+            cat > docker-integration-test.sh << 'EOF'
+          #!/bin/sh
+          set -e
           
-          # Create integration test script
-          cat > integration-test.js << 'EOF'
+          # Install dependencies
+          apk add --no-cache libstdc++ libgcc nodejs npm
+          npm install -g bun
+          
+          # Test basic functionality
+          echo "Testing binary version..."
+          /workspace/${{ matrix.artifact }} --version
+          
+          # Test server startup
+          echo "Testing server startup..."
+          DB_PATH=":memory:" timeout 5s /workspace/${{ matrix.artifact }} || true
+          
+          # Create and run integration test
+          cat > /tmp/integration-test.js << 'JSEOF'
           import { spawn } from 'child_process';
-
-          const executable = process.env.EXECUTABLE;
+          
+          const executable = '/workspace/${{ matrix.artifact }}';
           const server = spawn(executable, [], {
             env: { ...process.env, DB_PATH: ':memory:' }
           });
-
+          
           // Give server time to start
           await new Promise(resolve => setTimeout(resolve, 2000));
-
+          
           // Test server is running
-          console.log('MCP server started successfully');
-
+          console.log('MCP server started successfully in Alpine');
+          
           // Clean shutdown
           server.kill('SIGTERM');
+          JSEOF
+          
+          cd /tmp && bun integration-test.js
           EOF
+            
+            # Run the test script in Alpine container
+            docker run --rm -v $PWD/dist:/workspace:ro -v $PWD/docker-integration-test.sh:/test.sh:ro alpine:latest sh /test.sh
+          else
+            # Native testing for non-MUSL builds
+            if [ "${{ matrix.os }}" == "windows-latest" ]; then
+              EXECUTABLE="./dist/${{ matrix.artifact }}.exe"
+            else
+              EXECUTABLE="./dist/${{ matrix.artifact }}"
+            fi
+            
+            # Create integration test script
+            cat > integration-test.js << 'EOF'
+            import { spawn } from 'child_process';
 
-          EXECUTABLE=$EXECUTABLE bun integration-test.js
+            const executable = process.env.EXECUTABLE;
+            const server = spawn(executable, [], {
+              env: { ...process.env, DB_PATH: ':memory:' }
+            });
+
+            // Give server time to start
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Test server is running
+            console.log('MCP server started successfully');
+
+            // Clean shutdown
+            server.kill('SIGTERM');
+            EOF
+
+            EXECUTABLE=$EXECUTABLE bun integration-test.js
+          fi
         shell: bash
