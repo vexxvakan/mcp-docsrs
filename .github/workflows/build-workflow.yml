@@ -6,10 +6,16 @@ on:
 env:
   BUN_VERSION: '1.2.14'
 
+
 jobs:
   build:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60  # Extended timeout for ARM64 runner availability
+    # Limit ARM64 concurrency to help with runner availability
+    concurrency:
+      group: arm64-${{ matrix.target }}-${{ github.ref }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
@@ -44,6 +50,19 @@ jobs:
             build-cmd: bun run build:windows-x64
 
     steps:
+      - name: Show runner info
+        run: |
+          echo "::group::Runner Information"
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner Arch: ${{ runner.arch }}"
+          echo "Target: ${{ matrix.target }}"
+          echo "Current time: $(date)"
+          echo "Waiting for runner: This step confirms the runner has started"
+          uname -a
+          echo "CPU info:"
+          lscpu 2>/dev/null || sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "CPU info not available"
+          echo "::endgroup::"
+
       - name: Checkout code
         uses: actions/checkout@v4
 

@@ -210,13 +210,12 @@ docker rm test-registry
 4. **Runner Images**: Not all GitHub runner features are available
 5. **ARM64 on x64**: Cross-platform builds may be slow or fail
 
-## Alternative: Fork Testing
+## GitHub Actions ARM64 Runner Issues
 
-For critical workflows, consider:
+ARM64 runners (`ubuntu-latest-arm64`) can experience delays:
 
-1. Fork the repository
-2. Modify the workflows to use your fork's registry
-3. Test with real GitHub Actions on the fork
-4. Use a test registry namespace (e.g., `ghcr.io/username/test-mcp-docsrs`)
+- **Provisioning**: Can take around 15 minutes to start
+- **Availability**: Limited runner pool, may queue for extended periods
+- **Stuck appearance**: The workflow may appear stuck with a non-pulsating yellow circle
 
 This provides the most accurate testing environment while keeping production safe.
