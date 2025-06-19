@@ -212,10 +212,17 @@ docker rm test-registry
 
 ## GitHub Actions ARM64 Runner Issues
 
-ARM64 runners (`ubuntu-latest-arm64`) can experience delays:
+ARM64 runners for public repositories use specific labels:
 
-- **Provisioning**: Can take around 15 minutes to start
-- **Availability**: Limited runner pool, may queue for extended periods
-- **Stuck appearance**: The workflow may appear stuck with a non-pulsating yellow circle
+- `ubuntu-24.04-arm` - Ubuntu 24.04 ARM64 runner
+- `ubuntu-22.04-arm` - Ubuntu 22.04 ARM64 runner
+- **Note**: `ubuntu-latest-arm64` does NOT exist!
+
+ARM64 runners can experience delays:
+
+- **Public Preview**: Currently in public preview (as of Jan 2025)
+- **Free for Public Repos Only**: Not available for private repositories
+- **Queue Times**: May experience longer wait times during peak hours
+- **Performance**: 4 vCPU runners with Cobalt 100-based processors
 
 This provides the most accurate testing environment while keeping production safe.

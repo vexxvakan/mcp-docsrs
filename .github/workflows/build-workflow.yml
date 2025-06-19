@@ -25,7 +25,7 @@ jobs:
             target: linux-x64
             build-cmd: bun run build:linux-x64
           # Linux ARM64 GLIBC builds (native ARM64 runner)
-          - os: ubuntu-latest-arm64
+          - os: ubuntu-24.04-arm
             target: linux-arm64
             build-cmd: bun run build:linux-arm64
           # Linux x64 MUSL builds (for Alpine, containers, static linking)
@@ -33,7 +33,7 @@ jobs:
             target: linux-x64-musl
             build-cmd: bun run build:linux-x64-musl
           # Linux ARM64 MUSL builds (native ARM64 runner)
-          - os: ubuntu-latest-arm64
+          - os: ubuntu-24.04-arm
             target: linux-arm64-musl
             build-cmd: bun run build:linux-arm64-musl
           # macOS x64 builds (Intel-based runner)
@@ -133,7 +133,7 @@ jobs:
       - name: Run tests on native architecture
         run: |
           # Only run full tests on native architecture builds
-          if [[ "${{ matrix.os }}" == "ubuntu-latest-arm64" ]] && [[ "${{ matrix.target }}" == *"arm64"* ]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-24.04-arm" ]] && [[ "${{ matrix.target }}" == *"arm64"* ]]; then
             echo "Running tests on native ARM64..."
             bun test
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]] && [[ "${{ matrix.target }}" == "linux-x64" ]]; then
