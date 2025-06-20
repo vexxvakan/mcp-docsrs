@@ -5,7 +5,7 @@ This directory contains integration tests for the mcp-docsrs binary executables 
 ## Structure
 
 - `test-binary.ts` - Main integration test suite orchestrator
-- `test-musl.sh` - Basic test script for MUSL builds (runs inside Alpine container)
+- `test-musl.sh` - Full test script for MUSL builds (runs inside Alpine container with Bun)
 - `test-crates-search.ts` - Tests for crate search functionality
 - `test-mcp-protocol.ts` - Tests for MCP protocol implementation
 - `test-persistent-cache.ts` - Tests for persistent cache functionality
@@ -25,7 +25,7 @@ bun test/integration/test-binary.ts ./dist/mcp-docsrs-linux-x64 linux-x64
 
 ```bash
 docker run --rm -v $PWD:/workspace alpine:latest sh -c "
-  apk add --no-cache libstdc++ libgcc && 
+  apk add --no-cache libstdc++ libgcc &&
   /workspace/test/integration/test-musl.sh /workspace/dist/mcp-docsrs-linux-x64-musl linux-x64-musl
 "
 ```
@@ -35,12 +35,11 @@ docker run --rm -v $PWD:/workspace alpine:latest sh -c "
 The integration tests verify:
 
 ### Basic Tests (All Platforms)
+
 1. **Version Flag** - Binary responds correctly to `--version`
 2. **Server Startup** - MCP server starts and shuts down cleanly
 3. **Cache Functionality** - Cache directory is properly handled
 4. **MCP Operations** - Basic MCP protocol operations work correctly
-
-### Extended Tests (Non-MUSL Platforms)
 5. **Crate Search** - Search functionality with various query types
 6. **MCP Protocol** - Full protocol implementation including error handling
 7. **Persistent Cache** - Cache persistence across server restarts
@@ -49,7 +48,7 @@ The integration tests verify:
 
 ## Platform-Specific Tests
 
-- **Linux (GLIBC)** - Direct execution tests
-- **Linux (MUSL)** - Containerized Alpine Linux tests
-- **macOS** - Direct execution tests on Intel and Apple Silicon
-- **Windows** - Direct execution tests with Windows-specific handling
+- **Linux (GLIBC)** - Direct execution of full test suite
+- **Linux (MUSL)** - Containerized Alpine Linux with full test suite
+- **macOS** - Direct execution of full test suite on Intel and Apple Silicon
+- **Windows** - Direct execution of full test suite with Windows-specific handling

@@ -59,11 +59,14 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: chmod +x dist/${{ matrix.artifact }}
 
+      - name: Build MUSL test Docker image
+        if: matrix.needs-docker == true
+        run: docker build -t mcp-docsrs-musl-test -f test/integration/Dockerfile.musl-test .
+
       - name: Run integration tests (MUSL)
         if: matrix.needs-docker == true
         run: |
-          docker run --rm -v $PWD:/workspace alpine:latest sh -c "
-            apk add --no-cache libstdc++ libgcc &&
+          docker run --rm -v $PWD:/workspace mcp-docsrs-musl-test -c "
             chmod +x /workspace/test/integration/test-musl.sh &&
             /workspace/test/integration/test-musl.sh /workspace/dist/${{ matrix.artifact }} ${{ matrix.target }}
           "

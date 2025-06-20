@@ -1,0 +1,16 @@
+# Dockerfile for MUSL integration tests
+FROM alpine:latest
+
+# Install required runtime dependencies
+RUN apk add --no-cache libstdc++ libgcc curl bash
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash && \
+    mv /root/.bun/bin/bun /usr/local/bin/bun && \
+    chmod +x /usr/local/bin/bun
+
+# Set working directory
+WORKDIR /workspace
+
+# The test script will be run with the workspace mounted
+ENTRYPOINT ["/bin/sh"]

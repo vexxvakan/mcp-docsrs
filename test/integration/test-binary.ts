@@ -222,17 +222,15 @@ const runTests = async (options: TestOptions): Promise<void> => {
 	await testCacheFunctionality()
 	await testBasicMCPOperations(options)
 
-	// Extended tests (skip for MUSL builds as they run in minimal Alpine environment)
-	if (!options.isMusl) {
-		console.log("\n📋 Running extended integration tests...")
+	// Extended tests for all platforms
+	console.log("\n📋 Running extended integration tests...")
 
-		// Run additional test suites
-		await runCratesSearchTests(options)
-		await runMCPProtocolTests(options)
-		await runPersistentCacheTests(options)
-		await runResourcesTests(options)
-		await runZstdTests(options)
-	}
+	// Run additional test suites
+	await runCratesSearchTests(options)
+	await runMCPProtocolTests(options)
+	await runPersistentCacheTests(options)
+	await runResourcesTests(options)
+	await runZstdTests(options)
 
 	console.log(`\n✅ All integration tests passed for ${options.target}`)
 }

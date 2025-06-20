@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    name: Test on ${{ matrix.os }}
+    name: Test on ${{ matrix.os }} (Bun ${{ matrix.bun-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

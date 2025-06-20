@@ -16,10 +16,7 @@ describe("Integration Tests", () => {
 		fetcher.close()
 	})
 
-	// Skip these tests in CI or when offline
-	const skipInCI = process.env.CI ? it.skip : it
-
-	skipInCI("should fetch and parse a real crate (tinc)", async () => {
+	it("should fetch and parse a real crate (tinc)", async () => {
 		try {
 			// Try to fetch tinc which should have JSON docs
 			const { data: json } = await fetcher.fetchCrateJson("tinc", "0.1.6")
@@ -49,7 +46,7 @@ describe("Integration Tests", () => {
 		}
 	})
 
-	skipInCI("should handle crates without JSON docs gracefully", () => {
+	it("should handle crates without JSON docs gracefully", () => {
 		// Try an old version that likely doesn't have JSON docs
 		expect(fetcher.fetchCrateJson("tinc", "0.1.0")).rejects.toThrow(/not found|404/)
 	})

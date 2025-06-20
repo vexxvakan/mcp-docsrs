@@ -226,6 +226,22 @@ export class ItemNotFoundError extends MCPDocsRsError {
 }
 
 /**
+ * Error thrown when an operation is aborted
+ */
+export class AbortError extends MCPDocsRsError {
+	constructor(operation: string, reason?: string) {
+		const message = `Operation aborted: ${operation}${reason ? ` - ${reason}` : ""}`
+
+		super(message, {
+			operation,
+			reason
+		})
+
+		this.name = "AbortError" // Ensure the name matches what fetch throws
+	}
+}
+
+/**
  * Error logger utility functions
  */
 const formatError = (error: Error): string => {
@@ -259,7 +275,8 @@ export const ErrorLogger = {
 				error instanceof CrateNotFoundError ||
 				error instanceof TimeoutError ||
 				error instanceof RustdocParseError ||
-				error.name === "AbortError" || // For timeout tests
+				error instanceof AbortError ||
+				error.name === "AbortError" || // For native AbortError
 				error.message === "Test interception" // For URL validation tests
 			) {
 				// Show a brief indicator that the expected error was caught
@@ -313,4 +330,8 @@ export function isCrateNotFoundError(error: unknown): error is CrateNotFoundErro
 
 export function isTimeoutError(error: unknown): error is TimeoutError {
 	return error instanceof TimeoutError
+}
+
+export function isAbortError(error: unknown): error is AbortError {
+	return error instanceof AbortError || (error instanceof Error && error.name === "AbortError")
 }
