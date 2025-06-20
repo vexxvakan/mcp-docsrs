@@ -70,11 +70,7 @@ const testZstdDecompression = async (options: TestOptions): Promise<void> => {
 		}
 
 		const itemText = itemResponse.result.content[0].text
-		assertContains(
-			itemText.toLowerCase(),
-			"error",
-			"Item documentation should contain 'error'"
-		)
+		assertContains(itemText.toLowerCase(), "error", "Item documentation should contain 'error'")
 		console.log("✅ Successfully fetched and decompressed item documentation")
 
 		// Test 4: Test with a smaller crate to ensure zstd works for various sizes
