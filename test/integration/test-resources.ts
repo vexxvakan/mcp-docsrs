@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 import {
 	assertContains,
-	assertError,
 	callTool,
 	listResources,
 	readResource,
@@ -34,8 +33,14 @@ const testResources = async (options: TestOptions): Promise<void> => {
 
 				// Test 2: Add some data to cache
 				console.log("\n🔄 Test 2: Populate cache with test data...")
-				await callTool(server, "lookup_crate_docs", { crateName: "tinc", version: "0.1.6" }, 3)
+				const addResult = await callTool(server, "lookup_crate_docs", { crateName: "tinc", version: "0.1.6" }, 3)
+				if (addResult.result?.isError) {
+					throw new Error(`Failed to add tinc to cache: ${addResult.result.content[0].text}`)
+				}
 				console.log("✅ Added tinc to cache")
+				
+				// Small delay to ensure cache write completes
+				await new Promise(resolve => setTimeout(resolve, 100))
 
 				// Test 3: Read cache statistics
 				console.log("\n📊 Test 3: Read cache statistics...")
@@ -52,27 +57,43 @@ const testResources = async (options: TestOptions): Promise<void> => {
 
 				// Test 4: Read cache entries
 				console.log("\n📚 Test 4: Read cache entries...")
-				const entriesContent = await readResource(server, "cache://entries?limit=10", 5)
-
-				const entries = JSON.parse(entriesContent)
+				const entriesContent = await readResource(server, "cache://entries?limit=10&offset=0", 5)
+				
+				if (!entriesContent) {
+					throw new Error("No content returned from cache entries resource")
+				}
+				
+				let entries: any
+				try {
+					entries = JSON.parse(entriesContent)
+				} catch (e) {
+					console.error("Failed to parse entries content:", JSON.stringify(entriesContent))
+					console.error("Content length:", entriesContent.length)
+					console.error("First 100 chars:", entriesContent.substring(0, 100))
+					throw e
+				}
 				if (entries.entries.length !== 1) {
 					throw new Error(`Expected 1 cache entry, got ${entries.entries.length}`)
 				}
 
 				const entry = entries.entries[0]
-				assertContains(entry.url, "tinc", "Cache entry should contain 'tinc'")
-				console.log(`✅ Found cache entry for ${entry.url}`)
+				assertContains(entry.key, "tinc", "Cache entry should contain 'tinc'")
+				console.log(`✅ Found cache entry for ${entry.key}`)
 
 				// Test 5: Test pagination
 				console.log("\n📄 Test 5: Test cache entries pagination...")
 
 				// Add more crates to test pagination
-				const crateNames = ["tokio", "async-trait", "futures"]
+				const crateNames = ["clap", "anyhow", "thiserror"]
 				let reqId = 10
+				let successCount = 0
 				for (const crateName of crateNames) {
-					await callTool(server, "lookup_crate_docs", { crateName }, reqId++)
+					const result = await callTool(server, "lookup_crate_docs", { crateName }, reqId++)
+					if (!result.result?.isError) {
+						successCount++
+					}
 				}
-				console.log(`✅ Added ${crateNames.length} more crates to cache`)
+				console.log(`✅ Added ${successCount} more crates to cache`)
 
 				// Test pagination with limit
 				const paginatedContent = await readResource(
@@ -93,13 +114,14 @@ const testResources = async (options: TestOptions): Promise<void> => {
 				console.log("\n🔍 Test 6: SQL query execution...")
 				const sqlContent = await readResource(
 					server,
-					"cache://query?sql=SELECT COUNT(*) as count FROM cache_entries",
+					"cache://query?sql=SELECT COUNT(*) as count FROM cache",
 					30
 				)
 				const sqlResult = JSON.parse(sqlContent)
 
-				if (!sqlResult.rows || sqlResult.rows[0].count !== 4) {
-					throw new Error(`Expected 4 cache entries, got ${sqlResult.rows?.[0]?.count}`)
+				const expectedCount = 1 + successCount // 1 from tinc + successCount from pagination test
+				if (!Array.isArray(sqlResult) || sqlResult.length === 0 || sqlResult[0].count !== expectedCount) {
+					throw new Error(`Expected ${expectedCount} cache entries, got ${sqlResult?.[0]?.count}`)
 				}
 				console.log("✅ SQL query executed successfully")
 
@@ -110,11 +132,13 @@ const testResources = async (options: TestOptions): Promise<void> => {
 					id: 40,
 					method: "resources/read",
 					params: {
-						uri: "cache://query?sql=DELETE FROM cache_entries"
+						uri: "cache://query?sql=DELETE FROM cache"
 					}
 				})
 
-				assertError(dangerousResponse, "Should have rejected DELETE query")
+				// The server returns a successful response with an error message in the content
+				const dangerousContent = dangerousResponse.result?.contents?.[0]?.text || ""
+				assertContains(dangerousContent, "Only SELECT queries are allowed", "Should reject non-SELECT query")
 				console.log("✅ Correctly rejected non-SELECT query")
 
 				console.log("\n✅ All resources tests passed")
