@@ -5,10 +5,16 @@ import { join } from "node:path"
 import { createDocsFetcher } from "../../../src/docs-fetcher.js"
 
 describe("Cache Status Tracking", () => {
-	const testDbPath = join(tmpdir(), `test-cache-status-${Date.now()}.db`)
+	let testDbPath: string
 	let fetcher: ReturnType<typeof createDocsFetcher>
 
 	beforeEach(() => {
+		// Create unique database path for each test to avoid conflicts
+		testDbPath = join(
+			tmpdir(),
+			`test-cache-status-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.db`
+		)
+
 		// Create fetcher with persistent database for testing
 		fetcher = createDocsFetcher({
 			dbPath: testDbPath,
@@ -47,7 +53,7 @@ describe("Cache Status Tracking", () => {
 		expect(result.fromCache).toBe(false)
 		expect(result.data).toBeDefined()
 		expect(result.data.root).toBeDefined() // Basic validation of rustdoc JSON structure
-	})
+	}, 10000)
 
 	it("should return fromCache: true on subsequent fetch", async () => {
 		// First fetch - should hit the network
@@ -60,7 +66,7 @@ describe("Cache Status Tracking", () => {
 
 		// Data should be identical
 		expect(secondResult.data).toEqual(firstResult.data)
-	})
+	}, 10000)
 
 	it("should persist cache across fetcher instances", async () => {
 		// First fetcher instance
@@ -81,7 +87,7 @@ describe("Cache Status Tracking", () => {
 		expect(result2.data).toEqual(result1.data)
 
 		fetcher2.close()
-	})
+	}, 10000)
 
 	it("should handle different versions separately", async () => {
 		// Fetch latest version
@@ -99,7 +105,7 @@ describe("Cache Status Tracking", () => {
 		// Fetch the specific version again - should also be cached
 		const versionAgain = await fetcher.fetchCrateJson("tinc", "0.1.6")
 		expect(versionAgain.fromCache).toBe(true)
-	})
+	}, 15000)
 
 	it("should track cache misses for non-existent crates", async () => {
 		try {
@@ -118,7 +124,7 @@ describe("Cache Status Tracking", () => {
 				expect(secondError).toBeDefined()
 			}
 		}
-	})
+	}, 10000)
 
 	it("should work with in-memory cache", async () => {
 		// Create fetcher with in-memory cache
@@ -135,7 +141,7 @@ describe("Cache Status Tracking", () => {
 		expect(secondResult.fromCache).toBe(true)
 
 		memoryFetcher.close()
-	})
+	}, 10000)
 
 	it("should respect cache TTL", async () => {
 		// Create fetcher with very short TTL
@@ -162,5 +168,5 @@ describe("Cache Status Tracking", () => {
 			await new Promise((resolve) => setTimeout(resolve, 100))
 		}
 		rmSync(join(tmpdir(), `test-ttl-${Date.now()}.db`), { force: true })
-	})
+	}, 10000)
 })

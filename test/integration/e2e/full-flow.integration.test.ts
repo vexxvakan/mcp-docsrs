@@ -44,12 +44,12 @@ describe("Integration Tests", () => {
 				throw error
 			}
 		}
-	})
+	}, 10000)
 
 	it("should handle crates without JSON docs gracefully", () => {
 		// Try an old version that likely doesn't have JSON docs
 		expect(fetcher.fetchCrateJson("tinc", "0.1.0")).rejects.toThrow(/not found|404/)
-	})
+	}, 10000)
 
 	it("should validate URL construction", async () => {
 		// Mock a quick test without actual network call
@@ -70,5 +70,5 @@ describe("Integration Tests", () => {
 		)
 
 		global.fetch = originalFetch
-	})
+	}, 10000)
 })
