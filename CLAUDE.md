@@ -13,6 +13,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Instruct your subagents to use their respective task plans to complete the tasks from the plans directory if they are available.
 - Instead of assuming bun commands look up the bun documentation: https://bun.sh/docs/cli/(run, init, add, update, publish, etc.), https://bun.sh/docs/api/(http, fetch, etc.) and https://bun.sh/docs/bundler
 
+## Development Process for New Features
+
+When developing a new feature, follow this test-driven development approach:
+
+1. **Plan and Research Phase**
+   - Create a rough plan and concept for the feature
+   - Think deeply about the implementation approach
+   - Use web search extensively to research:
+     - Appropriate libraries to use
+     - Best practices for the feature domain
+     - API documentation for chosen libraries
+     - Similar implementations for reference
+   - Document your findings and decisions
+
+2. **Test Implementation Phase**
+   - Write thorough unit and integration tests FIRST based on:
+     - The API documentation of chosen libraries
+     - Expected behavior of the feature
+     - Edge cases and error scenarios
+   - Ensure tests are comprehensive and cover all planned functionality
+   - Tests should be written to match our existing test suite patterns
+
+3. **Feature Implementation Phase**
+   - Only after tests are complete, start writing the actual implementation
+   - Write code to satisfy the tests you've created
+   - Let the tests guide your implementation
+   - **Never write software first and then tests later**
+
+This test-driven approach ensures better design, more reliable code, and easier maintenance.
+
 ## Project Overview
 
 This is an MCP server implementation that provides access to Rust crate documentation via the docs.rs JSON API. The project enables AI assistants to fetch and parse Rust documentation, making it easier to provide accurate information about Rust crates, their APIs, and usage. The server includes intelligent caching and supports fetching documentation for specific crate versions and items.

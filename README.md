@@ -69,6 +69,7 @@ docker run --rm -i ghcr.io/vexxvakan/mcp-docsrs:latest \
 ```
 
 Available tags:
+
 - `latest` - Latest stable release (multi-arch)
 - `v1.0.0` - Specific version (multi-arch)
 - `x64` - Latest x64/AMD64 build
@@ -154,6 +155,29 @@ Fetches documentation for a specific item within a crate.
   "arguments": {
     "crateName": "tokio",
     "itemPath": "runtime.Runtime"
+  }
+}
+```
+
+#### `search_crates`
+
+Search for Rust crates on crates.io with fuzzy/partial name matching.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | ✅ | Search query for crate names (supports partial matches) |
+| `limit` | number | ❌ | Maximum number of results to return (default: 10) |
+
+**Example:**
+
+```json
+{
+  "tool": "search_crates",
+  "arguments": {
+    "query": "serde",
+    "limit": 5
   }
 }
 ```
@@ -476,10 +500,16 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 <a id="license"></a>
 
+## 🙏 Acknowledgments
+
+- [docs.rs](https://docs.rs) for providing the Rust documentation API
+- [Model Context Protocol](https://github.com/modelcontextprotocol) for the MCP specification
+- The Rust community for excellent documentation standards
+
 ## 📄 License
 <a id="license"></a>
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ---
 
