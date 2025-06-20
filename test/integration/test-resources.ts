@@ -14,7 +14,7 @@ const testResources = async (options: TestOptions): Promise<void> => {
 	console.log("\n🗂️  Testing MCP resources functionality...")
 
 	await withTempDir("mcp-docsrs-resources-test-", async (tempDir) => {
-		const cacheDbPath = `${tempDir}/test-cache.db`
+		const cacheDbPath = tempDir
 
 		await withMCPServer(
 			options.executable,
@@ -24,7 +24,7 @@ const testResources = async (options: TestOptions): Promise<void> => {
 				const emptyResources = await listResources(server)
 
 				// Should have cache statistics and cache entries resources
-				const expectedResourceNames = ["cache-statistics", "cache-entries"]
+				const expectedResourceNames = ["Cache Statistics", "Cache Entries"]
 				for (const name of expectedResourceNames) {
 					if (!emptyResources.some((r: any) => r.name === name)) {
 						throw new Error(`Missing expected resource: ${name}`)
@@ -34,12 +34,12 @@ const testResources = async (options: TestOptions): Promise<void> => {
 
 				// Test 2: Add some data to cache
 				console.log("\n🔄 Test 2: Populate cache with test data...")
-				await callTool(server, "lookup_crate_docs", { crateName: "serde" }, 3)
-				console.log("✅ Added serde to cache")
+				await callTool(server, "lookup_crate_docs", { crateName: "tinc", version: "0.1.6" }, 3)
+				console.log("✅ Added tinc to cache")
 
 				// Test 3: Read cache statistics
 				console.log("\n📊 Test 3: Read cache statistics...")
-				const statsContent = await readResource(server, "cache://statistics", 4)
+				const statsContent = await readResource(server, "cache://stats", 4)
 
 				// Parse statistics
 				const stats = JSON.parse(statsContent)
@@ -60,7 +60,7 @@ const testResources = async (options: TestOptions): Promise<void> => {
 				}
 
 				const entry = entries.entries[0]
-				assertContains(entry.url, "serde", "Cache entry should contain 'serde'")
+				assertContains(entry.url, "tinc", "Cache entry should contain 'tinc'")
 				console.log(`✅ Found cache entry for ${entry.url}`)
 
 				// Test 5: Test pagination

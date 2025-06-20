@@ -28,7 +28,7 @@ export type MCPServer = {
  */
 export const createMCPServer = (executable: string, env?: Record<string, string>): MCPServer => {
 	const server = spawn(executable, [], {
-		env: { ...process.env, ...env },
+		env: { ...process.env, MCP_TEST: "true", ...env },
 		stdio: ["pipe", "pipe", "pipe"]
 	})
 
@@ -124,7 +124,7 @@ export const withMCPServer = async (
 	testFn: (server: MCPServer) => Promise<void>,
 	env?: Record<string, string>
 ): Promise<void> => {
-	const server = createMCPServer(executable, env || { DB_PATH: ":memory:" })
+	const server = createMCPServer(executable, { DB_PATH: ":memory:", ...env })
 
 	try {
 		await initializeServer(server)

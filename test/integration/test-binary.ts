@@ -74,7 +74,7 @@ const testServerStartup = async (options: TestOptions): Promise<void> => {
 	console.log("\n🚀 Testing server startup...")
 
 	const server = spawn(options.executable, [], {
-		env: { ...process.env, DB_PATH: ":memory:" },
+		env: { ...process.env, DB_PATH: ":memory:", MCP_TEST: "true" },
 		stdio: ["pipe", "pipe", "pipe"]
 	})
 
@@ -130,7 +130,7 @@ const testBasicMCPOperations = async (options: TestOptions): Promise<void> => {
 
 	// Test with in-memory database to avoid file system issues
 	const server = spawn(options.executable, [], {
-		env: { ...process.env, DB_PATH: ":memory:" },
+		env: { ...process.env, DB_PATH: ":memory:", MCP_TEST: "true" },
 		stdio: ["pipe", "pipe", "pipe"]
 	})
 

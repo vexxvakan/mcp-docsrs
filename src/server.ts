@@ -210,7 +210,7 @@ export const createRustDocsServer = (config: ServerConfig = {}) => {
 						{
 							uri: uri.href,
 							mimeType: "application/json",
-							text: JSON.stringify(entries, null, 2)
+							text: JSON.stringify({ entries }, null, 2)
 						}
 					]
 				}

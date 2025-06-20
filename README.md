@@ -337,13 +337,13 @@ All executables are created in the `dist/` directory with bytecode compilation f
 
 | File | Platform | Type | Size |
 |------|----------|------|------|
-| `mcp-docsrs-linux-x64` | Linux x64/AMD64 | GLIBC + Bytecode | ~99MB |
-| `mcp-docsrs-linux-arm64` | Linux ARM64 | GLIBC + Bytecode | ~93MB |
-| `mcp-docsrs-linux-x64-musl` | Linux x64/AMD64 | MUSL (static) + Bytecode | ~92MB |
-| `mcp-docsrs-linux-arm64-musl` | Linux ARM64 | MUSL (static) + Bytecode | ~88MB |
-| `mcp-docsrs-darwin-x64` | macOS Intel | Bytecode | ~64MB |
-| `mcp-docsrs-darwin-arm64` | macOS Apple Silicon | Bytecode | ~58MB |
-| `mcp-docsrs-windows-x64.exe` | Windows x64 | Bytecode | ~113MB |
+| `mcp-docsrs-linux-x64` | Linux x64/AMD64 | GLIBC + Bytecode | 99MB |
+| `mcp-docsrs-linux-arm64` | Linux ARM64 | GLIBC + Bytecode | 93MB |
+| `mcp-docsrs-linux-x64-musl` | Linux x64/AMD64 | MUSL (static) + Bytecode | 92MB |
+| `mcp-docsrs-linux-arm64-musl` | Linux ARM64 | MUSL (static) + Bytecode | 88MB |
+| `mcp-docsrs-darwin-x64` | macOS Intel | Bytecode | 64MB |
+| `mcp-docsrs-darwin-arm64` | macOS Apple Silicon | Bytecode | 58MB |
+| `mcp-docsrs-windows-x64.exe` | Windows x64 | Bytecode | 113MB |
 
 <a id="development"></a>
 

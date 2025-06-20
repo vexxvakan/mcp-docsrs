@@ -6,36 +6,36 @@ const testCratesSearch = async (options: TestOptions): Promise<void> => {
 
 	await withMCPServer(options.executable, async (server) => {
 		// Test 1: Search for popular crate
-		console.log("\n📦 Test 1: Searching for 'serde'...")
-		const serdeResponse = await callTool(
+		console.log("\n📦 Test 1: Searching for 'tinc'...")
+		const tincResponse = await callTool(
 			server,
 			"search_crates",
 			{
-				query: "serde",
+				query: "tinc",
 				limit: 5
 			},
 			2
 		)
 
-		const serdeText = serdeResponse.result?.content?.[0]?.text || ""
-		assertContains(serdeText, "serde", "Should find serde crate")
-		console.log("✅ Found serde crate")
+		const tincText = tincResponse.result?.content?.[0]?.text || ""
+		assertContains(tincText, "tinc", "Should find tinc crate")
+		console.log("✅ Found tinc crate")
 
 		// Test 2: Partial match search
-		console.log("\n📦 Test 2: Partial match search for 'tok'...")
+		console.log("\n📦 Test 2: Partial match search for 'tokio'...")
 		const partialResponse = await callTool(
 			server,
 			"search_crates",
 			{
-				query: "tok",
+				query: "tokio",
 				limit: 10
 			},
 			3
 		)
 
 		const partialText = partialResponse.result?.content?.[0]?.text || ""
-		assertContains(partialText, "tokio", "Partial match should find tokio")
-		console.log("✅ Partial match found tokio")
+		assertContains(partialText, "tokio", "Should find tokio crate")
+		console.log("✅ Found tokio crate")
 
 		// Test 3: Non-existent crate
 		console.log("\n📦 Test 3: Searching for non-existent crate...")
@@ -59,14 +59,14 @@ const testCratesSearch = async (options: TestOptions): Promise<void> => {
 			server,
 			"search_crates",
 			{
-				query: "serde-json",
+				query: "clap-derive",
 				limit: 5
 			},
 			5
 		)
 
 		const specialText = specialResponse.result?.content?.[0]?.text || ""
-		if (!specialText.includes("serde_json") && !specialText.includes("serde-json")) {
+		if (!specialText.includes("clap_derive") && !specialText.includes("clap-derive")) {
 			throw new Error("Should handle hyphenated names")
 		}
 		console.log("✅ Special characters handled correctly")

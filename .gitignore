@@ -17,5 +17,6 @@ event-*.json
 # Test artifacts
 test-artifacts/
 
-# Test scripts
+# Test scripts - exclude test-musl.sh from being ignored
 test-*.sh
+!test/integration/test-musl.sh

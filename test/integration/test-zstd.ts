@@ -14,12 +14,11 @@ const testZstdDecompression = async (options: TestOptions): Promise<void> => {
 		// Test 1: Fetch a crate that requires zstd decompression
 		console.log("\n📦 Test 1: Fetch crate documentation with zstd compression...")
 
-		// Using a popular crate that's likely to have compressed docs
-		console.log("⏳ Fetching tokio documentation (this may take a moment)...")
+		// Using a crate that we know has rustdoc JSON
+		console.log("⏳ Fetching anyhow documentation (this may take a moment)...")
 		const startTime = Date.now()
 		const lookupResponse = await callTool(server, "lookup_crate_docs", {
-			crateName: "tokio",
-			version: "1.40.0"
+			crateName: "anyhow"
 		})
 		const fetchTime = Date.now() - startTime
 
@@ -34,8 +33,8 @@ const testZstdDecompression = async (options: TestOptions): Promise<void> => {
 		// Test 2: Verify decompressed content is valid
 		console.log("\n🔍 Test 2: Verify decompressed content...")
 
-		// Check for expected content in tokio docs
-		const expectedPatterns = ["tokio", "async", "runtime", "spawn"]
+		// Check for expected content in anyhow docs
+		const expectedPatterns = ["anyhow", "error", "result", "context"]
 
 		let foundPatterns = 0
 		for (const pattern of expectedPatterns) {
@@ -46,7 +45,7 @@ const testZstdDecompression = async (options: TestOptions): Promise<void> => {
 
 		if (foundPatterns < 2) {
 			throw new Error(
-				"Decompressed content doesn't contain expected tokio documentation patterns"
+				"Decompressed content doesn't contain expected anyhow documentation patterns"
 			)
 		}
 		console.log(
@@ -59,9 +58,8 @@ const testZstdDecompression = async (options: TestOptions): Promise<void> => {
 			server,
 			"lookup_item_docs",
 			{
-				crateName: "tokio",
-				itemPath: "runtime",
-				version: "1.40.0"
+				crateName: "anyhow",
+				itemPath: "Error"
 			},
 			3
 		)
@@ -74,8 +72,8 @@ const testZstdDecompression = async (options: TestOptions): Promise<void> => {
 		const itemText = itemResponse.result.content[0].text
 		assertContains(
 			itemText.toLowerCase(),
-			"runtime",
-			"Item documentation should contain 'runtime'"
+			"error",
+			"Item documentation should contain 'error'"
 		)
 		console.log("✅ Successfully fetched and decompressed item documentation")
 

@@ -89,7 +89,11 @@ The project uses the official `@modelcontextprotocol/sdk` for MCP protocol imple
 - ALWAYS create a copy of the file you are editing before making changes and name it with the suffix `-new.(ts, json, etc.)`. Then ask the user if you should keep the new or the original implementation and list the changes that you made. If you are keeping the new file, delete the original file and rename the new file to the original file name, essentially removing -new from the file name.
 - NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 - At the end of any task, make sure to lint, typecheck, run tests and finally build the code using `build:all`.
+- ALWAYS check file sizes after building with `ls -lh dist/` and update the README.md Build Output table if sizes have changed.
 
 ## Memories
 
 - Bun uses bun.lock now, not bun.lockb anymore
+- For testing the MCP server functionality, always use the "tinc" crate at version "0.1.6" as it has rustdoc JSON available
+- For testing with another library, use "clap" which also has rustdoc JSON available
+- Do NOT use "serde" for testing as it doesn't have rustdoc JSON available yet

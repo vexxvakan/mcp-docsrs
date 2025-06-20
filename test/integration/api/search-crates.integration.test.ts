@@ -9,7 +9,7 @@ describe("Search Crates Tool", () => {
 
 	test("should search for crates with partial name match", async () => {
 		const result = await searchHandler({
-			query: "serde",
+			query: "tinc",
 			limit: 5
 		})
 
@@ -24,9 +24,9 @@ describe("Search Crates Tool", () => {
 		expect(result.content[0].type).toBe("text")
 
 		const text = result.content[0].text
-		expect(text).toContain("serde")
+		expect(text).toContain("tinc")
 		expect(text).toContain("Downloads:")
-		expect(text).toMatch(/Found \d+ crates matching "serde"/)
+		expect(text).toMatch(/Found \d+ crates matching "tinc"/)
 	}, 10000)
 
 	test("should handle no results gracefully", async () => {
@@ -93,13 +93,13 @@ describe("Search Crates Tool", () => {
 describe("Suggest Similar Crates", () => {
 	test("should suggest similar crates for typos", async () => {
 		try {
-			const suggestions = await suggestSimilarCrates("serd", 5)
+			const suggestions = await suggestSimilarCrates("cla", 5)
 
 			expect(Array.isArray(suggestions)).toBe(true)
 			// Network might be down, so we just check it returns an array
 			if (suggestions.length > 0) {
-				// Should likely include something with "serd" in it
-				expect(suggestions.some((s) => s.includes("serd"))).toBe(true)
+				// Should likely include something with "cla" in it (like "clap")
+				expect(suggestions.some((s) => s.includes("cla"))).toBe(true)
 			}
 		} catch (error) {
 			console.log("Network error during suggestion test:", error)

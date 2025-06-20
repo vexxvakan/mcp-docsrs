@@ -32,7 +32,7 @@ describe("DocsFetcher (Unit Tests)", () => {
 
 	describe("URL construction", () => {
 		it("should construct correct URL with defaults", async () => {
-			const url = "https://docs.rs/crate/serde/latest/json"
+			const url = "https://docs.rs/crate/tinc/latest/json"
 			mockFetchResponses.set(url, {
 				ok: true,
 				status: 200,
@@ -40,12 +40,12 @@ describe("DocsFetcher (Unit Tests)", () => {
 				json: mockRustdocJson
 			})
 
-			await fetcher.fetchCrateJson("serde")
+			await fetcher.fetchCrateJson("tinc")
 			expect(mockFetch).toHaveBeenCalledWith(url, expect.any(Object))
 		})
 
 		it("should construct URL with version", async () => {
-			const url = "https://docs.rs/crate/serde/1.0.0/json"
+			const url = "https://docs.rs/crate/tinc/0.1.6/json"
 			mockFetchResponses.set(url, {
 				ok: true,
 				status: 200,
@@ -53,12 +53,12 @@ describe("DocsFetcher (Unit Tests)", () => {
 				json: mockRustdocJson
 			})
 
-			await fetcher.fetchCrateJson("serde", "1.0.0")
+			await fetcher.fetchCrateJson("tinc", "0.1.6")
 			expect(mockFetch).toHaveBeenCalledWith(url, expect.any(Object))
 		})
 
 		it("should construct URL with target", async () => {
-			const url = "https://docs.rs/crate/serde/latest/wasm32-unknown-unknown/json"
+			const url = "https://docs.rs/crate/tinc/latest/wasm32-unknown-unknown/json"
 			mockFetchResponses.set(url, {
 				ok: true,
 				status: 200,
@@ -66,12 +66,12 @@ describe("DocsFetcher (Unit Tests)", () => {
 				json: mockRustdocJson
 			})
 
-			await fetcher.fetchCrateJson("serde", undefined, "wasm32-unknown-unknown")
+			await fetcher.fetchCrateJson("tinc", undefined, "wasm32-unknown-unknown")
 			expect(mockFetch).toHaveBeenCalledWith(url, expect.any(Object))
 		})
 
 		it("should construct URL with all parameters", async () => {
-			const url = "https://docs.rs/crate/serde/1.0.0/wasm32-unknown-unknown/json/30"
+			const url = "https://docs.rs/crate/tinc/0.1.6/wasm32-unknown-unknown/json/30"
 			mockFetchResponses.set(url, {
 				ok: true,
 				status: 200,
@@ -79,7 +79,7 @@ describe("DocsFetcher (Unit Tests)", () => {
 				json: mockRustdocJson
 			})
 
-			await fetcher.fetchCrateJson("serde", "1.0.0", "wasm32-unknown-unknown", 30)
+			await fetcher.fetchCrateJson("tinc", "0.1.6", "wasm32-unknown-unknown", 30)
 			expect(mockFetch).toHaveBeenCalledWith(url, expect.any(Object))
 		})
 	})

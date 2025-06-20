@@ -276,6 +276,7 @@ export const ErrorLogger = {
 				error instanceof TimeoutError ||
 				error instanceof RustdocParseError ||
 				error instanceof AbortError ||
+				error instanceof NetworkError ||
 				error.name === "AbortError" || // For native AbortError
 				error.message === "Test interception" // For URL validation tests
 			) {
@@ -300,6 +301,10 @@ export const ErrorLogger = {
 	},
 
 	logInfo(message: string, context?: Record<string, unknown>): void {
+		// Skip info logging during tests or when silent mode is enabled
+		if (process.env.SILENT_LOGS === "true" || process.env.MCP_TEST === "true") {
+			return
+		}
 		const timestamp = new Date().toISOString()
 		const contextStr = context ? ` - Context: ${JSON.stringify(context)}` : ""
 		console.info(`[${timestamp}] INFO: ${message}${contextStr}`)

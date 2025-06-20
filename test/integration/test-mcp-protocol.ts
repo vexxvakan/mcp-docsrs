@@ -39,14 +39,14 @@ const testMCPProtocol = async (options: TestOptions): Promise<void> => {
 			server,
 			"lookup_crate_docs",
 			{
-				crateName: "serde_json"
+				crateName: "clap"
 			},
 			3
 		)
 
 		assertSuccess(lookupResponse, "Failed to lookup crate documentation")
 		const docText = lookupResponse.result.content[0].text
-		assertContains(docText, "serde_json", "Documentation should contain crate name")
+		assertContains(docText, "clap", "Documentation should contain crate name")
 		console.log("✅ Successfully retrieved crate documentation")
 
 		// Test 4: Error handling - invalid tool
