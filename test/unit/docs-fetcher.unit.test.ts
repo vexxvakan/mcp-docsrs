@@ -1,12 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test"
 import { createDocsFetcher } from "../../src/docs-fetcher"
 import { NetworkError } from "../../src/errors"
-import {
-	mockFetch,
-	mockFetchResponses,
-	mockRustdocJson,
-	resetMocks
-} from "./mocks"
+import { mockFetch, mockFetchResponses, mockRustdocJson, resetMocks } from "./mocks"
 
 describe("DocsFetcher (Unit Tests)", () => {
 	let fetcher: ReturnType<typeof createDocsFetcher>
@@ -162,9 +157,7 @@ describe("DocsFetcher (Unit Tests)", () => {
 				error: abortError
 			})
 
-			expect(
-				fetcher.fetchCrateJson("test_crate")
-			).rejects.toThrow()
+			expect(fetcher.fetchCrateJson("test_crate")).rejects.toThrow()
 		})
 
 		it("should handle different versions", async () => {
