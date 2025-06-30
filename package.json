@@ -44,7 +44,7 @@
     "author": "Marius Modlich <marius@junonetwork.io>",
     "license": "Apache-2.0",
     "dependencies": {
-        "@modelcontextprotocol/sdk": "1.13.0",
+        "@modelcontextprotocol/sdk": "1.13.2",
         "fzstd": "0.1.1",
         "zod": "3.25.67"
     },
