@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/vexxvakan-mcp-docsrs-badge.png)](https://mseep.ai/app/vexxvakan-mcp-docsrs)
+
 # 🦀 MCP Rust Docs Server
 
 [![MCP Protocol](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blue?style=for-the-badge)](https://modelcontextprotocol.io)
