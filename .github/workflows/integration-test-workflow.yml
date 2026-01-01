@@ -50,7 +50,7 @@ jobs:
           no-cache: ${{ runner.os == 'Windows' }}  # Disable cache on Windows due to issues
 
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: dist/
