@@ -35,7 +35,7 @@ jobs:
           no-cache: ${{ runner.os == 'Windows' }}  # Disable cache on Windows due to issues
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.bun/install/cache
