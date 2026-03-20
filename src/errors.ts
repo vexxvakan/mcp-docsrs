@@ -1,342 +1,180 @@
-/**
- * Custom error classes for the mcp-docsrs-rustdoc MCP server
- * All errors are fully typed with detailed context information
- */
+import { inspect } from "node:util"
+import { APP_NAME } from "./meta.ts"
 
-/**
- * Base error class for all mcp-docsrs errors
- */
-export abstract class MCPDocsRsError extends Error {
+const ERROR_PREVIEW_LENGTH = 200
+const TEST_ENV = "test"
+const TRUE_VALUE = "true"
+
+const isTestEnv = () => Bun.env.NODE_ENV === TEST_ENV || Bun.env.BUN_ENV === TEST_ENV
+
+const isSilent = () => Bun.env.SILENT_LOGS === TRUE_VALUE || Bun.env.MCP_TEST === TRUE_VALUE
+
+const toError = (error: unknown): Error => {
+	if (error instanceof Error) {
+		return error
+	}
+
+	return new Error(typeof error === "string" ? error : inspect(error))
+}
+
+const trimPreview = (value: string) => {
+	if (value.length <= ERROR_PREVIEW_LENGTH) {
+		return value
+	}
+
+	return `${value.slice(0, ERROR_PREVIEW_LENGTH)}...`
+}
+
+const formatContext = (context: Record<string, unknown> | undefined) => {
+	if (!context || Object.keys(context).length === 0) {
+		return ""
+	}
+
+	return ` ${JSON.stringify(context)}`
+}
+
+class McpDocsrsError extends Error {
+	readonly context: Record<string, unknown> | undefined
 	readonly timestamp: Date
-	readonly context?: Record<string, unknown>
 
 	constructor(message: string, context?: Record<string, unknown>) {
 		super(message)
-		this.name = this.constructor.name
-		this.timestamp = new Date()
 		this.context = context
-		Error.captureStackTrace(this, this.constructor)
-	}
-
-	toJSON() {
-		return {
-			name: this.name,
-			message: this.message,
-			timestamp: this.timestamp,
-			context: this.context,
-			stack: this.stack
-		}
+		this.name = new.target.name
+		this.timestamp = new Date()
 	}
 }
 
-/**
- * Error thrown when JSON parsing fails
- */
-export class JSONParseError extends MCPDocsRsError {
-	readonly rawData: string
-	readonly parseError: Error
-
+class JsonParseError extends McpDocsrsError {
 	constructor(rawData: string, parseError: Error, url?: string) {
-		const preview = rawData.length > 200 ? `${rawData.substring(0, 200)}...` : rawData
-		const message = `Failed to parse JSON: ${parseError.message}`
-
-		super(message, {
-			url,
-			dataLength: rawData.length,
-			dataPreview: preview,
+		super(`Failed to parse JSON: ${parseError.message}`, {
 			contentType: typeof rawData,
-			parseErrorName: parseError.name
+			dataLength: rawData.length,
+			dataPreview: trimPreview(rawData),
+			parseErrorName: parseError.name,
+			url
 		})
-
-		this.rawData = rawData
-		this.parseError = parseError
 	}
 }
 
-/**
- * Error thrown when network requests fail
- */
-export class NetworkError extends MCPDocsRsError {
-	readonly statusCode?: number
-	readonly statusText?: string
-	readonly url: string
-
+class NetworkError extends McpDocsrsError {
 	constructor(url: string, statusCode?: number, statusText?: string, details?: string) {
-		const message = statusCode
-			? `Network request failed: HTTP ${statusCode} ${statusText || ""}${details ? ` - ${details}` : ""}`
-			: `Network request failed: ${details || "Unknown error"}`
-
-		super(message, {
-			url,
-			statusCode,
-			statusText,
-			details
-		})
-
-		this.url = url
-		this.statusCode = statusCode
-		this.statusText = statusText
+		super(
+			statusCode
+				? `Network request failed: HTTP ${statusCode} ${statusText ?? ""}${details ? ` - ${details}` : ""}`
+				: `Network request failed: ${details ?? "Unknown error"}`,
+			{
+				details,
+				statusCode,
+				statusText,
+				url
+			}
+		)
 	}
 }
 
-/**
- * Error thrown when a crate is not found
- */
-export class CrateNotFoundError extends MCPDocsRsError {
-	readonly crateName: string
-	readonly version?: string
-
-	constructor(crateName: string, version?: string, details?: string) {
-		const versionStr = version ? ` version ${version}` : ""
-		const message = `Crate '${crateName}'${versionStr} not found. ${details || "Note: docs.rs started building rustdoc JSON on 2023-05-23, so older releases may not have JSON available yet."}`
-
-		super(message, {
-			crateName,
-			version,
-			details
-		})
-
-		this.crateName = crateName
-		this.version = version
+class CrateNotFoundError extends McpDocsrsError {
+	constructor(crateName: string, version?: string) {
+		super(
+			`Crate '${crateName}'${version ? ` version ${version}` : ""} not found. Note: docs.rs started building rustdoc JSON on 2023-05-23, so older releases may not have JSON available yet.`,
+			{
+				crateName,
+				version
+			}
+		)
 	}
 }
 
-/**
- * Error thrown when rustdoc JSON is not available
- */
-export class RustdocNotAvailableError extends MCPDocsRsError {
-	readonly crateName: string
-	readonly version?: string
-	readonly reason?: string
-
-	constructor(crateName: string, version?: string, reason?: string) {
-		const versionStr = version ? ` version ${version}` : ""
-		const message = `Rustdoc JSON not available for crate '${crateName}'${versionStr}. ${reason || "The crate may not have been built with rustdoc JSON support."}`
-
-		super(message, {
-			crateName,
-			version,
-			reason
-		})
-
-		this.crateName = crateName
-		this.version = version
-		this.reason = reason
-	}
-}
-
-/**
- * Error thrown when request times out
- */
-export class TimeoutError extends MCPDocsRsError {
-	readonly url: string
-	readonly timeoutMs: number
-
+class TimeoutError extends McpDocsrsError {
 	constructor(url: string, timeoutMs: number) {
-		const message = `Request timeout after ${timeoutMs}ms`
-
-		super(message, {
-			url,
-			timeoutMs
+		super(`Request timeout after ${timeoutMs}ms`, {
+			timeoutMs,
+			url
 		})
-
-		this.url = url
-		this.timeoutMs = timeoutMs
 	}
 }
 
-/**
- * Error thrown when decompression fails
- */
-export class DecompressionError extends MCPDocsRsError {
-	readonly encoding: string
-	readonly url: string
-
+class DecompressionError extends McpDocsrsError {
 	constructor(url: string, encoding: string, details?: string) {
-		const message = `Failed to decompress ${encoding} content: ${details || "Unknown error"}`
-
-		super(message, {
-			url,
+		super(`Failed to decompress ${encoding} content: ${details ?? "Unknown error"}`, {
+			details,
 			encoding,
-			details
+			url
 		})
-
-		this.url = url
-		this.encoding = encoding
 	}
 }
 
-/**
- * Error thrown when cache operations fail
- */
-export class CacheError extends MCPDocsRsError {
-	readonly operation: "get" | "set" | "delete" | "clear" | "close" | "query" | "stats" | "list"
+class CacheError extends McpDocsrsError {
+	constructor(operation: string, details?: string) {
+		super(`Cache operation '${operation}' failed: ${details ?? "Unknown error"}`, {
+			details,
+			operation
+		})
+	}
+}
 
-	constructor(
-		operation: "get" | "set" | "delete" | "clear" | "close" | "query" | "stats" | "list",
-		details?: string
-	) {
-		const message = `Cache operation '${operation}' failed: ${details || "Unknown error"}`
-
+class RustdocParseError extends McpDocsrsError {
+	constructor(message: string, itemPath?: string) {
 		super(message, {
-			operation,
-			details
+			itemPath
 		})
-
-		this.operation = operation
 	}
 }
 
-/**
- * Error thrown when parsing rustdoc data structures fails
- */
-export class RustdocParseError extends MCPDocsRsError {
-	readonly itemPath?: string
-	readonly expectedType?: string
-
-	constructor(message: string, itemPath?: string, expectedType?: string) {
-		super(message, {
-			itemPath,
-			expectedType
-		})
-
-		this.itemPath = itemPath
-		this.expectedType = expectedType
-	}
-}
-
-/**
- * Error thrown when an item is not found in rustdoc
- */
-export class ItemNotFoundError extends MCPDocsRsError {
-	readonly crateName: string
-	readonly itemPath: string
-
+class ItemNotFoundError extends McpDocsrsError {
 	constructor(crateName: string, itemPath: string) {
-		const message = `Item '${itemPath}' not found in crate '${crateName}'`
-
-		super(message, {
+		super(`Item '${itemPath}' not found in crate '${crateName}'`, {
 			crateName,
 			itemPath
 		})
-
-		this.crateName = crateName
-		this.itemPath = itemPath
 	}
 }
 
-/**
- * Error thrown when an operation is aborted
- */
-export class AbortError extends MCPDocsRsError {
-	constructor(operation: string, reason?: string) {
-		const message = `Operation aborted: ${operation}${reason ? ` - ${reason}` : ""}`
-
-		super(message, {
-			operation,
-			reason
-		})
-
-		this.name = "AbortError" // Ensure the name matches what fetch throws
-	}
-}
-
-/**
- * Error logger utility functions
- */
-const formatError = (error: Error): string => {
-	if (error instanceof MCPDocsRsError) {
-		const lines = [`[${error.timestamp.toISOString()}] ${error.name}: ${error.message}`]
-
-		if (error.context && Object.keys(error.context).length > 0) {
-			lines.push("Context:")
-			for (const [key, value] of Object.entries(error.context)) {
-				lines.push(`  ${key}: ${JSON.stringify(value)}`)
-			}
-		}
-
-		if (error.stack) {
-			lines.push("Stack trace:")
-			lines.push(error.stack)
-		}
-
-		return lines.join("\n")
-	}
-
-	return `[${new Date().toISOString()}] ${error.name || "Error"}: ${error.message}\n${error.stack || ""}`
-}
-
-export const ErrorLogger = {
-	log(error: Error): void {
-		// During tests, check if this is an expected error
-		if (process.env.NODE_ENV === "test" || process.env.BUN_ENV === "test") {
-			// In test environment, use a different format for expected errors
-			if (
-				error instanceof CrateNotFoundError ||
-				error instanceof TimeoutError ||
-				error instanceof RustdocParseError ||
-				error instanceof AbortError ||
-				error instanceof NetworkError ||
-				error.name === "AbortError" || // For native AbortError
-				error.message === "Test interception" // For URL validation tests
-			) {
-				// Show a brief indicator that the expected error was caught
-				if (process.env.LOG_EXPECTED_ERRORS === "true") {
-					// Full logging if explicitly requested
-					console.log(`\x1b[32m[EXPECTED ERROR] ${error.name}: ${error.message}\x1b[0m`)
-				} else {
-					// Brief indicator in green to show test is working correctly
-					console.log(`\x1b[32m✓ Expected ${error.name} thrown\x1b[0m`)
-				}
-				return
-			}
-		}
-		console.error(formatError(error))
-	},
-
-	logWarning(message: string, context?: Record<string, unknown>): void {
-		const timestamp = new Date().toISOString()
-		const contextStr = context ? ` - Context: ${JSON.stringify(context)}` : ""
-		console.warn(`[${timestamp}] WARNING: ${message}${contextStr}`)
-	},
-
-	logInfo(message: string, context?: Record<string, unknown>): void {
-		// Skip info logging during tests or when silent mode is enabled
-		if (process.env.SILENT_LOGS === "true" || process.env.MCP_TEST === "true") {
+const ErrorLogger = {
+	log(error: unknown) {
+		if (isSilent()) {
 			return
 		}
-		const timestamp = new Date().toISOString()
-		const contextStr = context ? ` - Context: ${JSON.stringify(context)}` : ""
-		console.info(`[${timestamp}] INFO: ${message}${contextStr}`)
+
+		const resolved = toError(error)
+		const context = resolved instanceof McpDocsrsError ? formatContext(resolved.context) : ""
+		if (isTestEnv() && resolved instanceof CrateNotFoundError) {
+			return
+		}
+
+		process.stderr.write(`[${APP_NAME}] ${resolved.name}: ${resolved.message}${context}\n`)
+	},
+
+	logInfo(message: string, context?: Record<string, unknown>) {
+		if (isSilent() || isTestEnv()) {
+			return
+		}
+
+		process.stderr.write(`[${APP_NAME}] ${message}${formatContext(context)}\n`)
 	}
 }
 
-/**
- * Type guard to check if an error is an MCPDocsRsError
- */
-export function isMCPDocsRsError(error: unknown): error is MCPDocsRsError {
-	return error instanceof MCPDocsRsError
-}
+const isMcpDocsrsError = (error: unknown): error is McpDocsrsError =>
+	error instanceof McpDocsrsError
 
-/**
- * Type guard for specific error types
- */
-export function isNetworkError(error: unknown): error is NetworkError {
-	return error instanceof NetworkError
-}
+const isJsonParseError = (error: unknown): error is JsonParseError =>
+	error instanceof JsonParseError
 
-export function isJSONParseError(error: unknown): error is JSONParseError {
-	return error instanceof JSONParseError
-}
+const isCrateNotFoundError = (error: unknown): error is CrateNotFoundError =>
+	error instanceof CrateNotFoundError
 
-export function isCrateNotFoundError(error: unknown): error is CrateNotFoundError {
-	return error instanceof CrateNotFoundError
-}
-
-export function isTimeoutError(error: unknown): error is TimeoutError {
-	return error instanceof TimeoutError
-}
-
-export function isAbortError(error: unknown): error is AbortError {
-	return error instanceof AbortError || (error instanceof Error && error.name === "AbortError")
+export {
+	CacheError,
+	CrateNotFoundError,
+	DecompressionError,
+	ErrorLogger,
+	ItemNotFoundError,
+	isCrateNotFoundError,
+	isJsonParseError,
+	isMcpDocsrsError,
+	JsonParseError,
+	McpDocsrsError,
+	NetworkError,
+	RustdocParseError,
+	TimeoutError
 }
