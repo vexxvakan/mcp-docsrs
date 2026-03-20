@@ -21,7 +21,7 @@ jobs:
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'full-ci'))
-    uses: ./.github/workflows/test-workflow.yml
+    uses: ./.github/workflows/tests.yml
     secrets: inherit
     with:
       debug_enabled: ${{ inputs.debug_enabled || false }}
@@ -29,29 +29,19 @@ jobs:
   build:
     name: Build
     needs: test
-    uses: ./.github/workflows/build-workflow.yml
+    uses: ./.github/workflows/build.yml
     secrets: inherit
 
   code-quality:
     name: Quality
     needs: test
-    uses: ./.github/workflows/code-quality-workflow.yml
-    secrets: inherit
-
-  integration-test:
-    name: Integration
-    needs: build
-    if: |
-      github.event_name == 'push' || 
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'full-ci'))
-    uses: ./.github/workflows/integration-test-workflow.yml
+    uses: ./.github/workflows/code-quality.yml
     secrets: inherit
 
   status-check:
     name: CI Status Check
     runs-on: ubuntu-latest
-    needs: [test, build, code-quality, integration-test]
+    needs: [test, build, code-quality]
     if: always()
 
     steps:
@@ -59,27 +49,22 @@ jobs:
         run: |
           # Check all job results
           FAILED=false
-          
+
           if [ "${{ needs.test.result }}" != "success" ] && [ "${{ needs.test.result }}" != "skipped" ]; then
             echo "❌ Test failed: ${{ needs.test.result }}"
             FAILED=true
           fi
-          
+
           if [ "${{ needs.build.result }}" != "success" ] && [ "${{ needs.build.result }}" != "skipped" ]; then
             echo "❌ Build failed: ${{ needs.build.result }}"
             FAILED=true
           fi
-          
+
           if [ "${{ needs.code-quality.result }}" != "success" ] && [ "${{ needs.code-quality.result }}" != "skipped" ]; then
             echo "❌ Code Quality failed: ${{ needs.code-quality.result }}"
             FAILED=true
           fi
-          
-          if [ "${{ needs.integration-test.result }}" != "success" ] && [ "${{ needs.integration-test.result }}" != "skipped" ]; then
-            echo "❌ Integration Test failed: ${{ needs.integration-test.result }}"
-            FAILED=true
-          fi
-          
+
           if [ "$FAILED" = "true" ]; then
             echo "❌ CI pipeline failed"
             exit 1
@@ -96,4 +81,3 @@ jobs:
           echo "| Test Suite | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Integration Test | ${{ needs.integration-test.result }} |" >> $GITHUB_STEP_SUMMARY

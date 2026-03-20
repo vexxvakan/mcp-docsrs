@@ -1,17 +1,16 @@
-name: Build Executables
+name: Build
 
 on:
   workflow_call:
 
 env:
-  BUN_VERSION: '1.2.14'
-
+  BUN_VERSION: '1.3.11'
 
 jobs:
   build:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60  # Extended timeout for ARM64 runner availability
+    timeout-minutes: 60
     # Limit ARM64 concurrency to help with runner availability
     concurrency:
       group: arm64-${{ matrix.target }}-${{ github.ref }}

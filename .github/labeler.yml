@@ -3,94 +3,75 @@
 
 # Language/Framework labels
 typescript:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "**/*.ts"
-          - "tsconfig.json"
-
+    - changed-files:
+          - any-glob-to-any-file:
+                - "**/*.ts"
+                - "tsconfig.json"
 javascript:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "**/*.js"
-
+    - changed-files:
+          - any-glob-to-any-file:
+                - "**/*.js"
 bun:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "bun.lock"
-          - "bunfig.toml"
+    - changed-files:
+          - any-glob-to-any-file:
+                - "bun.lock"
+                - "bunfig.toml"
 
 # Component labels
 cache:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/cache.ts"
-          - "src/cache/**/*"
-          - "test/cache.test.ts"
-
-mcp-server:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "src/server.ts"
-          - "src/tools/**/*"
-          - "src/index.ts"
-
+    - changed-files:
+          - any-glob-to-any-file:
+                - "src/cache/**/*"
+mcp:
+    - changed-files:
+          - any-glob-to-any-file:
+                - "src/server/**/*"
+                - "src/tools/**/*"
+                - "src/resources/**/*"
+                - "src/prompts/**/*"
+                - "src/index.ts"
+config:
+    - changed-files:
+          - any-glob-to-any-file:
+                - "src/config/**/*"
 documentation:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "**/*.md"
-          - "docs/**/*"
-          - ".github/*.md"
+    - changed-files:
+          - any-glob-to-any-file:
+                - "**/*.md"
 
 # Infrastructure labels
 ci:
-  - changed-files:
-      - any-glob-to-any-file:
-          - ".github/workflows/**/*"
-          - ".github/actions/**/*"
-          - ".github/labeler.yml"
-
+    - changed-files:
+          - any-glob-to-any-file:
+                - ".github/workflows/**/*"
+                - ".github/actions/**/*"
+                - ".github/labeler.yml"
 dependencies:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "package.json"
-          - "bun.lock"
-          - ".github/dependabot.yml"
-
+    - changed-files:
+          - any-glob-to-any-file:
+                - "package.json"
+                - "bun.lock"
 build:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "tsconfig.json"
-          - "biome.json"
-
+    - changed-files:
+          - any-glob-to-any-file:
+                - "tsconfig.json"
+                - "biome.json"
 tests:
-  - changed-files:
-      - any-glob-to-any-file:
-          - "test/**/*"
-          - "**/*.test.ts"
+    - changed-files:
+          - any-glob-to-any-file:
+                - "**/*.test.ts"
 
 # Type labels
 bug:
-  - head-branch:
-      - "^fix/.*"
-      - "^bugfix/.*"
-      - "^hotfix/.*"
-
+    - head-branch:
+          - "^fix/.*"
 feature:
-  - head-branch:
-      - "^feat/.*"
-      - "^feature/.*"
-
-enhancement:
-  - head-branch:
-      - "^enhance/.*"
-      - "^improvement/.*"
-
+    - head-branch:
+          - "^feat/.*"
 chore:
-  - head-branch:
-      - "^chore/.*"
-      - "^maintenance/.*"
-
+    - head-branch:
+          - "^chore/.*"
 refactor:
-  - head-branch:
-      - "^refactor/.*"
-      - "^cleanup/.*"
+    - head-branch:
+          - "^refactor/.*"
+          - "^cleanup/.*"
