@@ -35,13 +35,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Welcome first-time contributors
-        uses: actions/first-interaction@v1
+        uses: actions/first-interaction@v3
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-message: >
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          issue_message: >
             Thanks for opening your first issue here. A maintainer will take a
             look soon.
-          pr-message: >
+          pr_message: >
             Thanks for your first pull request here. A maintainer will review it soon.
 
   stale-check:
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Mark stale issues and PRs
-        uses: actions/stale@v9
+        uses: actions/stale@v10
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-issue-message: This issue has been inactive for 60 days.
