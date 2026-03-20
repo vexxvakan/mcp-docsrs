@@ -1,4 +1,3 @@
-import type { CacheEntry, CacheStats, SqlRow } from "../cache/types.ts"
 import type { RustdocJson } from "../rustdoc/types.ts"
 
 type DocsFetchResult = {
@@ -15,9 +14,6 @@ type DocsFetcher = {
 		target?: string,
 		formatVersion?: number
 	) => Promise<DocsFetchResult>
-	getCacheEntries: (limit: number, offset: number) => CacheEntry[]
-	getCacheStats: () => CacheStats
-	queryCacheDb: (sql: string) => SqlRow[]
 }
 
 export type { DocsFetcher, DocsFetchResult }

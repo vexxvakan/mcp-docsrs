@@ -16,7 +16,6 @@ import type { DocsFetcher, DocsFetchResult } from "./types.ts"
 const ACCEPT_ENCODING = "gzip, deflate, br"
 const HTTP_NOT_FOUND = 404
 const MEMORY_DB = ":memory:"
-const SELECT_PREFIX = "SELECT"
 
 const buildJsonUrl = (
 	crateName: string,
@@ -94,12 +93,6 @@ const ensureRustdocPayload = (payload: RustdocJson, url: string) => {
 	}
 
 	return payload
-}
-
-const ensureSelectQuery = (sql: string) => {
-	if (!sql.trim().toUpperCase().startsWith(SELECT_PREFIX)) {
-		throw new Error("Only SELECT queries are allowed for safety")
-	}
 }
 
 const getCachedResult = (
@@ -187,13 +180,7 @@ const createDocsFetcher = (config: ServerConfig): DocsFetcher => {
 	return {
 		clearCache: () => cache.clear(),
 		close: () => cache.close(),
-		fetchCrateJson,
-		getCacheEntries: (limit: number, offset: number) => cache.listEntries(limit, offset),
-		getCacheStats: () => cache.getStats(),
-		queryCacheDb: (sql: string) => {
-			ensureSelectQuery(sql)
-			return cache.query(sql)
-		}
+		fetchCrateJson
 	}
 }
 

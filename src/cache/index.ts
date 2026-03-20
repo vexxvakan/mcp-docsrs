@@ -2,9 +2,8 @@ import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
 import { CacheError, ErrorLogger } from "../errors.ts"
-import type { CacheEntry, CacheStats, CacheStore, SqlParams, SqlRow } from "./types.ts"
+import type { CacheStore } from "./types.ts"
 
-const DEFAULT_LIMIT = 100
 const MEMORY_DB = ":memory:"
 
 const toCacheDbPath = (dbPath: string | undefined) => {
@@ -55,19 +54,6 @@ const cleanupExpired = (db: Database) => {
 }
 
 const parseStoredValue = <T>(value: string) => JSON.parse(value) as T
-
-const toCacheEntry = (row: {
-	key: string
-	size: number
-	timestamp: number
-	ttl: number
-}): CacheEntry => ({
-	expiresAt: new Date(row.timestamp + row.ttl),
-	key: row.key,
-	size: row.size,
-	timestamp: new Date(row.timestamp),
-	ttl: row.ttl
-})
 
 type CacheStatements = {
 	clearStmt: ReturnType<Database["prepare"]>
@@ -145,65 +131,6 @@ const createSet =
 		}
 	}
 
-const createListEntries =
-	(db: Database) =>
-	(limit = DEFAULT_LIMIT, offset = 0) => {
-		try {
-			cleanupExpired(db)
-			const rows = db
-				.prepare(`
-				SELECT key, timestamp, ttl, LENGTH(data) as size
-				FROM cache
-				ORDER BY timestamp DESC
-				LIMIT ? OFFSET ?
-			`)
-				.all(limit, offset) as Array<{
-				key: string
-				size: number
-				timestamp: number
-				ttl: number
-			}>
-			return rows.map(toCacheEntry)
-		} catch (error) {
-			throw new CacheError("list", (error as Error).message)
-		}
-	}
-
-const createGetStats = (db: Database, statements: CacheStatements) => (): CacheStats => {
-	try {
-		const totalEntries = (
-			statements.countStmt.get() as {
-				count: number
-			}
-		).count
-		const sizeRow = db.prepare("SELECT SUM(LENGTH(data)) as totalSize FROM cache").get() as {
-			totalSize: number | null
-		}
-		const oldestRow = db.prepare("SELECT MIN(timestamp) as oldest FROM cache").get() as {
-			oldest: number | null
-		}
-
-		return {
-			oldestEntry: oldestRow.oldest ? new Date(oldestRow.oldest) : null,
-			totalEntries,
-			totalSize: sizeRow.totalSize ?? 0
-		}
-	} catch (error) {
-		throw new CacheError("stats", (error as Error).message)
-	}
-}
-
-const createQuery =
-	(db: Database) =>
-	(sql: string, params: SqlParams = []): SqlRow[] => {
-		try {
-			cleanupExpired(db)
-			return db.prepare(sql).all(...params) as SqlRow[]
-		} catch (error) {
-			throw new CacheError("query", (error as Error).message)
-		}
-	}
-
 const createClose = (db: Database, statements: CacheStatements) => () => {
 	try {
 		statements.getStmt.finalize()
@@ -233,10 +160,7 @@ const createCache = <T>(maxSize: number, dbPath?: string): CacheStore<T> => {
 		close: createClose(db, statements),
 		delete: (key: string) => statements.deleteStmt.run(key),
 		get: (key: string) => getWithMetadata(key).data,
-		getStats: createGetStats(db, statements),
 		getWithMetadata,
-		listEntries: createListEntries(db),
-		query: createQuery(db),
 		set: createSet(statements, maxSize)
 	}
 }

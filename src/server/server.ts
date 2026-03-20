@@ -6,7 +6,6 @@ import { createDocsFetcher } from "../docs/index.ts"
 import { ErrorLogger } from "../errors.ts"
 import { APP_NAME, APP_VERSION } from "../meta.ts"
 import { registerPrompts } from "../prompts/index.ts"
-import { registerResources } from "../resources/index.ts"
 import { registerTools } from "../tools/register.ts"
 import type { RustDocsServer } from "./types.ts"
 
@@ -21,7 +20,6 @@ const createServer = (configInput: ServerConfigInput = {}): RustDocsServer => {
 
 	registerTools(server, fetcher)
 	registerPrompts(server)
-	registerResources(server, config, fetcher)
 
 	return {
 		close: async () => {
