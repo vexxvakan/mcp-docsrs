@@ -494,7 +494,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Commit your changes (`git commit -m 'feat: add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
@@ -515,4 +515,4 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 Made with ❤️ for the Rust community
 
-[Report Bug](https://github.com/your-repo/issues) • [Request Feature](https://github.com/your-repo/issues)
+[Report Bug](https://github.com/vexxvakan/mcp-docsrs/issues) • [Request Feature](https://github.com/vexxvakan/mcp-docsrs/issues)
