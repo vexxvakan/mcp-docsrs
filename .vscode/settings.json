@@ -1,13 +1,16 @@
 {
-    "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnPaste": true,
-    "editor.formatOnSave": true,
-    "biome.lsp.trace.server": "verbose",
-    "biome.requireConfiguration": true,
-    "biome.suggestInstallingGlobally": false,
-    "trailing-spaces.trimOnSave": true,
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "[shellscript]": {
-        "editor.defaultFormatter": "foxundermoon.shell-format"
-    }
+	"editor.defaultFormatter": "biomejs.biome",
+	"editor.formatOnPaste": true,
+	"editor.formatOnSave": true,
+	"biome.lsp.trace.server": "verbose",
+	"biome.requireConfiguration": true,
+	"biome.suggestInstallingGlobally": false,
+	"trailing-spaces.trimOnSave": true,
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"[shellscript]": {
+		"editor.defaultFormatter": "foxundermoon.shell-format"
+	},
+	"[markdown]": {
+		"editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+	}
 }

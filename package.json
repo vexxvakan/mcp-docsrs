@@ -20,19 +20,12 @@
         "build:darwin-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-darwin-x64 --outfile dist/mcp-docsrs-darwin-x64",
         "build:darwin-arm64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-darwin-arm64 --outfile dist/mcp-docsrs-darwin-arm64",
         "build:windows-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-windows-x64 --outfile dist/mcp-docsrs-windows-x64.exe",
-        "typecheck": "tsc --noEmit",
-        "inspector": "DANGEROUSLY_OMIT_AUTH=true bunx @modelcontextprotocol/inspector -- ./dist/mcp-docsrs --cache-ttl=7200000 --max-cache-size=200 --db-path=/Users/vexx/Repos/mcp-docsrs/.cache",
-        "lint": "biome check ./src && biome check ./test",
-        "lint:fix": "biome check ./src --fix && biome check ./test --fix",
-        "lint:fixunsafe": "biome check ./src --fix --unsafe && biome check ./test --fix --unsafe",
-        "test": "BUN_ENV=test bun test test/unit",
-        "test:unit": "BUN_ENV=test bun test test/unit",
-        "test:integration": "BUN_ENV=test bun test test/integration/api test/integration/persistence test/integration/e2e",
-        "test:integration:api": "BUN_ENV=test bun test test/integration/api",
-        "test:integration:binary": "BUN_ENV=test bun test test/integration/binary/runner.test.ts",
-        "test:all": "bun run test:unit && bun run test:integration",
-        "test:watch": "BUN_ENV=test bun test test/unit --watch",
-        "check:sizes": "bun run scripts/check-build-sizes.ts"
+        "check": "tsc --noEmit",
+        "inspect": "mcp-inspector --config mcp-inspector.config.json --server mcp-docsrs",
+        "lint": "biome check .",
+        "lint:fix": "biome check . --fix",
+        "lint:fixunsafe": "biome check . --fix --unsafe",
+        "test": "BUN_ENV=test bun test test/unit"
     },
     "keywords": [
         "mcp",
@@ -41,19 +34,21 @@
         "documentation",
         "bun"
     ],
-    "author": "Marius Modlich <marius@junonetwork.io>",
+    "author": "Marius Modlich <hi@vexx.sh>",
     "license": "Apache-2.0",
     "dependencies": {
-        "@modelcontextprotocol/sdk": "1.13.0",
+        "@modelcontextprotocol/sdk": "1.27.1",
         "fzstd": "0.1.1",
-        "zod": "3.25.67"
+        "neverthrow": "^8.2.0",
+        "zod": "4.3.6"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.0.0",
-        "@types/bun": "1.2.16",
-        "typescript": "5.8.3"
+        "@biomejs/biome": "2.4.8",
+        "@modelcontextprotocol/inspector": "0.21.1",
+        "@types/bun": "1.3.11",
+        "typescript": "5.9.3"
     },
     "engines": {
-        "bun": ">=1.2.14"
+        "bun": "1.3.11"
     }
 }

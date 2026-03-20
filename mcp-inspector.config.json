@@ -1,0 +1,12 @@
+{
+	"mcpServers": {
+		"mcp-docsrs": {
+			"args": [
+				"--cache-ttl=7200000",
+				"--max-cache-size=200",
+				"--db-path=/Users/vexx/Repos/mcp-docsrs/.cache"
+			],
+			"command": "./dist/mcp-docsrs"
+		}
+	}
+}

@@ -1,104 +1,158 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.0.0-beta.6/schema.json",
-	"vcs": {
-		"enabled": true,
-		"clientKind": "git",
-		"useIgnoreFile": true
-	},
-	"files": {
-		"ignoreUnknown": false,
-		"includes": [
-			"**",
-			"!**/dist/**",
-			"!**/src/varint.ts",
-			"!**/src/utf8.ts",
-			"!**/src/types.ts",
-			"!**/src/helpers.ts",
-			"!**/src/extern.ts",
-			"!**/src/decimals.ts",
-			"!**/src/binary.ts"
-		]
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "tab",
-		"indentWidth": 3
-	},
+	"$schema": "https://biomejs.dev/schemas/2.4.8/schema.json",
 	"assist": {
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"noDuplicateClasses": "on",
+				"organizeImports": "on",
+				"useSortedAttributes": "on",
+				"useSortedInterfaceMembers": "on",
+				"useSortedKeys": "on",
+				"useSortedProperties": "on"
 			}
-		}
+		},
+		"enabled": true
 	},
-	"linter": {
+	"files": {
+		"ignoreUnknown": false
+	},
+	"formatter": {
+		"attributePosition": "multiline",
+		"bracketSameLine": true,
+		"bracketSpacing": true,
 		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"correctness": {
-				"noConstantMathMinMaxClamp": "error",
-				"noUndeclaredVariables": "error",
-				"noUnusedImports": "error",
-				"noUnusedFunctionParameters": "error",
-				"noUnusedPrivateClassMembers": "error",
-				"useExhaustiveDependencies": {
-					"level": "error",
-					"options": {
-						"reportUnnecessaryDependencies": false
-					}
-				},
-				"noUnusedVariables": "error"
-			},
-			"style": {
-				"noParameterProperties": "error",
-				"noYodaExpression": "error",
-				"useConsistentBuiltinInstantiation": "error",
-				"useFragmentSyntax": "error",
-				"useShorthandAssign": "error",
-				"noNonNullAssertion": "off",
-				"noParameterAssign": "error",
-				"useAsConstAssertion": "error",
-				"useDefaultParameterLast": "error",
-				"useEnumInitializers": "error",
-				"useSelfClosingElements": "error",
-				"useSingleVarDeclarator": "error",
-				"noUnusedTemplateLiteral": "error",
-				"useNumberNamespace": "error",
-				"noInferrableTypes": "error",
-				"noUselessElse": "error",
-				"useArrayLiterals": "error"
-			},
-			"suspicious": {
-				"useAwait": "error",
-				"noEvolvingTypes": "error",
-				"noExplicitAny": "off"
-			},
-			"complexity": {
-				"noUselessStringConcat": "error",
-				"noUselessUndefinedInitialization": "error",
-				"noVoid": "error",
-				"useDateNow": "error",
-				"noBannedTypes": "off",
-				"noForEach": "off"
-			}
-		}
+		"expand": "always",
+		"formatWithErrors": false,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineEnding": "lf",
+		"lineWidth": 100,
+		"trailingNewline": true,
+		"useEditorconfig": false
 	},
 	"javascript": {
 		"formatter": {
 			"arrowParentheses": "always",
-			"quoteStyle": "double",
-			"bracketSameLine": false,
-			"semicolons": "asNeeded",
-			"bracketSpacing": true,
-			"trailingCommas": "none",
-			"quoteProperties": "asNeeded",
-			"enabled": true,
-			"attributePosition": "auto",
-			"indentWidth": 3,
-			"indentStyle": "tab",
 			"jsxQuoteStyle": "double",
-			"lineEnding": "lf",
-			"lineWidth": 100
+			"quoteProperties": "asNeeded",
+			"quoteStyle": "double",
+			"semicolons": "asNeeded",
+			"trailingCommas": "none"
+		},
+		"globals": [
+			"Bun"
+		]
+	},
+	"linter": {
+		"domains": {
+			"project": "all",
+			"test": "all",
+			"types": "all"
+		},
+		"enabled": true,
+		"rules": {
+			"a11y": "error",
+			"complexity": "error",
+			"correctness": {
+				"noNodejsModules": "off",
+				"noUnresolvedImports": "off",
+				"recommended": true
+			},
+			"nursery": {
+				"noExcessiveClassesPerFile": "off",
+				"recommended": true
+			},
+			"performance": "error",
+			"security": "error",
+			"style": {
+				"noCommonJs": "error",
+				"noDefaultExport": "error",
+				"noDescendingSpecificity": "error",
+				"noDoneCallback": "error",
+				"noEnum": "off",
+				"noExportedImports": "error",
+				"noHeadElement": "off",
+				"noImplicitBoolean": "off",
+				"noInferrableTypes": "error",
+				"noJsxLiterals": "off",
+				"noMagicNumbers": "error",
+				"noNamespace": "error",
+				"noNegationElse": "error",
+				"noNestedTernary": "error",
+				"noNonNullAssertion": "error",
+				"noParameterAssign": "error",
+				"noParameterProperties": "error",
+				"noProcessEnv": "error",
+				"noRestrictedGlobals": "error",
+				"noRestrictedImports": "error",
+				"noRestrictedTypes": "off",
+				"noShoutyConstants": "error",
+				"noSubstr": "error",
+				"noUnusedTemplateLiteral": "error",
+				"noUselessElse": "error",
+				"noValueAtRule": "off",
+				"noYodaExpression": "warn",
+				"useArrayLiterals": "error",
+				"useAsConstAssertion": "off",
+				"useAtIndex": "warn",
+				"useBlockStatements": "error",
+				"useCollapsedElseIf": "error",
+				"useCollapsedIf": "error",
+				"useComponentExportOnlyModules": "off",
+				"useConsistentArrayType": "error",
+				"useConsistentArrowReturn": "error",
+				"useConsistentBuiltinInstantiation": "error",
+				"useConsistentCurlyBraces": "error",
+				"useConsistentMemberAccessibility": "error",
+				"useConsistentObjectDefinitions": "error",
+				"useConsistentTypeDefinitions": {
+					"level": "error",
+					"options": {
+						"style": "type"
+					}
+				},
+				"useConst": "error",
+				"useDefaultParameterLast": "error",
+				"useDefaultSwitchClause": "error",
+				"useDeprecatedReason": "error",
+				"useEnumInitializers": "error",
+				"useExplicitLengthCheck": "error",
+				"useExponentiationOperator": "error",
+				"useExportsLast": "error",
+				"useExportType": "warn",
+				"useFilenamingConvention": "error",
+				"useForOf": "error",
+				"useFragmentSyntax": "off",
+				"useGraphqlNamingConvention": "off",
+				"useGroupedAccessorPairs": "error",
+				"useImportType": "error",
+				"useLiteralEnumMembers": "warn",
+				"useNamingConvention": "error",
+				"useNodeAssertStrict": "warn",
+				"useNodejsImportProtocol": "error",
+				"useNumberNamespace": "error",
+				"useNumericSeparators": "warn",
+				"useObjectSpread": "error",
+				"useReactFunctionComponents": "error",
+				"useReadonlyClassProperties": "warn",
+				"useSelfClosingElements": "error",
+				"useShorthandAssign": "error",
+				"useShorthandFunctionType": "off",
+				"useSingleVarDeclarator": "error",
+				"useSymbolDescription": "warn",
+				"useTemplate": "error",
+				"useThrowNewError": "error",
+				"useThrowOnlyError": "error",
+				"useTrimStartEnd": "error",
+				"useUnifiedTypeSignatures": "error"
+			},
+			"suspicious": "error"
 		}
+	},
+	"root": true,
+	"vcs": {
+		"clientKind": "git",
+		"enabled": true,
+		"useIgnoreFile": true
 	}
 }
