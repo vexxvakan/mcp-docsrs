@@ -1,22 +1,8 @@
-name: Build Binaries
+name: Build
 
 on:
   workflow_call:
-    inputs:
-      mode:
-        required: false
-        default: quick
-        type: string
   workflow_dispatch:
-    inputs:
-      mode:
-        description: Build mode
-        required: false
-        default: quick
-        type: choice
-        options:
-          - quick
-          - all
 
 permissions:
   contents: read
@@ -25,12 +11,8 @@ concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  BUN_VERSION: "1.3.11"
-
 jobs:
   build:
-    if: inputs.mode == 'quick'
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -40,21 +22,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: ${{ env.BUN_VERSION }}
-
-      - name: Cache Bun install cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.bun/install/cache
-          key: ubuntu-bun-build-quick-${{ env.BUN_VERSION }}-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ubuntu-bun-build-quick-${{ env.BUN_VERSION }}-
-            ubuntu-bun-build-quick-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+        uses: ./.github/actions/setup-bun
 
       - name: Build executable
         run: bun run build
@@ -64,84 +32,3 @@ jobs:
 
       - name: Smoke test built binary
         run: ./dist/mcp-docsrs --version
-
-  build-all:
-    if: inputs.mode == 'all'
-    name: Build ${{ matrix.target }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: linux-x64
-            artifact: dist/mcp-docsrs-linux-x64
-            command: bun run build:linux-x64
-          - target: linux-arm64
-            artifact: dist/mcp-docsrs-linux-arm64
-            command: bun run build:linux-arm64
-          - target: linux-x64-musl
-            artifact: dist/mcp-docsrs-linux-x64-musl
-            command: bun run build:linux-x64-musl
-          - target: linux-arm64-musl
-            artifact: dist/mcp-docsrs-linux-arm64-musl
-            command: bun run build:linux-arm64-musl
-          - target: darwin-x64
-            artifact: dist/mcp-docsrs-darwin-x64
-            command: bun run build:darwin-x64
-          - target: darwin-arm64
-            artifact: dist/mcp-docsrs-darwin-arm64
-            command: bun run build:darwin-arm64
-          - target: windows-x64
-            artifact: dist/mcp-docsrs-windows-x64.exe
-            command: bun run build:windows-x64
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: ${{ env.BUN_VERSION }}
-
-      - name: Cache Bun install cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.bun/install/cache
-          key: ubuntu-bun-build-${{ env.BUN_VERSION }}-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ubuntu-bun-build-${{ env.BUN_VERSION }}-
-            ubuntu-bun-build-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build executable
-        run: ${{ matrix.command }}
-
-      - name: Verify artifact exists
-        run: test -f "${{ matrix.artifact }}"
-
-      - name: Smoke test linux x64 binary
-        if: matrix.target == 'linux-x64'
-        run: ${{ matrix.artifact }} --version
-
-      - name: Smoke test linux x64 musl binary
-        if: matrix.target == 'linux-x64-musl'
-        run: |
-          chmod +x "${{ matrix.artifact }}"
-          docker run --rm -v "$PWD/dist:/workspace:ro" -w /workspace oven/bun:alpine ./mcp-docsrs-linux-x64-musl --version
-
-      - name: Report binary size
-        run: |
-          size=$(stat -c%s "${{ matrix.artifact }}")
-          echo "Built ${{ matrix.target }} (${size} bytes)" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: mcp-docsrs-${{ matrix.target }}
-          path: ${{ matrix.artifact }}
-          compression-level: 0
-          retention-days: 14

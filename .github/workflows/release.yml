@@ -38,10 +38,8 @@ jobs:
     name: Build Binaries
     if: needs.release.outputs.release_created == 'true'
     needs: release
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/build-release.yml
     secrets: inherit
-    with:
-      mode: all
 
   docker:
     name: Publish Docker Images
