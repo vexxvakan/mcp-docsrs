@@ -9,7 +9,7 @@ import {
 } from "./config/index.ts"
 import { ErrorLogger } from "./errors.ts"
 import { APP_VERSION } from "./meta.ts"
-import { createRustDocsServer } from "./server.ts"
+import { createServer } from "./server/server.ts"
 
 const exitOnFailure = (error: unknown) => {
 	ErrorLogger.log(error)
@@ -65,7 +65,7 @@ const run = async () => {
 			...flags.overrides
 		})
 	)
-	const app = createRustDocsServer(config)
+	const app = createServer(config)
 	installShutdown(app.close)
 	await app.start()
 }

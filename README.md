@@ -116,7 +116,7 @@ Fetches comprehensive documentation for an entire Rust crate.
 **Parameters:**
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| ----------- | ------ | ---------- | ------------- |
 | `crateName` | string | ✅ | Name of the Rust crate |
 | `version` | string | ❌ | Specific version or semver range (e.g., "1.0.0", "~4") |
 | `target` | string | ❌ | Target platform (e.g., "i686-pc-windows-msvc") |
@@ -141,7 +141,7 @@ Fetches documentation for a specific item within a crate.
 **Parameters:**
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| ----------- | ------ | ---------- | ------------- |
 | `crateName` | string | ✅ | Name of the Rust crate |
 | `itemPath` | string | ✅ | Path to the item (e.g., "struct.MyStruct", "fn.my_function") |
 | `version` | string | ❌ | Specific version or semver range |
@@ -166,7 +166,7 @@ Search for Rust crates on crates.io with fuzzy/partial name matching.
 **Parameters:**
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| ----------- | ------ | ---------- | ------------- |
 | `query` | string | ✅ | Search query for crate names (supports partial matches) |
 | `limit` | number | ❌ | Maximum number of results to return (default: 10) |
 
@@ -255,7 +255,7 @@ Returns the current server configuration including all runtime parameters.
 Configure the server using environment variables or command-line arguments:
 
 | Variable | CLI Flag | Default | Description |
-|----------|----------|---------|-------------|
+| ---------- | ---------- | --------- | ------------- |
 | `CACHE_TTL` | `--cache-ttl` | 3600000 | Cache time-to-live in milliseconds |
 | `MAX_CACHE_SIZE` | `--max-cache-size` | 100 | Maximum number of cached entries |
 | `REQUEST_TIMEOUT` | `--request-timeout` | 30000 | HTTP request timeout in milliseconds |
@@ -360,7 +360,7 @@ bun run build:windows-x64    # Windows x64
 All executables are created in the `dist/` directory with bytecode compilation for fast startup:
 
 | File | Platform | Type | Size |
-|------|----------|------|------|
+| ------ | ---------- | ------ | ------ |
 | `mcp-docsrs-linux-x64` | Linux x64/AMD64 | GLIBC + Bytecode | 99MB |
 | `mcp-docsrs-linux-arm64` | Linux ARM64 | GLIBC + Bytecode | 93MB |
 | `mcp-docsrs-linux-x64-musl` | Linux x64/AMD64 | MUSL (static) + Bytecode | 92MB |

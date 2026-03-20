@@ -18,14 +18,14 @@ updates:
       - "bun"
     assignees:
       - "vexxvakan"
-    reviewers:
-      - "vexxvakan"
     groups:
       development-dependencies:
         patterns:
-          - "@types/*"
-          - "typescript"
           - "@biomejs/biome"
+          - "@types/*"
+          - "@modelcontextprotocol/inspector"
+          - "release-please"
+          - "typescript"
         update-types:
           - "minor"
           - "patch"
@@ -33,21 +33,20 @@ updates:
         patterns:
           - "*"
         exclude-patterns:
-          - "@types/*"
-          - "typescript"
           - "@biomejs/biome"
+          - "@types/*"
+          - "@modelcontextprotocol/inspector"
+          - "release-please"
+          - "typescript"
         update-types:
           - "patch"
-    # Auto-merge rules
     allow:
       - dependency-type: "development"
       - dependency-type: "production"
     ignore:
-      # Ignore major updates for critical dependencies
       - dependency-name: "@modelcontextprotocol/sdk"
         update-types: ["version-update:semver-major"]
 
-  # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -59,7 +58,6 @@ updates:
       include: "scope"
     labels:
       - "ci"
-      - "github-actions"
     assignees:
       - "vexxvakan"
     pull-request-branch-name:

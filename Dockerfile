@@ -1,24 +1,33 @@
-# Multi-stage build for smaller final image
+# Build the target-specific MUSL binary inside Docker so release images do not
+# depend on pre-staged workflow artifacts.
+FROM oven/bun:1.3.11-alpine AS build
+
+WORKDIR /app
+
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+
+COPY src ./src
+COPY tsconfig.json ./
+
+ARG TARGETARCH
+RUN case "$TARGETARCH" in \
+    amd64) TARGET="bun-linux-x64-musl" ;; \
+    arm64) TARGET="bun-linux-arm64-musl" ;; \
+    *) echo "Unsupported target arch: $TARGETARCH" && exit 1 ;; \
+  esac && \
+  bun build ./src/cli.ts --compile --minify --bytecode --target="$TARGET" --outfile /out/mcp-docsrs
+
 FROM alpine:latest AS runtime
 
-# Install required runtime dependencies
-# libstdc++ and libgcc are needed because Bun's MUSL builds aren't fully static
 RUN apk add --no-cache libstdc++ libgcc
 
-# Create non-root user for security
 RUN addgroup -g 1000 mcp && \
     adduser -u 1000 -G mcp -s /bin/sh -D mcp
 
-# Copy the appropriate binary based on target architecture
-# We'll handle the architecture mapping in the build process
-ARG BINARY_NAME
-COPY dist/${BINARY_NAME} /usr/local/bin/mcp-docsrs
-
-# Make binary executable
+COPY --from=build /out/mcp-docsrs /usr/local/bin/mcp-docsrs
 RUN chmod +x /usr/local/bin/mcp-docsrs
 
-# Switch to non-root user
 USER mcp
 
-# MCP servers typically communicate via stdio
 ENTRYPOINT ["mcp-docsrs"]

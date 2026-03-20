@@ -1,65 +1,41 @@
-name: Build
+name: Build Binaries
 
 on:
   workflow_call:
+    inputs:
+      mode:
+        required: false
+        default: quick
+        type: string
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Build mode
+        required: false
+        default: quick
+        type: choice
+        options:
+          - quick
+          - all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  BUN_VERSION: '1.3.11'
+  BUN_VERSION: "1.3.11"
 
 jobs:
   build:
-    name: Build ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    # Limit ARM64 concurrency to help with runner availability
-    concurrency:
-      group: arm64-${{ matrix.target }}-${{ github.ref }}
-      cancel-in-progress: false
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Linux x64 GLIBC builds
-          - os: ubuntu-latest
-            target: linux-x64
-            build-cmd: bun run build:linux-x64
-          # Linux ARM64 GLIBC builds (native ARM64 runner)
-          - os: ubuntu-24.04-arm
-            target: linux-arm64
-            build-cmd: bun run build:linux-arm64
-          # Linux x64 MUSL builds (for Alpine, containers, static linking)
-          - os: ubuntu-latest
-            target: linux-x64-musl
-            build-cmd: bun run build:linux-x64-musl
-          # Linux ARM64 MUSL builds (native ARM64 runner)
-          - os: ubuntu-24.04-arm
-            target: linux-arm64-musl
-            build-cmd: bun run build:linux-arm64-musl
-          # macOS x64 builds (Intel-based runner)
-          - os: macos-13
-            target: darwin-x64
-            build-cmd: bun run build:darwin-x64
-          # macOS ARM64 builds (Apple Silicon runner - latest)
-          - os: macos-latest
-            target: darwin-arm64
-            build-cmd: bun run build:darwin-arm64
-          # Windows build
-          - os: windows-latest
-            target: windows-x64
-            build-cmd: bun run build:windows-x64
+    if: inputs.mode == 'quick'
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - name: Show runner info
-        run: |
-          echo "::group::Runner Information"
-          echo "Runner OS: ${{ runner.os }}"
-          echo "Runner Arch: ${{ runner.arch }}"
-          echo "Target: ${{ matrix.target }}"
-          echo "Current time: $(date)"
-          echo "Waiting for runner: This step confirms the runner has started"
-          echo "::endgroup::"
-        shell: bash
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -67,107 +43,105 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
-          no-cache: ${{ runner.os == 'Windows' }}  # Disable cache on Windows due to issues
 
-      - name: Cache dependencies
+      - name: Cache Bun install cache
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.bun/install/cache
-            node_modules
-          key: ${{ runner.os }}-bun-build-${{ hashFiles('**/bun.lock') }}
+          path: ~/.bun/install/cache
+          key: ubuntu-bun-build-quick-${{ env.BUN_VERSION }}-${{ hashFiles('bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-bun-build-
-            ${{ runner.os }}-bun-
+            ubuntu-bun-build-quick-${{ env.BUN_VERSION }}-
+            ubuntu-bun-build-quick-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Build executable
-        run: ${{ matrix.build-cmd }}
+        run: bun run build
 
+      - name: Verify artifact exists
+        run: test -f dist/mcp-docsrs
 
-      - name: Test executable
+      - name: Smoke test built binary
+        run: ./dist/mcp-docsrs --version
+
+  build-all:
+    if: inputs.mode == 'all'
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x64
+            artifact: dist/mcp-docsrs-linux-x64
+            command: bun run build:linux-x64
+          - target: linux-arm64
+            artifact: dist/mcp-docsrs-linux-arm64
+            command: bun run build:linux-arm64
+          - target: linux-x64-musl
+            artifact: dist/mcp-docsrs-linux-x64-musl
+            command: bun run build:linux-x64-musl
+          - target: linux-arm64-musl
+            artifact: dist/mcp-docsrs-linux-arm64-musl
+            command: bun run build:linux-arm64-musl
+          - target: darwin-x64
+            artifact: dist/mcp-docsrs-darwin-x64
+            command: bun run build:darwin-x64
+          - target: darwin-arm64
+            artifact: dist/mcp-docsrs-darwin-arm64
+            command: bun run build:darwin-arm64
+          - target: windows-x64
+            artifact: dist/mcp-docsrs-windows-x64.exe
+            command: bun run build:windows-x64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache Bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ubuntu-bun-build-${{ env.BUN_VERSION }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ubuntu-bun-build-${{ env.BUN_VERSION }}-
+            ubuntu-bun-build-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build executable
+        run: ${{ matrix.command }}
+
+      - name: Verify artifact exists
+        run: test -f "${{ matrix.artifact }}"
+
+      - name: Smoke test linux x64 binary
+        if: matrix.target == 'linux-x64'
+        run: ${{ matrix.artifact }} --version
+
+      - name: Smoke test linux x64 musl binary
+        if: matrix.target == 'linux-x64-musl'
         run: |
-          # First check if the binary exists
-          if [ "${{ matrix.target }}" == "windows-x64" ]; then
-            BINARY_PATH="./dist/mcp-docsrs-${{ matrix.target }}.exe"
-          else
-            BINARY_PATH="./dist/mcp-docsrs-${{ matrix.target }}"
-          fi
+          chmod +x "${{ matrix.artifact }}"
+          docker run --rm -v "$PWD/dist:/workspace:ro" -w /workspace oven/bun:alpine ./mcp-docsrs-linux-x64-musl --version
 
-          if [ ! -f "$BINARY_PATH" ]; then
-            echo "Error: Binary not found at $BINARY_PATH"
-            ls -la ./dist/
-            exit 1
-          fi
-
-          # Now test the binary
-          if [ "${{ matrix.target }}" == "windows-x64" ]; then
-            ./dist/mcp-docsrs-${{ matrix.target }}.exe --version
-          else
-            # Test binaries on their native architecture
-            if [[ "${{ matrix.os }}" == "ubuntu-"* ]] && [[ "${{ matrix.target }}" == *"linux"* ]]; then
-              # Test MUSL binaries in Alpine container
-              if [[ "${{ matrix.target }}" == *"musl"* ]]; then
-                # Make binary executable before mounting
-                chmod +x ./dist/mcp-docsrs-${{ matrix.target }}
-                # IMPORTANT: Bun's MUSL builds are NOT fully static - they dynamically link libstdc++
-                # This is a known limitation: https://github.com/oven-sh/bun/issues/16056
-                # Test using oven/bun:alpine which has all necessary libraries
-                docker run --rm -v $PWD/dist:/workspace:ro -w /workspace oven/bun:alpine /workspace/mcp-docsrs-${{ matrix.target }} --version
-              else
-                # Test GLIBC binaries directly
-                ./dist/mcp-docsrs-${{ matrix.target }} --version
-              fi
-            elif [[ "${{ matrix.os }}" == "macos-"* ]] && [[ "${{ matrix.target }}" == *"darwin"* ]]; then
-              # Test on native architecture (no Rosetta)
-              ./dist/mcp-docsrs-${{ matrix.target }} --version
-            else
-              echo "Unexpected combination: ${{ matrix.target }} on ${{ matrix.os }}"
-              ./dist/mcp-docsrs-${{ matrix.target }} --version
-            fi
-          fi
-        shell: bash
-
-      - name: Run tests on native architecture
+      - name: Report binary size
         run: |
-          # Only run full tests on native architecture builds
-          if [[ "${{ matrix.os }}" == "ubuntu-24.04-arm" ]] && [[ "${{ matrix.target }}" == *"arm64"* ]]; then
-            echo "Running tests on native ARM64..."
-            bun test
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]] && [[ "${{ matrix.target }}" == "linux-x64" ]]; then
-            echo "Running tests on native x64..."
-            bun test
-          elif [[ "${{ matrix.os }}" == "macos-"* ]] && [[ "${{ matrix.target }}" == "darwin-"* ]]; then
-            echo "Running tests on macOS..."
-            bun test
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            echo "Running tests on Windows..."
-            bun test
-          else
-            echo "Skipping full test suite for cross-compiled target"
-          fi
-        shell: bash
+          size=$(stat -c%s "${{ matrix.artifact }}")
+          echo "Built ${{ matrix.target }} (${size} bytes)" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Calculate binary size
-        id: binary-size
-        run: |
-          if [ "${{ matrix.target }}" == "windows-x64" ]; then
-            SIZE=$(stat -c%s "./dist/mcp-docsrs-${{ matrix.target }}.exe" 2>/dev/null || stat -f%z "./dist/mcp-docsrs-${{ matrix.target }}.exe")
-            echo "size=$SIZE" >> $GITHUB_OUTPUT
-            echo "Binary size: $((SIZE / 1024 / 1024)) MB"
-          else
-            SIZE=$(stat -c%s "./dist/mcp-docsrs-${{ matrix.target }}" 2>/dev/null || stat -f%z "./dist/mcp-docsrs-${{ matrix.target }}")
-            echo "size=$SIZE" >> $GITHUB_OUTPUT
-            echo "Binary size: $((SIZE / 1024 / 1024)) MB"
-          fi
-        shell: bash
-
-      - name: Upload artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: mcp-docsrs-${{ matrix.target }}
-          path: |
-            dist/mcp-docsrs-${{ matrix.target }}*
-          retention-days: 30
+          path: ${{ matrix.artifact }}
+          compression-level: 0
+          retention-days: 14

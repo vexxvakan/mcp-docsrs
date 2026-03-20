@@ -1,128 +1,65 @@
 name: PR Automation
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
   issues:
-    types: [opened]
+    types:
+      - opened
   schedule:
-    # Run weekly for stale checks
-    - cron: '0 0 * * 0'
+    - cron: "0 0 * * 0"
 
 permissions:
   contents: read
-  pull-requests: write
   issues: write
+  pull-requests: write
 
 jobs:
   auto-label:
     name: Auto Label
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
     steps:
-      - name: Label based on files changed
-        uses: actions/labeler@v5
+      - name: Label changed paths
+        uses: actions/labeler@v6
         with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
           sync-labels: true
 
-      - name: Label based on PR size
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            });
-
-            const additions = pr.additions;
-            const deletions = pr.deletions;
-            const total = additions + deletions;
-
-            let sizeLabel = '';
-            if (total < 10) {
-              sizeLabel = 'size/XS';
-            } else if (total < 50) {
-              sizeLabel = 'size/S';
-            } else if (total < 250) {
-              sizeLabel = 'size/M';
-            } else if (total < 500) {
-              sizeLabel = 'size/L';
-            } else {
-              sizeLabel = 'size/XL';
-            }
-
-            // Remove other size labels
-            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number
-            });
-
-            const sizeLabels = labels
-              .filter(label => label.name.startsWith('size/'))
-              .filter(label => label.name !== sizeLabel);
-
-            for (const label of sizeLabels) {
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                name: label.name
-              }).catch(() => {}); // Ignore if label doesn't exist
-            }
-
-            // Add the appropriate size label
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: [sizeLabel]
-            }).catch(() => {}); // Ignore if label already exists
-
-  # Only welcome if they have 'first-time-contributor' label
-  # This prevents spam on every PR
-  welcome-first-time:
-    name: Welcome First Time Contributors
+  first-interaction:
+    name: First Interaction
+    if: github.event.action == 'opened'
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'pull_request' &&
-      github.event.action == 'opened' &&
-      contains(github.event.pull_request.labels.*.name, 'first-time-contributor')
-
     steps:
-      - name: Welcome message
-        uses: actions/github-script@v7
+      - name: Welcome first-time contributors
+        uses: actions/first-interaction@v1
         with:
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: `Welcome @${context.payload.pull_request.user.login}! 🎉
-
-              Thank you for your first contribution! A maintainer will review your PR soon.`
-            });
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: >
+            Thanks for opening your first issue here. A maintainer will take a
+            look soon.
+          pr-message: >
+            Thanks for your first pull request here. A maintainer will review it soon.
 
   stale-check:
     name: Mark Stale Items
-    runs-on: ubuntu-latest
     if: github.event_name == 'schedule'
-
+    runs-on: ubuntu-latest
     steps:
       - name: Mark stale issues and PRs
         uses: actions/stale@v9
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          stale-issue-message: 'This issue has been inactive for 60 days.'
-          stale-pr-message: 'This PR has been inactive for 30 days.'
-          stale-issue-label: 'stale'
-          stale-pr-label: 'stale'
+          stale-issue-message: This issue has been inactive for 60 days.
+          stale-pr-message: This PR has been inactive for 30 days.
+          stale-issue-label: stale
+          stale-pr-label: stale
           days-before-issue-stale: 60
           days-before-pr-stale: 30
           days-before-close: 14
-          exempt-pr-labels: 'pinned,security,work-in-progress,full-ci,codeql'
-          exempt-issue-labels: 'pinned,security,bug'
+          exempt-pr-labels: pinned,security,draft
+          exempt-issue-labels: pinned,security,bug
           operations-per-run: 30

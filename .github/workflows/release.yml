@@ -1,552 +1,93 @@
-name: Release Automation
+name: Release
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g., 1.2.0)'
-        required: true
-        type: string
-      release_type:
-        description: 'Release type'
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - custom
-      prerelease:
-        description: 'Mark as pre-release'
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
-  issues: read
-  packages: write
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  prepare-release:
+  release:
     name: Prepare Release
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      changelog: ${{ steps.changelog.outputs.changelog }}
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Create Release
+        id: release
+        uses: googleapis/release-please-action@v4
         with:
-          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: main
 
-      - name: Setup Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Determine version
-        id: version
-        run: |
-          if [ "${{ inputs.release_type }}" = "custom" ]; then
-            VERSION="${{ inputs.version }}"
-          else
-            # Get current version from package.json
-            CURRENT_VERSION=$(grep '"version"' package.json | cut -d'"' -f4)
-
-            # Parse version components
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-
-            # Increment based on release type
-            case "${{ inputs.release_type }}" in
-              major)
-                MAJOR=$((MAJOR + 1))
-                MINOR=0
-                PATCH=0
-                ;;
-              minor)
-                MINOR=$((MINOR + 1))
-                PATCH=0
-                ;;
-              patch)
-                PATCH=$((PATCH + 1))
-                ;;
-            esac
-
-            VERSION="$MAJOR.$MINOR.$PATCH"
-          fi
-
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
-
-      - name: Update version in package.json
-        run: |
-          # Update package.json version
-          sed -i "s/\"version\": \".*\"/\"version\": \"${{ steps.version.outputs.version }}\"/" package.json
-
-          # Commit version bump
-          git add package.json
-          git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
-          git push
-
-      - name: Generate changelog
-        id: changelog
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-
-          # Create changelog file
-          cat > CHANGELOG_TEMP.md << 'EOF'
-          # 🎉 Release v${{ steps.version.outputs.version }}
-
-          > Released on $(date +"%B %d, %Y")
-
-          ## ✨ Highlights
-
-          EOF
-
-          # Get commit messages and categorize them
-          if [ -z "$PREVIOUS_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"%H|%s|%an|%ae" --no-merges)
-          else
-            COMMITS=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"%H|%s|%an|%ae" --no-merges)
-          fi
-
-          # Initialize arrays for different categories
-          declare -A FEATURES
-          declare -A FIXES
-          declare -A DOCS
-          declare -A CHORES
-          declare -A BREAKING
-          declare -A AUTHORS
-          declare -A FIRST_TIME_CONTRIBUTORS
-
-          # Process commits
-          while IFS='|' read -r HASH MESSAGE AUTHOR EMAIL; do
-            # Track authors
-            AUTHORS["$AUTHOR"]="$EMAIL"
-
-            # Check if this is author's first contribution
-            AUTHOR_COMMITS=$(git log --author="$EMAIL" --oneline | wc -l)
-            if [ "$AUTHOR_COMMITS" -eq 1 ]; then
-              FIRST_TIME_CONTRIBUTORS["$AUTHOR"]="$EMAIL"
-            fi
-
-            # Categorize commits
-            if [[ "$MESSAGE" =~ ^feat(\(.*\))?!?:(.*)$ ]]; then
-              FEATURES["$HASH"]="$MESSAGE|$AUTHOR"
-              if [[ "$MESSAGE" =~ ! ]]; then
-                BREAKING["$HASH"]="$MESSAGE|$AUTHOR"
-              fi
-            elif [[ "$MESSAGE" =~ ^fix(\(.*\))?:(.*)$ ]]; then
-              FIXES["$HASH"]="$MESSAGE|$AUTHOR"
-            elif [[ "$MESSAGE" =~ ^docs(\(.*\))?:(.*)$ ]]; then
-              DOCS["$HASH"]="$MESSAGE|$AUTHOR"
-            elif [[ "$MESSAGE" =~ ^chore(\(.*\))?:(.*)$ ]]; then
-              CHORES["$HASH"]="$MESSAGE|$AUTHOR"
-            elif [[ "$MESSAGE" =~ BREAKING ]]; then
-              BREAKING["$HASH"]="$MESSAGE|$AUTHOR"
-            else
-              # Default to chore
-              CHORES["$HASH"]="$MESSAGE|$AUTHOR"
-            fi
-          done <<< "$COMMITS"
-
-          # Add highlights (top 3 features or all if less)
-          if [ ${#FEATURES[@]} -gt 0 ]; then
-            echo "### Key Features" >> CHANGELOG_TEMP.md
-            COUNT=0
-            for HASH in "${!FEATURES[@]}"; do
-              IFS='|' read -r MSG AUTHOR <<< "${FEATURES[$HASH]}"
-              CLEAN_MSG=$(echo "$MSG" | sed 's/^feat(\(.*\))?!?:\s*//')
-              echo "- 🚀 $CLEAN_MSG" >> CHANGELOG_TEMP.md
-              COUNT=$((COUNT + 1))
-              if [ $COUNT -eq 3 ]; then break; fi
-            done
-            echo "" >> CHANGELOG_TEMP.md
-          fi
-
-          # Add breaking changes warning
-          if [ ${#BREAKING[@]} -gt 0 ]; then
-            echo "## ⚠️ BREAKING CHANGES" >> CHANGELOG_TEMP.md
-            echo "" >> CHANGELOG_TEMP.md
-            for HASH in "${!BREAKING[@]}"; do
-              IFS='|' read -r MSG AUTHOR <<< "${BREAKING[$HASH]}"
-              CLEAN_MSG=$(echo "$MSG" | sed 's/^.*:\s*//')
-              SHORT_HASH=$(echo "$HASH" | cut -c1-7)
-              echo "- $CLEAN_MSG ([${SHORT_HASH}](https://github.com/${{ github.repository }}/commit/${HASH})) by @${AUTHOR}" >> CHANGELOG_TEMP.md
-            done
-            echo "" >> CHANGELOG_TEMP.md
-          fi
-
-          # Add categorized changes
-          echo "## 🎯 What's Changed" >> CHANGELOG_TEMP.md
-          echo "" >> CHANGELOG_TEMP.md
-
-          # Features
-          if [ ${#FEATURES[@]} -gt 0 ]; then
-            echo "### 🚀 Features" >> CHANGELOG_TEMP.md
-            for HASH in "${!FEATURES[@]}"; do
-              IFS='|' read -r MSG AUTHOR <<< "${FEATURES[$HASH]}"
-              CLEAN_MSG=$(echo "$MSG" | sed 's/^feat(\(.*\))?!?:\s*//')
-              SHORT_HASH=$(echo "$HASH" | cut -c1-7)
-              echo "- $CLEAN_MSG ([${SHORT_HASH}](https://github.com/${{ github.repository }}/commit/${HASH})) @${AUTHOR}" >> CHANGELOG_TEMP.md
-            done
-            echo "" >> CHANGELOG_TEMP.md
-          fi
-
-          # Bug Fixes
-          if [ ${#FIXES[@]} -gt 0 ]; then
-            echo "### 🐛 Bug Fixes" >> CHANGELOG_TEMP.md
-            for HASH in "${!FIXES[@]}"; do
-              IFS='|' read -r MSG AUTHOR <<< "${FIXES[$HASH]}"
-              CLEAN_MSG=$(echo "$MSG" | sed 's/^fix(\(.*\))?:\s*//')
-              SHORT_HASH=$(echo "$HASH" | cut -c1-7)
-              echo "- $CLEAN_MSG ([${SHORT_HASH}](https://github.com/${{ github.repository }}/commit/${HASH})) @${AUTHOR}" >> CHANGELOG_TEMP.md
-            done
-            echo "" >> CHANGELOG_TEMP.md
-          fi
-
-          # Documentation
-          if [ ${#DOCS[@]} -gt 0 ]; then
-            echo "### 📚 Documentation" >> CHANGELOG_TEMP.md
-            for HASH in "${!DOCS[@]}"; do
-              IFS='|' read -r MSG AUTHOR <<< "${DOCS[$HASH]}"
-              CLEAN_MSG=$(echo "$MSG" | sed 's/^docs(\(.*\))?:\s*//')
-              SHORT_HASH=$(echo "$HASH" | cut -c1-7)
-              echo "- $CLEAN_MSG ([${SHORT_HASH}](https://github.com/${{ github.repository }}/commit/${HASH})) @${AUTHOR}" >> CHANGELOG_TEMP.md
-            done
-            echo "" >> CHANGELOG_TEMP.md
-          fi
-
-          # First Time Contributors
-          if [ ${#FIRST_TIME_CONTRIBUTORS[@]} -gt 0 ]; then
-            echo "## 🌟 First Time Contributors" >> CHANGELOG_TEMP.md
-            echo "" >> CHANGELOG_TEMP.md
-            echo "We'd like to welcome the following contributors who made their first contribution! 🎊" >> CHANGELOG_TEMP.md
-            echo "" >> CHANGELOG_TEMP.md
-            for AUTHOR in "${!FIRST_TIME_CONTRIBUTORS[@]}"; do
-              echo "- @${AUTHOR}" >> CHANGELOG_TEMP.md
-            done
-            echo "" >> CHANGELOG_TEMP.md
-          fi
-
-          # Statistics
-          TOTAL_COMMITS=$(echo "$COMMITS" | wc -l)
-          TOTAL_AUTHORS=${#AUTHORS[@]}
-          FILES_CHANGED=$(git diff ${PREVIOUS_TAG}..HEAD --name-only 2>/dev/null | wc -l || echo "N/A")
-
-          echo "## 📊 Release Stats" >> CHANGELOG_TEMP.md
-          echo "" >> CHANGELOG_TEMP.md
-          echo "- 📝 **$TOTAL_COMMITS** commits" >> CHANGELOG_TEMP.md
-          echo "- 👥 **$TOTAL_AUTHORS** contributors" >> CHANGELOG_TEMP.md
-          echo "- 📁 **$FILES_CHANGED** files changed" >> CHANGELOG_TEMP.md
-          echo "" >> CHANGELOG_TEMP.md
-
-          # Save changelog for output
-          CHANGELOG=$(cat CHANGELOG_TEMP.md)
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-  build-release:
-    name: Build Release Artifacts
-    needs: prepare-release
-    uses: ./.github/workflows/build-workflow.yml
+  build:
+    name: Build Binaries
+    if: needs.release.outputs.release_created == 'true'
+    needs: release
+    uses: ./.github/workflows/build.yml
     secrets: inherit
+    with:
+      mode: all
 
-  build-docker:
-    name: Build Docker Images
-    needs: [prepare-release, build-release]
+  docker:
+    name: Publish Docker Images
+    if: needs.release.outputs.release_created == 'true'
+    needs: release
+    uses: ./.github/workflows/docker.yml
+    secrets: inherit
+    with:
+      tag_name: ${{ needs.release.outputs.tag_name }}
+      version: ${{ needs.release.outputs.version }}
+
+  publish:
+    name: Publish Release Assets
+    if: needs.release.outputs.release_created == 'true'
+    needs:
+      - release
+      - build
+      - docker
     runs-on: ubuntu-latest
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
-    
-    strategy:
-      matrix:
-        include:
-          - platform: linux/amd64
-            arch: x64
-          - platform: linux/arm64
-            arch: arm64
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download binary artifact
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: mcp-docsrs-linux-${{ matrix.arch }}-musl
-          path: dist/
-
-      - name: Make binary executable
-        run: chmod +x dist/mcp-docsrs-linux-${{ matrix.arch }}-musl
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ needs.prepare-release.outputs.version }}
-            type=raw,value=${{ matrix.arch }}
-            type=raw,value=latest,enable=${{ matrix.arch == 'x64' }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: ${{ matrix.platform }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            BINARY_NAME=mcp-docsrs-linux-${{ matrix.arch }}-musl
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  create-docker-manifest:
-    name: Create Docker Multi-Arch Manifest
-    needs: [prepare-release, build-docker]
-    runs-on: ubuntu-latest
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
-
-    steps:
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create and push manifest
-        run: |
-          VERSION="${{ needs.prepare-release.outputs.version }}"
-          
-          # Create version-specific manifest
-          docker manifest create ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:x64 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64
-          
-          # Create latest manifest
-          docker manifest create ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:x64 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64
-          
-          # Annotate manifests with architecture info
-          docker manifest annotate ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:x64 --arch amd64
-          docker manifest annotate ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION} \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64 --arch arm64
-          
-          docker manifest annotate ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:x64 --arch amd64
-          docker manifest annotate ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64 --arch arm64
-          
-          # Push manifests
-          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION}
-          docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
-  create-release:
-    name: Create GitHub Release
-    needs: [prepare-release, build-release, create-docker-manifest]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts/
+          path: artifacts
+          pattern: mcp-docsrs-*
+          merge-multiple: false
 
       - name: Create checksums
         run: |
           cd artifacts
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > checksums.txt
 
-          # Create checksums file
-          echo "## 📝 SHA256 Checksums" > checksums.txt
-          echo "" >> checksums.txt
-          echo '```' >> checksums.txt
-
-          # Calculate checksums for each artifact
-          for dir in mcp-docsrs-*/; do
-            if [ -d "$dir" ]; then
-              cd "$dir"
-              for file in mcp-docsrs-*; do
-                if [ -f "$file" ]; then
-                  SHA256=$(sha256sum "$file" | cut -d' ' -f1)
-                  echo "$file: $SHA256" >> ../checksums.txt
-                fi
-              done
-              cd ..
-            fi
-          done
-
-          echo '```' >> checksums.txt
-
-      - name: Prepare release body
+      - name: Upload assets to GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ needs.prepare-release.outputs.version }}"
+          mapfile -t files < <(find artifacts -type f)
+          gh release upload "${{ needs.release.outputs.tag_name }}" "${files[@]}" --clobber
 
-          cat > release-body.md << 'EOF'
-          ${{ needs.prepare-release.outputs.changelog }}
-
-          ## 📥 Downloads
-
-          | Platform | Architecture | Type | Download |
-          |----------|--------------|------|----------|
-          | 🐧 Linux | x64 | GLIBC | [mcp-docsrs-linux-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64) |
-          | 🐧 Linux | ARM64 | GLIBC | [mcp-docsrs-linux-arm64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-arm64) |
-          | 🐧 Linux | x64 | MUSL | [mcp-docsrs-linux-x64-musl](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64-musl) |
-          | 🐧 Linux | ARM64 | MUSL | [mcp-docsrs-linux-arm64-musl](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-arm64-musl) |
-          | 🍎 macOS | x64 | Intel | [mcp-docsrs-darwin-x64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-x64) |
-          | 🍎 macOS | ARM64 | Apple Silicon | [mcp-docsrs-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-arm64) |
-          | 🪟 Windows | x64 | - | [mcp-docsrs-windows-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-windows-x64.exe) |
-
-          ### 🐳 Docker Images
-
-          Multi-architecture Docker images are available on GitHub Container Registry:
-
-          ```bash
-          # Pull the latest image (multi-arch: x64 and ARM64)
-          docker pull ghcr.io/${{ github.repository }}:latest
-          
-          # Or use a specific version
-          docker pull ghcr.io/${{ github.repository }}:${VERSION}
-          
-          # Run the server
-          docker run --rm -i ghcr.io/${{ github.repository }}:latest
-          ```
-
-          Available tags:
-          - `latest` - Latest stable release (multi-arch)
-          - `${VERSION}` - This specific version (multi-arch)
-          - `x64` - Latest x64/AMD64 build
-          - `arm64` - Latest ARM64 build
-
-          ### 🚀 Quick Install
-
-          #### Linux (GLIBC - Ubuntu, Debian, Fedora, etc.)
-          ```bash
-          # x64/AMD64
-          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64 -o mcp-docsrs
-          # ARM64 (AWS Graviton, Raspberry Pi 4+)
-          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-arm64 -o mcp-docsrs
-          
-          chmod +x mcp-docsrs
-          ./mcp-docsrs --version
-          ```
-
-          #### Linux (MUSL - Alpine, Docker, Static)
-          ```bash
-          # x64/AMD64
-          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-x64-musl -o mcp-docsrs
-          # ARM64
-          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-linux-arm64-musl -o mcp-docsrs
-          
-          chmod +x mcp-docsrs
-          ./mcp-docsrs --version
-          ```
-
-          #### macOS
-          ```bash
-          # Intel Macs
-          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-x64 -o mcp-docsrs
-          # Apple Silicon (M1/M2/M3)
-          curl -L https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-darwin-arm64 -o mcp-docsrs
-          
-          chmod +x mcp-docsrs
-          ./mcp-docsrs --version
-          ```
-
-          #### Windows
-          ```powershell
-          # Download using PowerShell
-          Invoke-WebRequest -Uri "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/mcp-docsrs-windows-x64.exe" -OutFile "mcp-docsrs.exe"
-          .\mcp-docsrs.exe --version
-          ```
-
-          EOF
-
-          # Append checksums
-          cat artifacts/checksums.txt >> release-body.md
-
-          # Add footer
-          cat >> release-body.md << 'EOF'
-
-          ---
-
-          ### 🤝 Contributing
-
-          Contributions are welcome! Please check our [contributing guidelines](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md) and feel free to submit issues or pull requests.
-
-          ### 📖 Documentation
-
-          For detailed documentation, visit our [GitHub repository](https://github.com/${{ github.repository }}).
-
-          EOF
-
-      - name: Create release tag
+      - name: Write release summary
         run: |
-          git tag -a "v${{ needs.prepare-release.outputs.version }}" -m "Release v${{ needs.prepare-release.outputs.version }}"
-          git push origin "v${{ needs.prepare-release.outputs.version }}"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ needs.prepare-release.outputs.version }}
-          name: Release v${{ needs.prepare-release.outputs.version }}
-          body_path: release-body.md
-          draft: false
-          prerelease: ${{ inputs.prerelease }}
-          files: |
-            artifacts/mcp-docsrs-linux-x64/mcp-docsrs-linux-x64
-            artifacts/mcp-docsrs-linux-arm64/mcp-docsrs-linux-arm64
-            artifacts/mcp-docsrs-linux-x64-musl/mcp-docsrs-linux-x64-musl
-            artifacts/mcp-docsrs-linux-arm64-musl/mcp-docsrs-linux-arm64-musl
-            artifacts/mcp-docsrs-darwin-x64/mcp-docsrs-darwin-x64
-            artifacts/mcp-docsrs-darwin-arm64/mcp-docsrs-darwin-arm64
-            artifacts/mcp-docsrs-windows-x64/mcp-docsrs-windows-x64.exe
-
-      - name: Post-release summary
-        run: |
-          echo "## 🎉 Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version**: v${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Release URL**: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🐳 Docker Images" >> $GITHUB_STEP_SUMMARY
-          echo "Multi-arch images published to GitHub Container Registry:" >> $GITHUB_STEP_SUMMARY
-          echo "- `ghcr.io/${{ github.repository }}:latest`" >> $GITHUB_STEP_SUMMARY
-          echo "- `ghcr.io/${{ github.repository }}:${{ needs.prepare-release.outputs.version }}`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Review the release notes" >> $GITHUB_STEP_SUMMARY
-          echo "2. Test the released binaries and Docker images" >> $GITHUB_STEP_SUMMARY
-          echo "3. Announce the release" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Release Published"
+            echo ""
+            echo "- Tag: \`${{ needs.release.outputs.tag_name }}\`"
+            echo "- Docker image: \`ghcr.io/${{ github.repository }}:${{ needs.release.outputs.tag_name }}\`"
+            echo "- Docker image: \`ghcr.io/${{ github.repository }}:latest\`"
+          } >> "$GITHUB_STEP_SUMMARY"

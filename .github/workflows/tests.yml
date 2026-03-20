@@ -1,71 +1,48 @@
-name: Test Suite
+name: Tests
 
 on:
   workflow_call:
-    inputs:
-      debug_enabled:
-        description: 'Enable debug logging'
-        required: false
-        default: false
-        type: boolean
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  BUN_VERSION: '1.2.14'
+  BUN_VERSION: "1.3.11"
 
 jobs:
   test:
-    name: Test on ${{ matrix.os }} (Bun ${{ matrix.bun-version }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        bun-version: ['1.2.14', 'latest']
+    name: Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ matrix.bun-version }}
-          no-cache: ${{ runner.os == 'Windows' }}  # Disable cache on Windows due to issues
+          bun-version: ${{ env.BUN_VERSION }}
 
-      - name: Cache dependencies
+      - name: Cache Bun install cache
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.bun/install/cache
-            node_modules
-          key: ${{ runner.os }}-bun-${{ matrix.bun-version }}-${{ hashFiles('**/bun.lock') }}
+          path: ~/.bun/install/cache
+          key: ubuntu-bun-test-${{ env.BUN_VERSION }}-${{ hashFiles('bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-bun-${{ matrix.bun-version }}-
-            ${{ runner.os }}-bun-
+            ubuntu-bun-test-${{ env.BUN_VERSION }}-
+            ubuntu-bun-test-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Run linter
-        run: bun run lint
-        if: matrix.os == 'ubuntu-latest' && matrix.bun-version == '1.2.14'
-
-      - name: Run type check
-        run: bun run typecheck
-
-      - name: Run tests
-        run: bun test --coverage
+      - name: Test
+        run: bun test src
         env:
-          LOG_EXPECTED_ERRORS: ${{ inputs.debug_enabled }}
-
-      - name: Upload coverage reports
-        if: matrix.os == 'ubuntu-latest' && matrix.bun-version == '1.2.14'
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
+          BUN_ENV: test
+          LOG_EXPECTED_ERRORS: "false"

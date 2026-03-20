@@ -1,16 +1,16 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { resolveConfig } from "./config/index.ts"
-import type { ServerConfigInput } from "./config/types.ts"
-import { createDocsFetcher } from "./docs/index.ts"
-import { ErrorLogger } from "./errors.ts"
-import { APP_NAME, APP_VERSION } from "./meta.ts"
-import { registerPrompts } from "./prompts/index.ts"
-import { registerResources } from "./resources/index.ts"
-import type { RustDocsServer } from "./server/types.ts"
-import { registerTools } from "./tools/register.ts"
+import { resolveConfig } from "../config/index.ts"
+import type { ServerConfigInput } from "../config/types.ts"
+import { createDocsFetcher } from "../docs/index.ts"
+import { ErrorLogger } from "../errors.ts"
+import { APP_NAME, APP_VERSION } from "../meta.ts"
+import { registerPrompts } from "../prompts/index.ts"
+import { registerResources } from "../resources/index.ts"
+import { registerTools } from "../tools/register.ts"
+import type { RustDocsServer } from "./types.ts"
 
-const createRustDocsServer = (configInput: ServerConfigInput = {}): RustDocsServer => {
+const createServer = (configInput: ServerConfigInput = {}): RustDocsServer => {
 	const config = resolveConfig(configInput)
 	const server = new McpServer({
 		name: APP_NAME,
@@ -48,4 +48,4 @@ const createRustDocsServer = (configInput: ServerConfigInput = {}): RustDocsServ
 	}
 }
 
-export { createRustDocsServer }
+export { createServer }

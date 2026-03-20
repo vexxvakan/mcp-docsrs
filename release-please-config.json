@@ -1,0 +1,14 @@
+{
+	"$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+	"always-update": true,
+	"changelog-type": "github",
+	"commit-batch-size": 25,
+	"force-tag-creation": true,
+	"include-component-in-tag": false,
+	"packages": {
+		".": {
+			"initial-version": "0.0.1",
+			"release-type": "node"
+		}
+	}
+}

@@ -1,54 +1,55 @@
 {
-    "name": "mcp-docsrs",
-    "version": "1.0.0",
-    "description": "MCP server for fetching Rust crate documentation via docs.rs JSON API",
-    "type": "module",
-    "main": "./dist/mcp-docsrs",
-    "bin": {
-        "mcp-docsrs": "./src/cli.ts"
-    },
-    "scripts": {
-        "start": "./dist/mcp-docsrs",
-        "dev": "bun run src/cli.ts",
-        "build": "bun build ./src/cli.ts --compile --minify --sourcemap --outfile dist/mcp-docsrs",
-        "build:bytecode": "bun build ./src/cli.ts --compile --minify --sourcemap --bytecode --outfile dist/mcp-docsrs",
-        "build:all": "bun run build:linux-x64 && bun run build:linux-arm64 && bun run build:linux-x64-musl && bun run build:linux-arm64-musl && bun run build:darwin-x64 && bun run build:darwin-arm64 && bun run build:windows-x64",
-        "build:linux-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-x64 --outfile dist/mcp-docsrs-linux-x64",
-        "build:linux-arm64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-arm64 --outfile dist/mcp-docsrs-linux-arm64",
-        "build:linux-x64-musl": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-x64-musl --outfile dist/mcp-docsrs-linux-x64-musl",
-        "build:linux-arm64-musl": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-arm64-musl --outfile dist/mcp-docsrs-linux-arm64-musl",
-        "build:darwin-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-darwin-x64 --outfile dist/mcp-docsrs-darwin-x64",
-        "build:darwin-arm64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-darwin-arm64 --outfile dist/mcp-docsrs-darwin-arm64",
-        "build:windows-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-windows-x64 --outfile dist/mcp-docsrs-windows-x64.exe",
-        "check": "tsc --noEmit",
-        "inspect": "mcp-inspector --config mcp-inspector.config.json --server mcp-docsrs",
-        "lint": "biome check .",
-        "lint:fix": "biome check . --fix",
-        "lint:fixunsafe": "biome check . --fix --unsafe",
-        "test": "BUN_ENV=test bun test test/unit"
-    },
-    "keywords": [
-        "mcp",
-        "rust",
-        "docs",
-        "documentation",
-        "bun"
-    ],
-    "author": "Marius Modlich <hi@vexx.sh>",
-    "license": "Apache-2.0",
-    "dependencies": {
-        "@modelcontextprotocol/sdk": "1.27.1",
-        "fzstd": "0.1.1",
-        "neverthrow": "^8.2.0",
-        "zod": "4.3.6"
-    },
-    "devDependencies": {
-        "@biomejs/biome": "2.4.8",
-        "@modelcontextprotocol/inspector": "0.21.1",
-        "@types/bun": "1.3.11",
-        "typescript": "5.9.3"
-    },
-    "engines": {
-        "bun": "1.3.11"
-    }
+	"author": "Marius Modlich <hi@vexx.sh>",
+	"bin": {
+		"mcp-docsrs": "./src/cli.ts"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "1.27.1",
+		"fzstd": "0.1.1",
+		"neverthrow": "^8.2.0",
+		"zod": "4.3.6"
+	},
+	"description": "MCP server for fetching Rust crate documentation via docs.rs RustDoc API",
+	"devDependencies": {
+		"@biomejs/biome": "2.4.8",
+		"@modelcontextprotocol/inspector": "0.21.1",
+		"@types/bun": "1.3.11",
+		"release-please": "17.3.0",
+		"typescript": "5.9.3"
+	},
+	"engines": {
+		"bun": "1.3.11"
+	},
+	"keywords": [
+		"mcp",
+		"rust",
+		"docs",
+		"documentation",
+		"bun"
+	],
+	"license": "Apache-2.0",
+	"main": "./dist/mcp-docsrs",
+	"name": "mcp-docsrs",
+	"scripts": {
+		"build": "bun build ./src/cli.ts --compile --minify --sourcemap --outfile dist/mcp-docsrs",
+		"build:all": "bun run build:linux-x64 && bun run build:linux-arm64 && bun run build:linux-x64-musl && bun run build:linux-arm64-musl && bun run build:darwin-x64 && bun run build:darwin-arm64 && bun run build:windows-x64",
+		"build:bytecode": "bun build ./src/cli.ts --compile --minify --sourcemap --bytecode --outfile dist/mcp-docsrs",
+		"build:darwin-arm64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-darwin-arm64 --outfile dist/mcp-docsrs-darwin-arm64",
+		"build:darwin-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-darwin-x64 --outfile dist/mcp-docsrs-darwin-x64",
+		"build:linux-arm64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-arm64 --outfile dist/mcp-docsrs-linux-arm64",
+		"build:linux-arm64-musl": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-arm64-musl --outfile dist/mcp-docsrs-linux-arm64-musl",
+		"build:linux-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-x64 --outfile dist/mcp-docsrs-linux-x64",
+		"build:linux-x64-musl": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-x64-musl --outfile dist/mcp-docsrs-linux-x64-musl",
+		"build:windows-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-windows-x64 --outfile dist/mcp-docsrs-windows-x64.exe",
+		"check": "tsc --noEmit",
+		"dev": "bun run src/cli.ts",
+		"inspect": "mcp-inspector --config mcp-inspector.config.json --server mcp-docsrs",
+		"lint": "biome check .",
+		"lint:fix": "biome check . --fix",
+		"lint:fixunsafe": "biome check . --fix --unsafe",
+		"start": "./dist/mcp-docsrs",
+		"test": "BUN_ENV=test bun test src"
+	},
+	"type": "module",
+	"version": "0.0.1"
 }
