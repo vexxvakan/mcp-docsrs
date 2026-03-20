@@ -4,9 +4,14 @@ import { ErrorLogger } from "../errors.ts"
 import { parseCrateInfo } from "../rustdoc/index.ts"
 import { suggestSimilarCrates } from "./search-crates.ts"
 import { createErrorResult, createTextResult, toErrorMessage } from "./shared.ts"
-import type { LookupCrateArgs, ToolHandler } from "./types.ts"
+import type {
+	LookupCrateArgs,
+	LookupCrateInputSchema,
+	ToolDefinition,
+	ToolHandler
+} from "./types.ts"
 
-const lookupCrateInputSchema = {
+const lookupCrateInputSchema: LookupCrateInputSchema = {
 	crateName: z.string().describe("Name of the Rust crate to lookup documentation for"),
 	formatVersion: z.number().optional().describe("Rustdoc JSON format version"),
 	target: z.string().optional().describe('Target platform, for example "i686-pc-windows-msvc"'),
@@ -16,7 +21,7 @@ const lookupCrateInputSchema = {
 		.describe('Specific version or semver range, for example "1.0.0" or "~4"')
 }
 
-const lookupCrateTool = {
+const lookupCrateTool: ToolDefinition<"lookup_crate", LookupCrateInputSchema> = {
 	annotations: {
 		idempotentHint: true,
 		openWorldHint: true,
@@ -25,7 +30,7 @@ const lookupCrateTool = {
 	},
 	description: "Lookup documentation for a Rust crate from docs.rs",
 	inputSchema: lookupCrateInputSchema,
-	name: "lookup_crate_docs"
+	name: "lookup_crate"
 }
 
 const formatSuggestionMessage = async (crateName: string, message: string) => {

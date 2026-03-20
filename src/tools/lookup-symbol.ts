@@ -3,31 +3,36 @@ import type { DocsFetcher } from "../docs/types.ts"
 import { ErrorLogger, ItemNotFoundError } from "../errors.ts"
 import { findItem } from "../rustdoc/index.ts"
 import { createErrorResult, createTextResult, toErrorMessage } from "./shared.ts"
-import type { LookupItemArgs, ToolHandler } from "./types.ts"
+import type {
+	LookupSymbolArgs,
+	LookupSymbolInputSchema,
+	ToolDefinition,
+	ToolHandler
+} from "./types.ts"
 
-const lookupItemInputSchema = {
+const lookupSymbolInputSchema: LookupSymbolInputSchema = {
 	crateName: z.string().describe("Name of the Rust crate"),
-	itemPath: z
+	symbolPath: z
 		.string()
-		.describe('Path to a specific item, for example "struct.Runtime" or "fn.spawn"'),
+		.describe('Path to a specific Symbol, for example "struct.Runtime" or "fn.spawn"'),
 	target: z.string().optional().describe("Target platform"),
 	version: z.string().optional().describe("Specific version or semver range")
 }
 
-const lookupItemTool = {
+const lookupSymbolTool: ToolDefinition<"lookup_symbol", LookupSymbolInputSchema> = {
 	annotations: {
 		idempotentHint: true,
 		openWorldHint: true,
 		readOnlyHint: true,
-		title: "Lookup Rust Item Documentation"
+		title: "Lookup Rust symbol documentation"
 	},
-	description: "Lookup documentation for a specific item in a Rust crate",
-	inputSchema: lookupItemInputSchema,
-	name: "lookup_item_docs"
+	description: "Lookup documentation for a specific symbol in a Rust crate",
+	inputSchema: lookupSymbolInputSchema,
+	name: "lookup_symbol"
 }
 
-const createLookupItemHandler =
-	(fetcher: DocsFetcher): ToolHandler<LookupItemArgs> =>
+const createLookupSymbolHandler =
+	(fetcher: DocsFetcher): ToolHandler<LookupSymbolArgs> =>
 	async (args) => {
 		try {
 			const { data, fromCache } = await fetcher.fetchCrateJson(
@@ -38,12 +43,12 @@ const createLookupItemHandler =
 			ErrorLogger.logInfo("Item documentation retrieved", {
 				crateName: args.crateName,
 				fromCache,
-				itemPath: args.itemPath
+				itemPath: args.symbolPath
 			})
 
-			const content = findItem(data, args.itemPath)
+			const content = findItem(data, args.symbolPath)
 			if (!content) {
-				throw new ItemNotFoundError(args.crateName, args.itemPath)
+				throw new ItemNotFoundError(args.crateName, args.symbolPath)
 			}
 
 			return createTextResult(content)
@@ -52,4 +57,4 @@ const createLookupItemHandler =
 		}
 	}
 
-export { createLookupItemHandler, lookupItemInputSchema, lookupItemTool }
+export { createLookupSymbolHandler, lookupSymbolInputSchema, lookupSymbolTool }

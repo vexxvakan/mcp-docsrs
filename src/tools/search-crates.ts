@@ -3,7 +3,12 @@ import { z } from "zod"
 import { ErrorLogger, NetworkError } from "../errors.ts"
 import { APP_USER_AGENT } from "../meta.ts"
 import { createErrorResult, createTextResult, toErrorMessage } from "./shared.ts"
-import type { SearchCratesArgs, ToolHandler } from "./types.ts"
+import type {
+	SearchCratesArgs,
+	SearchCratesInputSchema,
+	ToolDefinition,
+	ToolHandler
+} from "./types.ts"
 
 const MILLISECONDS_PER_SECOND = 1000
 const SEARCH_TIMEOUT_SECONDS = 5
@@ -28,7 +33,7 @@ type CratesIoSearchResponse = {
 	}
 }
 
-const searchCratesInputSchema = {
+const searchCratesInputSchema: SearchCratesInputSchema = {
 	limit: z
 		.number()
 		.optional()
@@ -37,7 +42,7 @@ const searchCratesInputSchema = {
 	query: z.string().describe("Search query for crate names (supports partial matches)")
 }
 
-const searchCratesTool = {
+const searchCratesTool: ToolDefinition<"search_crates", SearchCratesInputSchema> = {
 	annotations: {
 		idempotentHint: true,
 		openWorldHint: true,
