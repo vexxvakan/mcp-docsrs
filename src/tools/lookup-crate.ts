@@ -1,7 +1,6 @@
 import { z } from "zod"
 import type { DocsFetcher } from "../docs/types.ts"
 import { ErrorLogger } from "../errors.ts"
-import { parseCrateInfo } from "../rustdoc/index.ts"
 import { suggestSimilarCrates } from "./search-crates.ts"
 import { createErrorResult, createTextResult, toErrorMessage } from "./shared.ts"
 import type {
@@ -47,17 +46,12 @@ const createLookupCrateHandler =
 	(fetcher: DocsFetcher): ToolHandler<LookupCrateArgs> =>
 	async (args) => {
 		try {
-			const { data, fromCache } = await fetcher.fetchCrateJson(
-				args.crateName,
-				args.version,
-				args.target,
-				args.formatVersion
-			)
+			const { content, fromCache } = await fetcher.lookupCrate(args)
 			ErrorLogger.logInfo("Crate documentation retrieved", {
 				crateName: args.crateName,
 				fromCache
 			})
-			return createTextResult(parseCrateInfo(data))
+			return createTextResult(content)
 		} catch (error) {
 			const message = await formatSuggestionMessage(args.crateName, toErrorMessage(error))
 			return createErrorResult(`Error: ${message}`)

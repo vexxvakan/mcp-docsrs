@@ -1,5 +1,3 @@
-# Build the target-specific MUSL binary inside Docker so release images do not
-# depend on pre-staged workflow artifacts.
 FROM oven/bun:1.3.11-alpine AS build
 
 WORKDIR /app

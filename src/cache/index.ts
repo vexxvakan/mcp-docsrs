@@ -2,7 +2,8 @@ import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
 import { CacheError, ErrorLogger } from "../errors.ts"
-import type { CacheStore } from "./types.ts"
+import type { JsonValue } from "../shared/types.ts"
+import type { CacheEntry, CacheStatements, CacheStore } from "./types.ts"
 
 const MEMORY_DB = ":memory:"
 
@@ -53,16 +54,7 @@ const cleanupExpired = (db: Database) => {
 	])
 }
 
-const parseStoredValue = <T>(value: string) => JSON.parse(value) as T
-
-type CacheStatements = {
-	clearStmt: ReturnType<Database["prepare"]>
-	countStmt: ReturnType<Database["prepare"]>
-	deleteStmt: ReturnType<Database["prepare"]>
-	getStmt: ReturnType<Database["prepare"]>
-	oldestStmt: ReturnType<Database["prepare"]>
-	setStmt: ReturnType<Database["prepare"]>
-}
+const parseStoredValue = (value: string) => JSON.parse(value) as JsonValue
 
 const createStatements = (db: Database): CacheStatements => ({
 	clearStmt: db.prepare("DELETE FROM cache"),
@@ -77,15 +69,11 @@ const createStatements = (db: Database): CacheStatements => ({
 })
 
 const createGetWithMetadata =
-	<T>(db: Database, statements: CacheStatements) =>
-	(key: string) => {
+	(db: Database, statements: CacheStatements) =>
+	<T>(key: string): CacheEntry<T> => {
 		try {
 			cleanupExpired(db)
-			const result = statements.getStmt.get(key) as {
-				data: string
-				timestamp: number
-				ttl: number
-			} | null
+			const result = statements.getStmt.get(key)
 
 			if (!result || Date.now() > result.timestamp + result.ttl) {
 				if (result) {
@@ -99,7 +87,7 @@ const createGetWithMetadata =
 			}
 
 			return {
-				data: parseStoredValue<T>(result.data),
+				data: parseStoredValue(result.data) as T,
 				isHit: true
 			}
 		} catch (error) {
@@ -108,18 +96,12 @@ const createGetWithMetadata =
 	}
 
 const createSet =
-	<T>(statements: CacheStatements, maxSize: number) =>
-	(key: string, value: T, ttl: number) => {
+	(statements: CacheStatements, maxSize: number) =>
+	(key: string, value: JsonValue, ttl: number) => {
 		try {
-			const count = (
-				statements.countStmt.get() as {
-					count: number
-				}
-			).count
+			const count = statements.countStmt.get()?.count ?? 0
 			if (count >= maxSize) {
-				const oldest = statements.oldestStmt.get() as {
-					key: string
-				} | null
+				const oldest = statements.oldestStmt.get()
 				if (oldest) {
 					statements.deleteStmt.run(oldest.key)
 				}
@@ -145,11 +127,11 @@ const createClose = (db: Database, statements: CacheStatements) => () => {
 	}
 }
 
-const createCache = <T>(maxSize: number, dbPath?: string): CacheStore<T> => {
+const createCache = (maxSize: number, dbPath?: string): CacheStore => {
 	const normalizedPath = toCacheDbPath(dbPath)
 	const db = createDb(normalizedPath)
 	const statements = createStatements(db)
-	const getWithMetadata = createGetWithMetadata<T>(db, statements)
+	const getWithMetadata = createGetWithMetadata(db, statements)
 
 	ErrorLogger.logInfo("Cache ready", {
 		dbPath: normalizedPath
@@ -159,7 +141,7 @@ const createCache = <T>(maxSize: number, dbPath?: string): CacheStore<T> => {
 		clear: () => statements.clearStmt.run(),
 		close: createClose(db, statements),
 		delete: (key: string) => statements.deleteStmt.run(key),
-		get: (key: string) => getWithMetadata(key).data,
+		get: <T>(key: string) => getWithMetadata<T>(key).data,
 		getWithMetadata,
 		set: createSet(statements, maxSize)
 	}
