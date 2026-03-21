@@ -2,13 +2,6 @@ import type { ZodRawShapeCompat } from "@modelcontextprotocol/sdk/server/zod-com
 import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js"
 import type { ZodBoolean, ZodDefault, ZodNumber, ZodOptional, ZodString } from "zod"
 
-type LookupCrateArgs = {
-	crateName: string
-	formatVersion?: number
-	target?: string
-	version?: string
-}
-
 type LookupSymbolArgs = {
 	crateName: string
 	expandDocs: boolean
@@ -32,13 +25,6 @@ type ToolDefinition<Name extends string, InputSchema extends ToolInputSchema> = 
 	name: Name
 }
 
-type LookupCrateInputSchema = {
-	crateName: ZodString
-	formatVersion: ZodOptional<ZodNumber>
-	target: ZodOptional<ZodString>
-	version: ZodOptional<ZodString>
-}
-
 type LookupSymbolInputSchema = {
 	crateName: ZodString
 	expandDocs: ZodDefault<ZodOptional<ZodBoolean>>
@@ -56,8 +42,6 @@ type SearchCratesInputSchema = {
 type ToolHandler<Args> = (args: Args) => Promise<CallToolResult>
 
 export type {
-	LookupCrateArgs,
-	LookupCrateInputSchema,
 	LookupSymbolArgs,
 	LookupSymbolInputSchema,
 	SearchCratesArgs,

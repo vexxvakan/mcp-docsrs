@@ -1,5 +1,5 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc kind aliases follow upstream snake_case naming
-import { formatCrate } from "./formatters/crate.ts"
+import { formatCrate, formatCrateDocs } from "./formatters/crate.ts"
 import { formatItem } from "./formatters/item.ts"
 import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "./shared.ts"
 import type {
@@ -212,7 +212,12 @@ const lookupCrate = (json: RustdocJson) => {
 	return formatCrate(json, root, buckets)
 }
 
-const lookupItem = (json: RustdocJson, input: DocsSymbolRequest) => {
+const lookupCrateDocs = (json: RustdocJson) => {
+	const root = ensureRoot(json)
+	return formatCrateDocs(root)
+}
+
+const lookupSymbol = (json: RustdocJson, input: DocsSymbolRequest) => {
 	ensureRoot(json)
 	const indexPaths = buildIndexPaths(json)
 	const query = parseSymbolQuery(input)
@@ -245,4 +250,4 @@ const lookupItem = (json: RustdocJson, input: DocsSymbolRequest) => {
 	return formatItem(best.item, best.kind ?? json.paths[best.key]?.kind, query.expandDocs)
 }
 
-export { lookupCrate, lookupItem }
+export { lookupCrate, lookupCrateDocs, lookupSymbol }

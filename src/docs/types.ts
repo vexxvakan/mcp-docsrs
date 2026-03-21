@@ -26,6 +26,10 @@ type DocsFetcher = {
 		content: string
 		fromCache: boolean
 	}>
+	lookupCrateDocs: (input: DocsRequest) => Promise<{
+		content: string
+		fromCache: boolean
+	}>
 	lookupSymbol: (input: DocsSymbolRequest) => Promise<{
 		content: string
 		fromCache: boolean

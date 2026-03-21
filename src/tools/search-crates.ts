@@ -42,16 +42,16 @@ const searchCratesInputSchema: SearchCratesInputSchema = {
 	query: z.string().describe("Search query for crate names (supports partial matches)")
 }
 
-const searchCratesTool: ToolDefinition<"search_crates", SearchCratesInputSchema> = {
+const crateFindTool: ToolDefinition<"crate_find", SearchCratesInputSchema> = {
 	annotations: {
 		idempotentHint: true,
 		openWorldHint: true,
 		readOnlyHint: true,
-		title: "Search Rust Crates"
+		title: "Find Rust Crates"
 	},
 	description: "Search for Rust crates on crates.io with fuzzy and partial name matching",
 	inputSchema: searchCratesInputSchema,
-	name: "search_crates"
+	name: "crate_find"
 }
 
 const fetchSearchResponse = async (query: string, limit: number) => {
@@ -120,8 +120,8 @@ const createSearchCratesHandler = (): ToolHandler<SearchCratesArgs> => async (ar
 }
 
 export {
+	crateFindTool,
 	createSearchCratesHandler,
 	searchCratesInputSchema,
-	searchCratesTool,
 	suggestSimilarCrates
 }

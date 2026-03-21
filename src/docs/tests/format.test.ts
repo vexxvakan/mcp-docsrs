@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc fixtures use upstream snake_case keys
 import { describe, expect, spyOn, test } from "bun:test"
 import { ErrorLogger } from "../../errors.ts"
-import { formatCrate } from "../formatters/crate.ts"
+import { formatCrate, formatCrateDocs } from "../formatters/crate.ts"
 import { formatItem } from "../formatters/item.ts"
 import { ensureRoot } from "../shared.ts"
 import type { RustdocItem } from "../types.ts"
@@ -38,7 +38,6 @@ describe("format", () => {
 			})
 
 			expect(content).toContain("# Crate: demo v1.2.3")
-			expect(content).toContain("## Documentation\nRoot crate docs")
 			expect(content).toContain("## Modules\n- **net**: Networking tools")
 			expect(content).toContain("## Structs\n- **Client**: Demo struct")
 			expect(content).toContain("## Enums\n- **Mode**: Modes for the runtime")
@@ -58,12 +57,19 @@ describe("format", () => {
 			})
 
 			expect(content).toContain("# Crate: demo v1.2.3")
-			expect(content).toContain("## Documentation\nRoot crate docs")
 			expect(content).not.toContain("## Modules")
 			expect(content).not.toContain("## Structs")
 			expect(content).not.toContain("## Enums")
 			expect(content).not.toContain("## Traits")
 			expect(content).not.toContain("## Functions")
+		})
+
+		test("formats crate docs", () => {
+			const json = createQueryJson()
+			const root = ensureRoot(json)
+			const content = formatCrateDocs(root)
+
+			expect(content).toBe("Root crate docs")
 		})
 	})
 
@@ -192,7 +198,7 @@ describe("format", () => {
 			expect(content).toContain("**Deprecated:** yes")
 		})
 
-		test("shows a documentation preview when docs expansion is disabled", () => {
+		test("shows collapsed docs - expandDocs: false", () => {
 			const item = {
 				attrs: [],
 				crate_id: 0,

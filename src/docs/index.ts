@@ -1,6 +1,6 @@
 import { createCache } from "../cache/index.ts"
 import type { ServerConfig } from "../config/types.ts"
-import { lookupCrate, lookupItem } from "./query.ts"
+import { lookupCrate, lookupCrateDocs, lookupSymbol } from "./query.ts"
 import { buildJsonUrl, getCachedDocument, getRemoteDocument } from "./store.ts"
 import type { DocsFetcher, DocsLoadResult, DocsRequest } from "./types.ts"
 
@@ -27,9 +27,16 @@ const createDocsFetcher = (config: ServerConfig): DocsFetcher => {
 				fromCache
 			}
 		},
+		lookupCrateDocs: async (input) => {
+			const { data, fromCache } = await load(input)
+			return {
+				content: lookupCrateDocs(data),
+				fromCache
+			}
+		},
 		lookupSymbol: async (input) => {
 			const { data, fromCache } = await load(input)
-			const content = lookupItem(data, input)
+			const content = lookupSymbol(data, input)
 			return content
 				? {
 						content,
