@@ -8,4 +8,4 @@ dist/
 *.sqlite3
 *.db
 .codex/
-
+*.bun-build

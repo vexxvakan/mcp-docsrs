@@ -149,6 +149,25 @@
 			"suspicious": "error"
 		}
 	},
+	"overrides": [
+		{
+			"includes": [
+				"**/*.test.ts"
+			],
+			"linter": {
+				"rules": {
+					"complexity": {
+						"noExcessiveLinesPerFunction": {
+							"level": "error",
+							"options": {
+								"maxLines": 300
+							}
+						}
+					}
+				}
+			}
+		}
+	],
 	"root": true,
 	"vcs": {
 		"clientKind": "git",

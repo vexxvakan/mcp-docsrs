@@ -32,9 +32,9 @@
 	"main": "./dist/mcp-docsrs",
 	"name": "mcp-docsrs",
 	"scripts": {
-		"build": "bun build ./src/cli.ts --compile --minify --sourcemap --outfile dist/mcp-docsrs",
+		"build": "bun build ./src/cli.ts --compile --minify --outfile dist/mcp-docsrs",
 		"build:all": "bun run build:linux-x64 && bun run build:linux-arm64 && bun run build:linux-x64-musl && bun run build:linux-arm64-musl && bun run build:darwin-x64 && bun run build:darwin-arm64 && bun run build:windows-x64",
-		"build:bytecode": "bun build ./src/cli.ts --compile --minify --sourcemap --bytecode --outfile dist/mcp-docsrs",
+		"build:bytecode": "bun build ./src/cli.ts --compile --minify --bytecode --outfile dist/mcp-docsrs",
 		"build:darwin-arm64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-darwin-arm64 --outfile dist/mcp-docsrs-darwin-arm64",
 		"build:darwin-x64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-darwin-x64 --outfile dist/mcp-docsrs-darwin-x64",
 		"build:linux-arm64": "bun build ./src/cli.ts --compile --minify --bytecode --target=bun-linux-arm64 --outfile dist/mcp-docsrs-linux-arm64",
@@ -50,7 +50,7 @@
 		"lint:fixunsafe": "biome check . --fix --unsafe",
 		"prepare": "husky",
 		"start": "./dist/mcp-docsrs",
-		"test": "BUN_ENV=test bun test src"
+		"test": "bun test src"
 	},
 	"type": "module",
 	"version": "0.0.1"
