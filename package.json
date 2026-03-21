@@ -49,8 +49,7 @@
 		"lint:fix": "biome check . --fix",
 		"lint:fixunsafe": "biome check . --fix --unsafe",
 		"prepare": "husky",
-		"start": "./dist/mcp-docsrs",
-		"test": "bun test src"
+		"start": "./dist/mcp-docsrs"
 	},
 	"type": "module",
 	"version": "0.0.1"

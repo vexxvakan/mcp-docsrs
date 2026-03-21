@@ -23,7 +23,9 @@ We are running multiple agents on the same code base so you can expect changes i
 - Do not clutter or break project structure:
   - Types belong in each directory's local `types.ts` file.
   - Types should be implemented as Type not Interface.
+- Always keep test files in sync with code changes. When updating code ALWAYS check if the respective test needs updating too.
 
 ## Task Completion
 
-- `bun lint:fix`, `bun check` and `bun run build` have to be entirely green for the touched files in this session. Test your updated or changed functionality by running the built binary here: `./dist/mcp-docsrs`.
+- `bun check`, `bun lint:fix`, and `bun test` have to be entirely green for the touched files in this session.
+- Test your updated or changed functionality by running direct tests of the touched files: Change in `src/docs` -> `bun test src/docs`
