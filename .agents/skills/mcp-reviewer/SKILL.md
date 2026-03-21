@@ -13,7 +13,7 @@ Follow the review flow in order and complete one artifact before starting the ne
 1. Write `review/CRATE_NAME/find.md`.
 2. Write `review/CRATE_NAME/lookup.md`.
 3. Write `review/CRATE_NAME/docs.md`.
-4. Write `review/CRATE_NAME/symbols.md`.
+4. Create `review/CRATE_NAME/symbols/`.
 
 Use the active docsrs MCP tools directly:
 
@@ -52,7 +52,7 @@ For `docs.md`:
 - Store the full returned documentation.
 - Do not trim or summarize the docs output.
 
-For `symbols.md`:
+For `symbols/**.md`:
 
 - Extract every available symbol from the `crate_lookup` result.
 - Run `lookup_symbol` for every listed symbol.
