@@ -3,6 +3,7 @@
 import { mkdir, rm, stat } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
 import { APP_NAME } from "../src/meta.ts"
+import { normalizeVersion, resolveBuildVersion } from "./version.ts"
 
 const ENTRYPOINT = "./src/cli.ts"
 const DIST_DIR = "./dist"
@@ -226,6 +227,11 @@ const writeError = (message: string) => {
 	process.stderr.write(`${message}\n`)
 }
 
+const APP_VERSION = resolveBuildVersion(
+	import.meta.dir,
+	normalizeVersion(Bun.env.APP_VERSION ?? "")
+)
+
 const buildLabel = (build: BuildTarget) =>
 	build.id === HOST_TARGET ? APP_NAME : `${APP_NAME} for ${build.label}`
 
@@ -259,6 +265,10 @@ const buildTarget = async (build: BuildTarget, clean: boolean) => {
 				: {
 						outfile: build.outfile
 					},
+			define: {
+				// biome-ignore lint/style/useNamingConvention: important global constant
+				BUILD_VERSION: JSON.stringify(APP_VERSION)
+			},
 			entrypoints: [
 				ENTRYPOINT
 			],
