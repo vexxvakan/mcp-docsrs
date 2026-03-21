@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
+import type { RustdocJson } from "../docs/types.ts"
 import { CacheError, ErrorLogger } from "../errors.ts"
 import type { JsonValue } from "../shared/types.ts"
 import type { CacheEntry, CacheStatements, CacheStore } from "./types.ts"
@@ -68,9 +69,9 @@ const createStatements = (db: Database): CacheStatements => ({
 	`)
 })
 
-const createGetWithMetadata =
+const createGet =
 	(db: Database, statements: CacheStatements) =>
-	<T>(key: string): CacheEntry<T> => {
+	(key: string): CacheEntry<RustdocJson> | null => {
 		try {
 			cleanupExpired(db)
 			const result = statements.getStmt.get(key)
@@ -87,7 +88,7 @@ const createGetWithMetadata =
 			}
 
 			return {
-				data: parseStoredValue(result.data) as T,
+				data: parseStoredValue(result.data) as RustdocJson,
 				isHit: true
 			}
 		} catch (error) {
@@ -131,7 +132,6 @@ const createCache = (maxSize: number, dbPath?: string): CacheStore => {
 	const normalizedPath = toCacheDbPath(dbPath)
 	const db = createDb(normalizedPath)
 	const statements = createStatements(db)
-	const getWithMetadata = createGetWithMetadata(db, statements)
 
 	ErrorLogger.logInfo("Cache ready", {
 		dbPath: normalizedPath
@@ -141,8 +141,7 @@ const createCache = (maxSize: number, dbPath?: string): CacheStore => {
 		clear: () => statements.clearStmt.run(),
 		close: createClose(db, statements),
 		delete: (key: string) => statements.deleteStmt.run(key),
-		get: <T>(key: string) => getWithMetadata<T>(key).data,
-		getWithMetadata,
+		get: createGet(db, statements),
 		set: createSet(statements, maxSize)
 	}
 }

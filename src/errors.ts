@@ -1,7 +1,6 @@
 import { inspect } from "node:util"
 import { APP_NAME } from "./meta.ts"
 
-const ERROR_PREVIEW_LENGTH = 200
 const TEST_ENV = "test"
 const TRUE_VALUE = "true"
 
@@ -15,14 +14,6 @@ const toError = (error: unknown): Error => {
 	}
 
 	return new Error(typeof error === "string" ? error : inspect(error))
-}
-
-const trimPreview = (value: string) => {
-	if (value.length <= ERROR_PREVIEW_LENGTH) {
-		return value
-	}
-
-	return `${value.slice(0, ERROR_PREVIEW_LENGTH)}...`
 }
 
 const formatContext = (context: Record<string, unknown> | undefined) => {
@@ -46,11 +37,8 @@ class McpDocsrsError extends Error {
 }
 
 class JsonParseError extends McpDocsrsError {
-	constructor(rawData: string, parseError: Error, url?: string) {
+	constructor(parseError: Error, url?: string) {
 		super(`Failed to parse JSON: ${parseError.message}`, {
-			contentType: typeof rawData,
-			dataLength: rawData.length,
-			dataPreview: trimPreview(rawData),
 			parseErrorName: parseError.name,
 			url
 		})

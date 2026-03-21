@@ -1,23 +1,34 @@
+import { createCache } from "../cache/index.ts"
 import type { ServerConfig } from "../config/types.ts"
-import { createRustdocStore } from "./fetch.ts"
-import { formatCrate, lookupItem } from "./query.ts"
-import type { DocsFetcher } from "./types.ts"
+import { lookupCrate, lookupItem } from "./query.ts"
+import { buildJsonUrl, getCachedDocument, getRemoteDocument } from "./store.ts"
+import type { DocsFetcher, DocsLoadResult, DocsRequest } from "./types.ts"
 
 const createDocsFetcher = (config: ServerConfig): DocsFetcher => {
-	const store = createRustdocStore(config)
+	const cache = createCache(config.maxCacheSize, config.dbPath ?? ":memory:")
+
+	const load = (input: DocsRequest): Promise<DocsLoadResult> => {
+		const url = buildJsonUrl(input)
+		const cached = getCachedDocument(cache, url)
+		if (cached) {
+			return Promise.resolve(cached)
+		}
+
+		return getRemoteDocument(cache, config, input, url)
+	}
 
 	return {
-		clearCache: store.clearCache,
-		close: store.close,
+		clearCache: () => cache.clear(),
+		close: () => cache.close(),
 		lookupCrate: async (input) => {
-			const { data, fromCache } = await store.load(input)
+			const { data, fromCache } = await load(input)
 			return {
-				content: formatCrate(data),
+				content: lookupCrate(data),
 				fromCache
 			}
 		},
 		lookupSymbol: async (input) => {
-			const { data, fromCache } = await store.load(input)
+			const { data, fromCache } = await load(input)
 			const content = lookupItem(data, input.symbolPath)
 			return content
 				? {

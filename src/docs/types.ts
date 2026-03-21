@@ -12,16 +12,22 @@ type DocsSymbolRequest = DocsRequest & {
 	symbolPath: string
 }
 
-type DocsLookupResult = {
-	content: string
+type DocsLoadResult = {
+	data: RustdocJson
 	fromCache: boolean
 }
 
 type DocsFetcher = {
 	clearCache: () => void
 	close: () => void
-	lookupCrate: (input: DocsRequest) => Promise<DocsLookupResult>
-	lookupSymbol: (input: DocsSymbolRequest) => Promise<DocsLookupResult | null>
+	lookupCrate: (input: DocsRequest) => Promise<{
+		content: string
+		fromCache: boolean
+	}>
+	lookupSymbol: (input: DocsSymbolRequest) => Promise<{
+		content: string
+		fromCache: boolean
+	} | null>
 }
 
 type RustdocVisibility = "crate" | "default" | "public" | "restricted"
@@ -116,11 +122,6 @@ type RustdocJson = JsonObject & {
 	root: string
 }
 
-type RustdocDocument = {
-	data: RustdocJson
-	fromCache: boolean
-}
-
 type DocsSymbolQuery = {
 	kind?: RustdocItemKind
 	name: string
@@ -138,14 +139,12 @@ type CrateBuckets = {
 export type {
 	CrateBuckets,
 	DocsFetcher,
-	DocsLookupResult,
+	DocsLoadResult,
 	DocsRequest,
 	DocsSymbolQuery,
 	DocsSymbolRequest,
-	RustdocDocument,
 	RustdocItem,
 	RustdocItemKind,
 	RustdocJson,
-	RustdocPath,
-	RustdocVisibility
+	RustdocPath
 }
