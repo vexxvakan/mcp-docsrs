@@ -1,9 +1,9 @@
 import { z } from "zod"
 import type { DocsFetcher } from "../../docs/types.ts"
 import { ErrorLogger } from "../../errors.ts"
-import { suggestSimilarCrates } from "../search-crates.ts"
 import { createErrorResult, createTextResult, toErrorMessage } from "../shared.ts"
 import type { ToolDefinition, ToolHandler } from "../types.ts"
+import { findSimilarCrates } from "./find.ts"
 import type { CrateArgs, CrateInputSchema } from "./types.ts"
 
 const crateInputSchema: CrateInputSchema = {
@@ -29,7 +29,7 @@ const crateLookupTool: ToolDefinition<"crate_lookup", CrateInputSchema> = {
 }
 
 const formatSuggestionMessage = async (crateName: string, message: string) => {
-	const suggestions = await suggestSimilarCrates(crateName)
+	const suggestions = await findSimilarCrates(crateName)
 	const alternatives = suggestions.filter((suggestion) => suggestion !== crateName)
 	if (alternatives.length === 0) {
 		return message

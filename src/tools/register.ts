@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import type { DocsFetcher } from "../docs/types.ts"
 import { crateDocsTool, createCrateDocsHandler } from "./crate/docs.ts"
+import { crateFindTool, createCrateFindHandler } from "./crate/find.ts"
 import { crateLookupTool, createCrateLookupHandler } from "./crate/lookup.ts"
-import { createLookupSymbolHandler, lookupSymbolTool } from "./lookup-symbol.ts"
-import { crateFindTool, createSearchCratesHandler } from "./search-crates.ts"
+import { createLookupSymbolHandler, lookupSymbolTool } from "./symbol/lookup.ts"
 
 const registerTools = (server: McpServer, fetcher: DocsFetcher) => {
 	server.registerTool(
@@ -43,7 +43,7 @@ const registerTools = (server: McpServer, fetcher: DocsFetcher) => {
 			description: crateFindTool.description,
 			inputSchema: crateFindTool.inputSchema
 		},
-		createSearchCratesHandler()
+		createCrateFindHandler()
 	)
 }
 

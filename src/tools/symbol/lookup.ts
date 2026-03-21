@@ -1,13 +1,9 @@
 import { z } from "zod"
-import type { DocsFetcher } from "../docs/types.ts"
-import { ErrorLogger, ItemNotFoundError } from "../errors.ts"
-import { createErrorResult, createTextResult, toErrorMessage } from "./shared.ts"
-import type {
-	LookupSymbolArgs,
-	LookupSymbolInputSchema,
-	ToolDefinition,
-	ToolHandler
-} from "./types.ts"
+import type { DocsFetcher } from "../../docs/types.ts"
+import { ErrorLogger, ItemNotFoundError } from "../../errors.ts"
+import { createErrorResult, createTextResult, toErrorMessage } from "../shared.ts"
+import type { ToolDefinition, ToolHandler } from "../types.ts"
+import type { LookupSymbolArgs, LookupSymbolInputSchema } from "./types.ts"
 
 const lookupSymbolInputSchema: LookupSymbolInputSchema = {
 	crateName: z.string().describe("Name of the Rust crate"),

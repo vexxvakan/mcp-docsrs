@@ -1,4 +1,4 @@
-import type { ZodNumber, ZodOptional, ZodString } from "zod"
+import type { ZodDefault, ZodNumber, ZodOptional, ZodString } from "zod"
 
 type CrateArgs = {
 	crateName: string
@@ -14,4 +14,14 @@ type CrateInputSchema = {
 	version: ZodOptional<ZodString>
 }
 
-export type { CrateArgs, CrateInputSchema }
+type FindCratesArgs = {
+	limit?: number
+	query: string
+}
+
+type FindCratesInputSchema = {
+	limit: ZodDefault<ZodOptional<ZodNumber>>
+	query: ZodString
+}
+
+export type { CrateArgs, CrateInputSchema, FindCratesArgs, FindCratesInputSchema }

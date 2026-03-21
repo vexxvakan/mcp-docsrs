@@ -79,7 +79,10 @@ describe("query", () => {
 
 	describe("lookupSymbol", () => {
 		test("finds exact path match", () => {
-			const content = lookupSymbol(createQueryJson(), createLookupInput("struct", "runtime::Client"))
+			const content = lookupSymbol(
+				createQueryJson(),
+				createLookupInput("struct", "runtime::Client")
+			)
 
 			expect(content).toContain("# Client")
 		})
@@ -110,7 +113,9 @@ describe("query", () => {
 				]
 			}
 
-			expect(lookupSymbol(json, createLookupInput("type", "Alias"))).toContain("**Type:** Type Alias")
+			expect(lookupSymbol(json, createLookupInput("type", "Alias"))).toContain(
+				"**Type:** Type Alias"
+			)
 		})
 
 		test("falls back to index matches when path metadata is missing", () => {

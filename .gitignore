@@ -1,11 +1,22 @@
+# deps and build
 node_modules/
 dist/
-*.log
+
+# macOS grrr
 .DS_Store
+
+# security
 .env
 .env.local
+
+
+# artifacts
+*.bun-build
 *.sqlite
 *.sqlite3
 *.db
+*.log
+
+# AI
 .codex/
-*.bun-build
+opencode.jsonc
