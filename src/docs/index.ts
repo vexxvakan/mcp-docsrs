@@ -29,7 +29,7 @@ const createDocsFetcher = (config: ServerConfig): DocsFetcher => {
 		},
 		lookupSymbol: async (input) => {
 			const { data, fromCache } = await load(input)
-			const content = lookupItem(data, input.symbolPath)
+			const content = lookupItem(data, input)
 			return content
 				? {
 						content,

@@ -7,6 +7,13 @@ import { ensureRoot } from "../shared.ts"
 import type { RustdocItem } from "../types.ts"
 import { createQueryJson } from "./fixtures.ts"
 
+const longDocs = Array.from(
+	{
+		length: 25
+	},
+	(_, index) => `Line ${index + 1}`
+).join("\n")
+
 describe("format", () => {
 	describe("formatCrate", () => {
 		test("creates crate output from prepared buckets", () => {
@@ -183,6 +190,60 @@ describe("format", () => {
 			expect(content).toContain("**Type:** Proc Derive")
 			expect(content).toContain("**Visibility:** crate")
 			expect(content).toContain("**Deprecated:** yes")
+		})
+
+		test("shows a documentation preview when docs expansion is disabled", () => {
+			const item = {
+				attrs: [],
+				crate_id: 0,
+				deprecation: null,
+				docs: longDocs,
+				id: 997,
+				inner: {
+					module: {
+						is_crate: false,
+						is_stripped: false,
+						items: []
+					}
+				},
+				links: {},
+				name: "PreviewedDocs",
+				span: null,
+				visibility: "public"
+			} as RustdocItem
+
+			const content = formatItem(item, "module", false)
+
+			expect(content).toContain("## Documentation\nLine 1")
+			expect(content).toContain("Line 20")
+			expect(content).not.toContain("Line 21")
+			expect(content).toContain("Use `expandDocs: true` for more info.")
+		})
+
+		test("shows full documentation when docs expansion is enabled", () => {
+			const item = {
+				attrs: [],
+				crate_id: 0,
+				deprecation: null,
+				docs: longDocs,
+				id: 996,
+				inner: {
+					module: {
+						is_crate: false,
+						is_stripped: false,
+						items: []
+					}
+				},
+				links: {},
+				name: "ExpandedDocs",
+				span: null,
+				visibility: "public"
+			} as RustdocItem
+
+			const content = formatItem(item, "module", true)
+
+			expect(content).toContain("Line 25")
+			expect(content).not.toContain("Use `expandDocs: true` for more info.")
 		})
 
 		test("ignores unsupported item kinds and warns", () => {

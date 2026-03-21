@@ -15,6 +15,9 @@ import {
 	formatValueDetails
 } from "./details.ts"
 
+const DOC_PREVIEW_ROWS = 20
+const DOC_HINT = "Use `expandDocs: true` for more info."
+
 const KIND_LABELS = {
 	assoc_const: "Associated Constant",
 	assoc_type: "Associated Type",
@@ -55,7 +58,19 @@ const toKindLabel = (kind: RustdocItemKind | undefined, item: RustdocItem) => {
 	return null
 }
 
-const formatItem = (item: RustdocItem, kind?: RustdocItemKind) =>
+const formatDocs = (docs: string, expandDocs: boolean) => {
+	if (expandDocs) {
+		return `## Documentation\n${docs}`
+	}
+
+	const lines = docs.split("\n")
+	const preview = lines.slice(0, DOC_PREVIEW_ROWS).join("\n")
+	return lines.length > DOC_PREVIEW_ROWS
+		? `## Documentation\n${preview}\n\n${DOC_HINT}`
+		: `## Documentation\n${preview}`
+}
+
+const formatItem = (item: RustdocItem, kind?: RustdocItemKind, expandDocs = true) =>
 	(() => {
 		const kindLabel = toKindLabel(kind, item)
 
@@ -65,7 +80,7 @@ const formatItem = (item: RustdocItem, kind?: RustdocItemKind) =>
 			item.visibility === "public"
 				? ""
 				: `**Visibility:** ${typeof item.visibility === "string" ? item.visibility : "restricted"}`,
-			item.docs ? `## Documentation\n${item.docs}` : "",
+			item.docs ? formatDocs(item.docs, expandDocs) : "",
 			item.deprecation ? "**Deprecated:** yes" : "",
 			...formatStructDetails(item),
 			...formatEnumDetails(item),

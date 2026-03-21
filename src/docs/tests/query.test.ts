@@ -3,13 +3,24 @@
 import { describe, expect, test } from "bun:test"
 import { RustdocParseError } from "../../errors.ts"
 import { lookupCrate, lookupItem } from "../query.ts"
-import type { RustdocJson } from "../types.ts"
+import type { DocsSymbolRequest, RustdocJson } from "../types.ts"
 import { createQueryJson } from "./fixtures.ts"
 
 const target = {
 	target_features: [],
 	triple: "x86_64-unknown-linux-gnu"
 }
+
+const createLookupInput = (
+	symbolType: string,
+	symbolname: string,
+	expandDocs = true
+): DocsSymbolRequest => ({
+	crateName: "demo",
+	expandDocs,
+	symbolname,
+	symbolType
+})
 
 describe("query", () => {
 	describe("lookupCrate", () => {
@@ -63,21 +74,21 @@ describe("query", () => {
 
 	describe("lookupItem", () => {
 		test("finds exact path match", () => {
-			const content = lookupItem(createQueryJson(), "struct.runtime::Client")
+			const content = lookupItem(createQueryJson(), createLookupInput("struct", "runtime::Client"))
 
 			expect(content).toContain("# Client")
 		})
 
 		test("finds fallback path match", () => {
 			const json = createQueryJson()
-			const exact = lookupItem(json, "struct.runtime::Client")
-			const fallback = lookupItem(json, "struct.Client")
+			const exact = lookupItem(json, createLookupInput("struct", "runtime::Client"))
+			const fallback = lookupItem(json, createLookupInput("struct", "Client"))
 
 			expect(fallback).toBe(exact)
 		})
 
 		test("finds raw index type alias match", () => {
-			const content = lookupItem(createQueryJson(), "type.Alias")
+			const content = lookupItem(createQueryJson(), createLookupInput("type", "Alias"))
 
 			expect(content).toContain("# Alias")
 			expect(content).toContain("**Type:** Type Alias")
@@ -94,7 +105,7 @@ describe("query", () => {
 				]
 			}
 
-			expect(lookupItem(json, "type.Alias")).toContain("**Type:** Type Alias")
+			expect(lookupItem(json, createLookupInput("type", "Alias"))).toContain("**Type:** Type Alias")
 		})
 
 		test("falls back to index matches when path metadata is missing", () => {
@@ -217,20 +228,52 @@ describe("query", () => {
 				visibility: "public"
 			}
 
-			expect(lookupItem(json, "module.FallbackMod")).toContain("**Type:** Module")
-			expect(lookupItem(json, "struct.FallbackStruct")).toContain("**Type:** Struct")
-			expect(lookupItem(json, "enum.FallbackEnum")).toContain("**Type:** Enum")
-			expect(lookupItem(json, "fn.fallbackFn")).toContain("**Type:** Function")
-			expect(lookupItem(json, "trait.FallbackTrait")).toContain("**Type:** Trait")
+			expect(lookupItem(json, createLookupInput("module", "FallbackMod"))).toContain(
+				"**Type:** Module"
+			)
+			expect(lookupItem(json, createLookupInput("struct", "FallbackStruct"))).toContain(
+				"**Type:** Struct"
+			)
+			expect(lookupItem(json, createLookupInput("enum", "FallbackEnum"))).toContain(
+				"**Type:** Enum"
+			)
+			expect(lookupItem(json, createLookupInput("fn", "fallbackFn"))).toContain(
+				"**Type:** Function"
+			)
+			expect(lookupItem(json, createLookupInput("trait", "FallbackTrait"))).toContain(
+				"**Type:** Trait"
+			)
 		})
 
-		test("returns null for missing symbols", () => {
+		test("returns null for missing symbols and invalid kinds", () => {
 			const json = createQueryJson()
 
-			expect(lookupItem(json, "fn.demo::connect::extra")).toBeNull()
-			expect(lookupItem(json, "struct.other::Ghost")).toBeNull()
-			expect(lookupItem(json, "module.FallbackMod")).toBeNull()
-			expect(lookupItem(json, "Missing")).toBeNull()
+			expect(lookupItem(json, createLookupInput("fn", "demo::connect::extra"))).toBeNull()
+			expect(lookupItem(json, createLookupInput("struct", "other::Ghost"))).toBeNull()
+			expect(lookupItem(json, createLookupInput("module", "FallbackMod"))).toBeNull()
+			expect(lookupItem(json, createLookupInput("missing", "Client"))).toBeNull()
+		})
+
+		test("limits docs by default and expands them on demand", () => {
+			const json = createQueryJson()
+			json.index["2"] = {
+				...json.index["2"],
+				docs: Array.from(
+					{
+						length: 24
+					},
+					(_, index) => `Doc line ${index + 1}`
+				).join("\n")
+			}
+
+			const preview = lookupItem(json, createLookupInput("struct", "runtime::Client", false))
+			const expanded = lookupItem(json, createLookupInput("struct", "runtime::Client", true))
+
+			expect(preview).toContain("Doc line 20")
+			expect(preview).not.toContain("Doc line 21")
+			expect(preview).toContain("Use `expandDocs: true` for more info.")
+			expect(expanded).toContain("Doc line 24")
+			expect(expanded).not.toContain("Use `expandDocs: true` for more info.")
 		})
 	})
 })

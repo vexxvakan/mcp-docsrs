@@ -11,9 +11,15 @@ import type {
 
 const lookupSymbolInputSchema: LookupSymbolInputSchema = {
 	crateName: z.string().describe("Name of the Rust crate"),
-	symbolPath: z
+	expandDocs: z
+		.boolean()
+		.optional()
+		.default(false)
+		.describe("When true, return the full documentation text instead of the preview"),
+	symbolname: z.string().describe('Symbol name or path, for example "runtime::Client" or "spawn"'),
+	symbolType: z
 		.string()
-		.describe('Path to a specific Symbol, for example "struct.Runtime" or "fn.spawn"'),
+		.describe('Rustdoc symbol type, for example "struct", "function", or "trait"'),
 	target: z.string().optional().describe("Target platform"),
 	version: z.string().optional().describe("Specific version or semver range")
 }
@@ -36,12 +42,12 @@ const createLookupSymbolHandler =
 		try {
 			const result = await fetcher.lookupSymbol(args)
 			if (!result) {
-				throw new ItemNotFoundError(args.crateName, args.symbolPath)
+				throw new ItemNotFoundError(args.crateName, `${args.symbolType}.${args.symbolname}`)
 			}
 			ErrorLogger.logInfo("Item documentation retrieved", {
 				crateName: args.crateName,
 				fromCache: result.fromCache,
-				itemPath: args.symbolPath
+				itemPath: `${args.symbolType}.${args.symbolname}`
 			})
 
 			return createTextResult(result.content)

@@ -5,6 +5,7 @@ import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "./shared.ts"
 import type {
 	CrateBuckets,
 	DocsSymbolQuery,
+	DocsSymbolRequest,
 	RustdocItem,
 	RustdocItemKind,
 	RustdocJson
@@ -12,7 +13,6 @@ import type {
 
 const MAX_PREVIEW_LENGTH = 100
 const PREVIEW_SUFFIX = "..."
-const SYMBOL_KIND_PATTERN = /^([a-z_]+)\.(.+)$/
 const KIND_MATCH_SCORE = 10
 const NAME_MATCH_SCORE = 10
 const INDEX_PATH_MATCH_SCORE = 100
@@ -120,15 +120,15 @@ const collectCrateBuckets = (json: RustdocJson, root: RustdocItem): CrateBuckets
 	return buckets
 }
 
-const parseSymbolPath = (symbolPath: string) => {
-	const trimmed = symbolPath.trim()
-	const kindMatch = SYMBOL_KIND_PATTERN.exec(trimmed)
-	const kind = kindMatch ? KIND_ALIASES[kindMatch[1] as keyof typeof KIND_ALIASES] : undefined
-	const pathText = kind && kindMatch ? kindMatch[2] : trimmed
+const parseSymbolQuery = (input: DocsSymbolRequest) => {
+	const normalizedType = input.symbolType.trim().toLowerCase()
+	const kind = KIND_ALIASES[normalizedType as keyof typeof KIND_ALIASES]
+	const pathText = input.symbolname.trim()
 	const segments = pathText.split("::").filter(Boolean)
 	const name = segments.at(-1) ?? pathText.split(".").at(-1) ?? pathText
 
 	return {
+		expandDocs: input.expandDocs,
 		kind,
 		name,
 		segments
@@ -182,14 +182,12 @@ const scoreCandidate = ({ indexPaths, item, json, key, kind, query }: CandidateS
 	if (item.name !== query.name) {
 		return -1
 	}
-	if (query.kind && kind !== query.kind) {
+	if (!query.kind || kind !== query.kind) {
 		return -1
 	}
 
 	let score = NAME_MATCH_SCORE
-	if (kind === query.kind) {
-		score += KIND_MATCH_SCORE
-	}
+	score += KIND_MATCH_SCORE
 
 	const derivedPath = indexPaths[key]
 	if (query.segments.length > 1 && derivedPath && hasPathSuffix(derivedPath, query.segments)) {
@@ -214,10 +212,10 @@ const lookupCrate = (json: RustdocJson) => {
 	return formatCrate(json, root, buckets)
 }
 
-const lookupItem = (json: RustdocJson, symbolPath: string) => {
+const lookupItem = (json: RustdocJson, input: DocsSymbolRequest) => {
 	ensureRoot(json)
 	const indexPaths = buildIndexPaths(json)
-	const query = parseSymbolPath(symbolPath)
+	const query = parseSymbolQuery(input)
 
 	const best = Object.entries(json.index)
 		.map(([key, item]) => {
@@ -244,7 +242,7 @@ const lookupItem = (json: RustdocJson, symbolPath: string) => {
 		return null
 	}
 
-	return formatItem(best.item, best.kind ?? json.paths[best.key]?.kind)
+	return formatItem(best.item, best.kind ?? json.paths[best.key]?.kind, query.expandDocs)
 }
 
 export { lookupCrate, lookupItem }

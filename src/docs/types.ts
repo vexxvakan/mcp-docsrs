@@ -9,7 +9,9 @@ type DocsRequest = {
 }
 
 type DocsSymbolRequest = DocsRequest & {
-	symbolPath: string
+	expandDocs: boolean
+	symbolType: string
+	symbolname: string
 }
 
 type DocsLoadResult = {
@@ -312,7 +314,8 @@ type RustdocJson = JsonObject & {
 }
 
 type DocsSymbolQuery = {
-	kind?: RustdocItemKind
+	expandDocs: boolean
+	kind: RustdocItemKind | null
 	name: string
 	segments: string[]
 }

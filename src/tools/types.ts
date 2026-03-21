@@ -1,6 +1,6 @@
 import type { ZodRawShapeCompat } from "@modelcontextprotocol/sdk/server/zod-compat.js"
 import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js"
-import type { ZodDefault, ZodNumber, ZodOptional, ZodString } from "zod"
+import type { ZodBoolean, ZodDefault, ZodNumber, ZodOptional, ZodString } from "zod"
 
 type LookupCrateArgs = {
 	crateName: string
@@ -11,7 +11,9 @@ type LookupCrateArgs = {
 
 type LookupSymbolArgs = {
 	crateName: string
-	symbolPath: string
+	expandDocs: boolean
+	symbolType: string
+	symbolname: string
 	target?: string
 	version?: string
 }
@@ -39,7 +41,9 @@ type LookupCrateInputSchema = {
 
 type LookupSymbolInputSchema = {
 	crateName: ZodString
-	symbolPath: ZodString
+	expandDocs: ZodDefault<ZodOptional<ZodBoolean>>
+	symbolType: ZodString
+	symbolname: ZodString
 	target: ZodOptional<ZodString>
 	version: ZodOptional<ZodString>
 }
