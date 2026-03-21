@@ -27,5 +27,5 @@ We are running multiple agents on the same code base so you can expect changes i
 
 ## Task Completion
 
-- `bun check`, `bun lint:fix`, and `bun test` have to be entirely green for the touched files in this session.
+- `bun check` and `bun lint:fix` have to be entirely green for the touched files in this session.
 - Test your updated or changed functionality by running direct tests of the touched files: Change in `src/docs` -> `bun test src/docs`

@@ -18,7 +18,7 @@
 		"noUnusedParameters": true,
 		"outDir": "./dist",
 		"resolveJsonModule": true,
-		"rootDir": "./src",
+		"rootDir": ".",
 		"skipLibCheck": true,
 		"sourceMap": true,
 		"strict": true,
@@ -33,6 +33,7 @@
 		"dist"
 	],
 	"include": [
-		"src/**/*"
+		"src/**/*",
+		"scripts/**/*"
 	]
 }

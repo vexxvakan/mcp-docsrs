@@ -22,25 +22,18 @@ jobs:
         include:
           - target: linux-x64
             artifact: dist/mcp-docsrs-linux-x64
-            command: bun run build:linux-x64
           - target: linux-arm64
             artifact: dist/mcp-docsrs-linux-arm64
-            command: bun run build:linux-arm64
           - target: linux-x64-musl
             artifact: dist/mcp-docsrs-linux-x64-musl
-            command: bun run build:linux-x64-musl
           - target: linux-arm64-musl
             artifact: dist/mcp-docsrs-linux-arm64-musl
-            command: bun run build:linux-arm64-musl
           - target: darwin-x64
             artifact: dist/mcp-docsrs-darwin-x64
-            command: bun run build:darwin-x64
           - target: darwin-arm64
             artifact: dist/mcp-docsrs-darwin-arm64
-            command: bun run build:darwin-arm64
           - target: windows-x64
             artifact: dist/mcp-docsrs-windows-x64.exe
-            command: bun run build:windows-x64
 
     steps:
       - name: Checkout code
@@ -49,8 +42,8 @@ jobs:
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
 
-      - name: Build executable
-        run: ${{ matrix.command }}
+      - name: Build executables
+        run: bun run build -- ${{ matrix.target }}
 
       - name: Verify artifact exists
         run: test -f "${{ matrix.artifact }}"
