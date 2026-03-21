@@ -1,8 +1,10 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc crate section keys mirror upstream snake_case kinds
 
+import type { RankedCrate } from "../classifier/types.ts"
 import type { Crate, Item, ItemKind } from "../rustdoc/types/items.ts"
 import { KIND_LABELS } from "../shared.ts"
 import type { CrateBuckets } from "../types.ts"
+import { formatRelativeDate } from "./time.ts"
 
 const CRATE_SECTION_ORDER = [
 	"module",
@@ -64,6 +66,51 @@ const createCrateBuckets = (): CrateBuckets =>
 
 const formatCrateDocs = (root: Item) => root.docs ?? "No crate-level documentation available."
 
+const withValue = (label: string, value: string | null) => (value ? `${label}: ${value}` : "")
+
+const formatDownloads = (downloads: number, recentDownloads: number) =>
+	`Downloads: ${downloads.toLocaleString()} (${recentDownloads.toLocaleString()} recent)`
+
+const formatCrateSearchEntry = (crate: RankedCrate["crate"], index: number, now: Date | number) =>
+	[
+		`${index + 1}. **${crate.name}** v${crate.maxVersion}`,
+		crate.description ? ` ${crate.description}` : "",
+		formatDownloads(crate.downloads, crate.recentDownloads),
+		withValue(
+			"Last Updated",
+			crate.updatedAt
+				? formatRelativeDate(crate.updatedAt, {
+						now
+					})
+				: null
+		),
+		withValue(
+			"Created",
+			crate.createdAt
+				? formatRelativeDate(crate.createdAt, {
+						now
+					})
+				: null
+		),
+		withValue("Source", crate.repository)
+	]
+		.filter(Boolean)
+		.join("\n")
+
+const formatCrateFindResults = (
+	query: string,
+	total: number,
+	crates: RankedCrate[],
+	now: Date | number = Date.now()
+) => {
+	if (crates.length === 0) {
+		return `No crates found matching "${query}"`
+	}
+
+	const lines = crates.map(({ crate }, index) => formatCrateSearchEntry(crate, index, now))
+	return `Found ${total} crates matching "${query}" (showing top ${crates.length}):\n\n${lines.join("\n\n")}`
+}
+
 const formatCrate = (json: Crate, root: Item, buckets: CrateBuckets) =>
 	[
 		root.name ? `# Crate: ${root.name}${json.crate_version ? ` v${json.crate_version}` : ""}` : "",
@@ -74,4 +121,4 @@ const formatCrate = (json: Crate, root: Item, buckets: CrateBuckets) =>
 		.filter(Boolean)
 		.join("\n\n")
 
-export { createCrateBuckets, formatCrate, formatCrateDocs }
+export { createCrateBuckets, formatCrate, formatCrateDocs, formatCrateFindResults }
