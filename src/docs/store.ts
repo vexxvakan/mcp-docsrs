@@ -16,6 +16,7 @@ const buildJsonUrl = (input: DocsRequest) => {
 	if (input.formatVersion !== undefined) {
 		url += `/${input.formatVersion}`
 	}
+	url += ".zst"
 
 	return url
 }

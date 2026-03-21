@@ -26,7 +26,7 @@ const parseRustdoc = async (response: Response, url: string) => {
 		const raw = await decodeBytes(
 			await response.arrayBuffer(),
 			url,
-			response.headers.get("content-encoding") ?? "identity"
+			response.headers.get("content-encoding") ?? "zstd"
 		)
 
 		const payload = JSON.parse(raw) as RustdocJson
@@ -36,7 +36,7 @@ const parseRustdoc = async (response: Response, url: string) => {
 
 		return payload
 	} catch (error) {
-		if (error instanceof JsonParseError) {
+		if (error instanceof DecompressionError || error instanceof JsonParseError) {
 			throw error
 		}
 
