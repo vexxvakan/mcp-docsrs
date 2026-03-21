@@ -1,4 +1,4 @@
-import type { ItemKind, Json } from "./rustdoc/types/items.ts"
+import type { Crate, ItemKind } from "./rustdoc/types/items.ts"
 
 type DocsRequest = {
 	crateName: string
@@ -14,7 +14,7 @@ type DocsSymbolRequest = DocsRequest & {
 }
 
 type DocsLoadResult = {
-	data: Json
+	data: Crate
 	fromCache: boolean
 }
 

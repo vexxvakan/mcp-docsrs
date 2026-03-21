@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc kind aliases follow upstream snake_case naming
 import { createCrateBuckets, formatCrate, formatCrateDocs } from "./formatters/crate.ts"
 import { formatItem } from "./formatters/item.ts"
-import type { Item, ItemKind, Json } from "./rustdoc/types/items.ts"
+import type { Crate, Item, ItemKind } from "./rustdoc/types/items.ts"
 import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "./shared.ts"
 import type { CrateBuckets, DocsSymbolQuery, DocsSymbolRequest } from "./types.ts"
 
@@ -68,7 +68,7 @@ const getFirstLine = (docs: string) => {
 	return `${trimmed.slice(0, MAX_PREVIEW_LENGTH - PREVIEW_SUFFIX.length)}${PREVIEW_SUFFIX}`
 }
 
-const collectCrateBuckets = (json: Json, root: Item): CrateBuckets => {
+const collectCrateBuckets = (json: Crate, root: Item): CrateBuckets => {
 	const buckets = createCrateBuckets()
 
 	const rootModule =
@@ -108,7 +108,7 @@ const parseSymbolQuery = (input: DocsSymbolRequest) => {
 	} satisfies DocsSymbolQuery
 }
 
-const buildIndexPaths = (json: Json) => {
+const buildIndexPaths = (json: Crate) => {
 	const root = ensureRoot(json)
 	const paths: Record<string, string[]> = {}
 	const visited = new Set<string>()
@@ -145,7 +145,7 @@ const buildIndexPaths = (json: Json) => {
 type CandidateScoreInput = {
 	indexPaths: Record<string, string[]>
 	item: Item
-	json: Json
+	json: Crate
 	key: string
 	kind?: ItemKind
 	query: DocsSymbolQuery
@@ -178,19 +178,19 @@ const scoreCandidate = ({ indexPaths, item, json, key, kind, query }: CandidateS
 	return score
 }
 
-const lookupCrate = (json: Json) => {
+const lookupCrate = (json: Crate) => {
 	const root = ensureRoot(json)
 	const buckets = collectCrateBuckets(json, root)
 
 	return formatCrate(json, root, buckets)
 }
 
-const lookupCrateDocs = (json: Json) => {
+const lookupCrateDocs = (json: Crate) => {
 	const root = ensureRoot(json)
 	return formatCrateDocs(root)
 }
 
-const lookupSymbol = (json: Json, input: DocsSymbolRequest) => {
+const lookupSymbol = (json: Crate, input: DocsSymbolRequest) => {
 	ensureRoot(json)
 	const indexPaths = buildIndexPaths(json)
 	const query = parseSymbolQuery(input)

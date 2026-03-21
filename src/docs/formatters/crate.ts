@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc crate section keys mirror upstream snake_case kinds
 
-import type { Item, ItemKind, Json } from "../rustdoc/types/items.ts"
+import type { Crate, Item, ItemKind } from "../rustdoc/types/items.ts"
 import { KIND_LABELS } from "../shared.ts"
 import type { CrateBuckets } from "../types.ts"
 
@@ -64,7 +64,7 @@ const createCrateBuckets = (): CrateBuckets =>
 
 const formatCrateDocs = (root: Item) => root.docs ?? "No crate-level documentation available."
 
-const formatCrate = (json: Json, root: Item, buckets: CrateBuckets) =>
+const formatCrate = (json: Crate, root: Item, buckets: CrateBuckets) =>
 	[
 		root.name ? `# Crate: ${root.name}${json.crate_version ? ` v${json.crate_version}` : ""}` : "",
 		...CRATE_SECTION_ORDER.map((kind) =>

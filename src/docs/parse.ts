@@ -1,5 +1,5 @@
 import { DecompressionError, JsonParseError } from "../errors.ts"
-import type { Json } from "./rustdoc/types/items.ts"
+import type { Crate } from "./rustdoc/types/items.ts"
 
 const TEXT_DECODER = new TextDecoder()
 
@@ -29,7 +29,7 @@ const parseRustdoc = async (response: Response, url: string) => {
 			response.headers.get("content-encoding") ?? "zstd"
 		)
 
-		const payload = JSON.parse(raw) as Json
+		const payload = JSON.parse(raw) as Crate
 		if (payload.root === undefined || !payload.index || !payload.paths) {
 			throw new Error("Invalid payload")
 		}

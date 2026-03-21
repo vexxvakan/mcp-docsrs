@@ -3,7 +3,7 @@
 // biome-ignore-all lint/complexity/useMaxParams: fixture helper keeps test data readable
 import type { ServerConfig } from "../../config/types.ts"
 import type { Visibility } from "../rustdoc/types/core.ts"
-import type { Item, ItemEnum, Json } from "../rustdoc/types/items.ts"
+import type { Crate, Item, ItemEnum } from "../rustdoc/types/items.ts"
 
 const TARGET = {
 	target_features: [],
@@ -122,7 +122,7 @@ const toResponse = (body: string | Uint8Array | null, encoding?: string) =>
 		status: 200
 	})
 
-const storeRustdocJson: Json = {
+const storeRustdocJson: Crate = {
 	crate_version: "1.2.3",
 	external_crates: {},
 	format_version: 57,
@@ -171,7 +171,7 @@ const storeRustdocJson: Json = {
 	target: TARGET
 }
 
-const queryRustdocJson: Json = {
+const queryRustdocJson: Crate = {
 	crate_version: "1.2.3",
 	external_crates: {},
 	format_version: 57,
