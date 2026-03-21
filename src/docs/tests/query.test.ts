@@ -41,6 +41,30 @@ describe("query", () => {
 			expect(content).not.toContain("999")
 		})
 
+		test("creates crate overview for expanded rustdoc kinds", () => {
+			const json = createQueryJson()
+			const root = json.index["0"]
+			if (typeof root.inner === "string" || !("module" in root.inner)) {
+				throw new Error("Expected module root fixture")
+			}
+
+			json.index["10"].visibility = "public"
+			root.inner.module.items.push(9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21)
+
+			const content = lookupCrate(json)
+
+			expect(content).toContain("## Type Aliases\n- **Alias**: Shared alias")
+			expect(content).toContain("## Proc Derives\n- **Mystery**: Mysterious item docs")
+			expect(content).toContain("## Proc Attributes\n- **trace**: Tracing attribute")
+			expect(content).toContain("## Unions\n- **Payload**: Union payload")
+			expect(content).toContain("## Variants\n- **Ready**: Ready state variant")
+			expect(content).toContain("## Constants\n- **MAX_RETRIES**: Retry count")
+			expect(content).toContain("## Associated Constants\n- **BUF_SIZE**: Buffer size")
+			expect(content).toContain("## Associated Types\n- **Output**: Associated output type")
+			expect(content).toContain("## Statics\n- **DEFAULT_TIMEOUT**: Default timeout")
+			expect(content).toContain("## Uses\n- **ClientAlias**: Re-exported client")
+		})
+
 		test("throws missing root metadata", () => {
 			const json = {
 				crate_version: "1.0.0",

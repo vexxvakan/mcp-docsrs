@@ -16,6 +16,7 @@ dist/
 *.sqlite3
 *.db
 *.log
+review/
 
 # AI
 .codex/

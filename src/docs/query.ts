@@ -1,5 +1,5 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc kind aliases follow upstream snake_case naming
-import { formatCrate, formatCrateDocs } from "./formatters/crate.ts"
+import { createCrateBuckets, formatCrate, formatCrateDocs } from "./formatters/crate.ts"
 import { formatItem } from "./formatters/item.ts"
 import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "./shared.ts"
 import type {
@@ -75,13 +75,7 @@ const getFirstLine = (docs: string) => {
 }
 
 const collectCrateBuckets = (json: RustdocJson, root: RustdocItem): CrateBuckets => {
-	const buckets: CrateBuckets = {
-		enums: [],
-		functions: [],
-		modules: [],
-		structs: [],
-		traits: []
-	}
+	const buckets = createCrateBuckets()
 
 	const rootModule =
 		typeof root.inner === "object" && "module" in root.inner ? root.inner.module : null
@@ -96,24 +90,9 @@ const collectCrateBuckets = (json: RustdocJson, root: RustdocItem): CrateBuckets
 		}
 
 		const line = `- **${item.name ?? "unknown"}**${item.docs ? `: ${getFirstLine(item.docs)}` : ""}`
-		switch (getKindFromItem(item)) {
-			case "module":
-				buckets.modules.push(line)
-				break
-			case "struct":
-				buckets.structs.push(line)
-				break
-			case "enum":
-				buckets.enums.push(line)
-				break
-			case "trait":
-				buckets.traits.push(line)
-				break
-			case "function":
-				buckets.functions.push(line)
-				break
-			default:
-				break
+		const kind = getKindFromItem(item)
+		if (kind) {
+			buckets[kind].push(line)
 		}
 	}
 

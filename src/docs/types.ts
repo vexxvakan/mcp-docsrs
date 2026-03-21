@@ -324,13 +324,7 @@ type DocsSymbolQuery = {
 	segments: string[]
 }
 
-type CrateBuckets = {
-	enums: string[]
-	functions: string[]
-	modules: string[]
-	structs: string[]
-	traits: string[]
-}
+type CrateBuckets = Record<RustdocItemKind, string[]>
 
 export type {
 	CrateBuckets,

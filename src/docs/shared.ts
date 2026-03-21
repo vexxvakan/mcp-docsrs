@@ -8,6 +8,33 @@ import type {
 	RustdocJson
 } from "./types.ts"
 
+const KIND_LABELS = {
+	assoc_const: "Associated Constant",
+	assoc_type: "Associated Type",
+	attribute: "Attribute",
+	constant: "Constant",
+	enum: "Enum",
+	extern_crate: "Extern Crate",
+	extern_type: "Extern Type",
+	function: "Function",
+	impl: "Implementation",
+	keyword: "Keyword",
+	macro: "Macro",
+	module: "Module",
+	primitive: "Primitive",
+	proc_attribute: "Proc Attribute",
+	proc_derive: "Proc Derive",
+	static: "Static",
+	struct: "Struct",
+	struct_field: "Struct Field",
+	trait: "Trait",
+	trait_alias: "Trait Alias",
+	type_alias: "Type Alias",
+	union: "Union",
+	use: "Use",
+	variant: "Variant"
+} as const satisfies Record<RustdocItemKind, string>
+
 const ITEM_KIND_BY_TAG = {
 	assoc_const: "assoc_const",
 	assoc_type: "assoc_type",
@@ -85,4 +112,4 @@ const getKindFromItem = (item: RustdocItem): RustdocItemKind | undefined => {
 	}
 }
 
-export { ensureRoot, getItemById, getItemInnerTag, getKindFromItem, toIdKey }
+export { ensureRoot, getItemById, getItemInnerTag, getKindFromItem, KIND_LABELS, toIdKey }

@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc fixtures use upstream snake_case keys
 import { describe, expect, spyOn, test } from "bun:test"
 import { ErrorLogger } from "../../errors.ts"
-import { formatCrate, formatCrateDocs } from "../formatters/crate.ts"
+import { createCrateBuckets, formatCrate, formatCrateDocs } from "../formatters/crate.ts"
 import { formatItem } from "../formatters/item.ts"
 import { ensureRoot } from "../shared.ts"
 import type { RustdocItem } from "../types.ts"
@@ -19,23 +19,16 @@ describe("format", () => {
 		test("creates crate output from prepared buckets", () => {
 			const json = createQueryJson()
 			const root = ensureRoot(json)
-			const content = formatCrate(json, root, {
-				enums: [
-					"- **Mode**: Modes for the runtime"
-				],
-				functions: [
-					"- **connect**: Connect to the backend"
-				],
-				modules: [
-					"- **net**: Networking tools"
-				],
-				structs: [
-					"- **Client**: Demo struct"
-				],
-				traits: [
-					"- **Handler**: Handles requests"
-				]
-			})
+			const buckets = createCrateBuckets()
+			buckets.module.push("- **net**: Networking tools")
+			buckets.struct.push("- **Client**: Demo struct")
+			buckets.enum.push("- **Mode**: Modes for the runtime")
+			buckets.trait.push("- **Handler**: Handles requests")
+			buckets.function.push("- **connect**: Connect to the backend")
+			buckets.type_alias.push("- **ResultAlias**: Shared result type")
+			buckets.proc_attribute.push("- **trace**: Tracing attribute")
+			buckets.assoc_const.push("- **BUF_SIZE**: Buffer size")
+			const content = formatCrate(json, root, buckets)
 
 			expect(content).toContain("# Crate: demo v1.2.3")
 			expect(content).toContain("## Modules\n- **net**: Networking tools")
@@ -43,18 +36,15 @@ describe("format", () => {
 			expect(content).toContain("## Enums\n- **Mode**: Modes for the runtime")
 			expect(content).toContain("## Traits\n- **Handler**: Handles requests")
 			expect(content).toContain("## Functions\n- **connect**: Connect to the backend")
+			expect(content).toContain("## Type Aliases\n- **ResultAlias**: Shared result type")
+			expect(content).toContain("## Proc Attributes\n- **trace**: Tracing attribute")
+			expect(content).toContain("## Associated Constants\n- **BUF_SIZE**: Buffer size")
 		})
 
 		test("omits empty sections", () => {
 			const json = createQueryJson()
 			const root = ensureRoot(json)
-			const content = formatCrate(json, root, {
-				enums: [],
-				functions: [],
-				modules: [],
-				structs: [],
-				traits: []
-			})
+			const content = formatCrate(json, root, createCrateBuckets())
 
 			expect(content).toContain("# Crate: demo v1.2.3")
 			expect(content).not.toContain("## Modules")
@@ -62,6 +52,9 @@ describe("format", () => {
 			expect(content).not.toContain("## Enums")
 			expect(content).not.toContain("## Traits")
 			expect(content).not.toContain("## Functions")
+			expect(content).not.toContain("## Type Aliases")
+			expect(content).not.toContain("## Proc Attributes")
+			expect(content).not.toContain("## Associated Constants")
 		})
 
 		test("formats crate docs", () => {
