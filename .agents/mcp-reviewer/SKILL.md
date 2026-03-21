@@ -1,11 +1,10 @@
 ---
 name: mcp-reviewer
-description: Run verbatim docsrs MCP review passes for a target crate and write structured review artifacts under review/CRATE_NAME/. Use when the task is to audit docsrs MCP behavior, capture exact tool parameters and exact text-field responses, generate find.md, lookup.md, docs.md, or symbols.md, or follow the repository review flow from review/README.md.
+description: Run verbatim docsrs MCP review passes for a target crate and write structured review artifacts under review/CRATE_NAME/.
 ---
 
 # MCP Reviewer
-
-Read `../review/README.md` first. Treat it as the source of truth for artifact names and capture rules.
+Do not read the code, just run the available MCP tools.
 
 ## Workflow
 
