@@ -37,7 +37,6 @@
 
 ## 7. Smart Caching Improvements
 
-- **Pre-fetching**: Pre-fetch commonly used crates
 - **Background Refresh**: Update stale cache entries automatically
 - **Compression**: Cache compression to store more data
 - **Export/Import**: Save cache for offline use

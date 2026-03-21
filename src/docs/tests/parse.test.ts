@@ -58,14 +58,15 @@ describe("parse", () => {
 			const compressed = await Bun.zstdCompress(JSON.stringify(createStoreJson()))
 			const data = await parseRustdoc(toResponse(compressed, "zstd"), TEST_URL)
 
-			expect(data.root).toBe("root")
-			expect(data.index.root?.name).toBe("demo")
-			expect(data.index.connect?.name).toBe("connect")
+			expect(data.root).toBe(0)
+			expect(data.index["0"]?.name).toBe("demo")
+			expect(data.index["1"]?.name).toBe("connect")
 		})
 
 		test("throws invalid payload", async () => {
 			try {
-				await parseRustdoc(toResponse("{}"), TEST_URL)
+				const compressed = await Bun.zstdCompress("{}")
+				await parseRustdoc(toResponse(compressed, "zstd"), TEST_URL)
 				throw new Error("Expected parseRustdoc to throw for invalid payload")
 			} catch (error) {
 				expect(error).toBeInstanceOf(JsonParseError)

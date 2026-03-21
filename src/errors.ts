@@ -64,7 +64,7 @@ class NetworkError extends McpDocsrsError {
 class CrateNotFoundError extends McpDocsrsError {
 	constructor(crateName: string, version?: string) {
 		super(
-			`Crate '${crateName}'${version ? ` version ${version}` : ""} not found. Note: docs.rs started building rustdoc JSON on 2023-05-23, so older releases may not have JSON available yet.`,
+			`Crate '${crateName}'${version ? ` version ${version}` : ""} not found. Note: docs.rs started building rustdoc JSON on 2025-05-23, so older releases may not have JSON available yet.`,
 			{
 				crateName,
 				version
@@ -139,6 +139,14 @@ const ErrorLogger = {
 		}
 
 		process.stderr.write(`[${APP_NAME}] ${message}${formatContext(context)}\n`)
+	},
+
+	logWarning(message: string, context?: Record<string, unknown>) {
+		if (isSilent() || isTestEnv()) {
+			return
+		}
+
+		process.stderr.write(`[${APP_NAME}] Warning: ${message}${formatContext(context)}\n`)
 	}
 }
 

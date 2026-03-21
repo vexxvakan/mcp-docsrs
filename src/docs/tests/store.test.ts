@@ -6,7 +6,7 @@ import { createConfig, createStoreJson, toResponse } from "./fixtures.ts"
 import { createCacheEntry, createCacheStoreMock } from "./mocks/cache.ts"
 
 const DEFAULT_CACHE_TTL = 60_000
-const TEST_URL = "https://docs.rs/crate/demo/latest/json"
+const TEST_URL = "https://docs.rs/crate/demo/latest/json.zst"
 
 describe("store", () => {
 	afterEach(() => {
@@ -23,7 +23,7 @@ describe("store", () => {
 				version: "1.2.3"
 			})
 
-			expect(url).toBe("https://docs.rs/crate/demo/1.2.3/x86_64-unknown-linux-gnu/json/43")
+			expect(url).toBe("https://docs.rs/crate/demo/1.2.3/x86_64-unknown-linux-gnu/json/43.zst")
 		})
 
 		test("creates url with latest version by default", () => {

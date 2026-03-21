@@ -1,29 +1,55 @@
-import { formatCrate, formatItem } from "./format.ts"
-import { ensureRoot, getKindFromItem } from "./shared.ts"
+// biome-ignore-all lint/style/useNamingConvention: rustdoc kind aliases follow upstream snake_case naming
+import { formatCrate } from "./formatters/crate.ts"
+import { formatItem } from "./formatters/item.ts"
+import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "./shared.ts"
 import type {
 	CrateBuckets,
 	DocsSymbolQuery,
 	RustdocItem,
-	RustdocJson,
-	RustdocPath
+	RustdocItemKind,
+	RustdocJson
 } from "./types.ts"
 
 const MAX_PREVIEW_LENGTH = 100
 const PREVIEW_SUFFIX = "..."
 const SYMBOL_KIND_PATTERN = /^([a-z_]+)\.(.+)$/
+const KIND_MATCH_SCORE = 10
+const NAME_MATCH_SCORE = 10
+const INDEX_PATH_MATCH_SCORE = 100
+const SUMMARY_PATH_MATCH_SCORE = 50
+const SUMMARY_KIND_MATCH_SCORE = 1
 
 const KIND_ALIASES = {
+	assoc_const: "assoc_const",
+	assoc_type: "assoc_type",
+	attr: "proc_attribute",
+	attribute: "attribute",
+	const: "constant",
+	constant: "constant",
 	enum: "enum",
+	extern_crate: "extern_crate",
+	extern_type: "extern_type",
 	fn: "function",
 	function: "function",
 	impl: "impl",
+	keyword: "keyword",
+	macro: "macro",
 	mod: "module",
 	module: "module",
+	primitive: "primitive",
+	proc_attribute: "proc_attribute",
+	proc_derive: "proc_derive",
+	static: "static",
 	struct: "struct",
+	struct_field: "struct_field",
 	trait: "trait",
-	type: "typedef",
-	typedef: "typedef"
-} as const
+	trait_alias: "trait_alias",
+	type: "type_alias",
+	type_alias: "type_alias",
+	union: "union",
+	use: "use",
+	variant: "variant"
+} as const satisfies Record<string, RustdocItemKind>
 
 const hasPathSuffix = (path: string[], suffix: string[]) => {
 	if (suffix.length > path.length) {
@@ -57,8 +83,14 @@ const collectCrateBuckets = (json: RustdocJson, root: RustdocItem): CrateBuckets
 		traits: []
 	}
 
-	for (const itemId of root.inner?.module?.items ?? []) {
-		const item = json.index[itemId]
+	const rootModule =
+		typeof root.inner === "object" && "module" in root.inner ? root.inner.module : null
+	if (!rootModule) {
+		return buckets
+	}
+
+	for (const itemId of rootModule.items) {
+		const item = getItemById(json, itemId)
 		if (!item || item.visibility !== "public") {
 			continue
 		}
@@ -103,28 +135,76 @@ const parseSymbolPath = (symbolPath: string) => {
 	} satisfies DocsSymbolQuery
 }
 
-const matchByPath = (
-	entries: [
-		string,
-		RustdocPath
-	][],
-	query: DocsSymbolQuery
-) => {
-	let fallbackId: string | null = null
+const buildIndexPaths = (json: RustdocJson) => {
+	const root = ensureRoot(json)
+	const paths: Record<string, string[]> = {}
+	const visited = new Set<string>()
 
-	for (const [id, path] of entries) {
-		if (query.kind && path.kind !== query.kind) {
-			continue
+	const visit = (item: RustdocItem, prefix: string[]) => {
+		const key = toIdKey(item.id)
+		const nextPath = item.name
+			? [
+					...prefix,
+					item.name
+				]
+			: prefix
+		paths[key] = nextPath
+
+		const module =
+			typeof item.inner === "object" && "module" in item.inner ? item.inner.module : null
+		if (!module || visited.has(key)) {
+			return
 		}
-		if (query.segments.length > 1 && hasPathSuffix(path.path, query.segments)) {
-			return id
-		}
-		if (!fallbackId && path.path.at(-1) === query.name) {
-			fallbackId = id
+
+		visited.add(key)
+		for (const childId of module.items) {
+			const child = getItemById(json, childId)
+			if (child) {
+				visit(child, nextPath)
+			}
 		}
 	}
 
-	return fallbackId
+	visit(root, [])
+	return paths
+}
+
+type CandidateScoreInput = {
+	indexPaths: Record<string, string[]>
+	item: RustdocItem
+	json: RustdocJson
+	key: string
+	kind?: RustdocItemKind
+	query: DocsSymbolQuery
+}
+
+const scoreCandidate = ({ indexPaths, item, json, key, kind, query }: CandidateScoreInput) => {
+	if (item.name !== query.name) {
+		return -1
+	}
+	if (query.kind && kind !== query.kind) {
+		return -1
+	}
+
+	let score = NAME_MATCH_SCORE
+	if (kind === query.kind) {
+		score += KIND_MATCH_SCORE
+	}
+
+	const derivedPath = indexPaths[key]
+	if (query.segments.length > 1 && derivedPath && hasPathSuffix(derivedPath, query.segments)) {
+		score += INDEX_PATH_MATCH_SCORE
+	}
+
+	const summaryPath = json.paths[key]
+	if (query.segments.length > 1 && summaryPath && hasPathSuffix(summaryPath.path, query.segments)) {
+		score += SUMMARY_PATH_MATCH_SCORE
+	}
+	if (summaryPath?.kind === kind) {
+		score += SUMMARY_KIND_MATCH_SCORE
+	}
+
+	return score
 }
 
 const lookupCrate = (json: RustdocJson) => {
@@ -136,23 +216,35 @@ const lookupCrate = (json: RustdocJson) => {
 
 const lookupItem = (json: RustdocJson, symbolPath: string) => {
 	ensureRoot(json)
+	const indexPaths = buildIndexPaths(json)
 	const query = parseSymbolPath(symbolPath)
-	const pathEntries = Object.entries(json.paths)
-	const pathMatch = matchByPath(pathEntries, query)
-	if (pathMatch) {
-		const item = json.index[pathMatch]
-		if (item) {
-			return formatItem(item, json.paths[pathMatch]?.kind)
-		}
+
+	const best = Object.entries(json.index)
+		.map(([key, item]) => {
+			const kind = getKindFromItem(item)
+
+			return {
+				item,
+				key,
+				kind,
+				score: scoreCandidate({
+					indexPaths,
+					item,
+					json,
+					key,
+					kind,
+					query
+				})
+			}
+		})
+		.filter((candidate) => candidate.score >= 0)
+		.sort((left, right) => right.score - left.score)[0]
+
+	if (!best) {
+		return null
 	}
 
-	for (const item of Object.values(json.index)) {
-		if (item.name === query.name && (!query.kind || getKindFromItem(item) === query.kind)) {
-			return formatItem(item)
-		}
-	}
-
-	return null
+	return formatItem(best.item, best.kind ?? json.paths[best.key]?.kind)
 }
 
 export { lookupCrate, lookupItem }

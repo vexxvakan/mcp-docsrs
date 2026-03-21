@@ -1,9 +1,15 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc fixtures and fallback items use upstream snake_case keys
+// biome-ignore-all lint/style/noMagicNumbers: fallback rustdoc ids are intentional test fixtures
 import { describe, expect, test } from "bun:test"
 import { RustdocParseError } from "../../errors.ts"
 import { lookupCrate, lookupItem } from "../query.ts"
 import type { RustdocJson } from "../types.ts"
 import { createQueryJson } from "./fixtures.ts"
+
+const target = {
+	target_features: [],
+	triple: "x86_64-unknown-linux-gnu"
+}
 
 describe("query", () => {
 	describe("lookupCrate", () => {
@@ -22,18 +28,19 @@ describe("query", () => {
 			expect(content).toContain("## Traits\n- **Handler**: Handles requests")
 			expect(content).toContain("## Functions\n- **connect**: Connect to the backend")
 			expect(content).not.toContain("hidden")
-			expect(content).not.toContain("missing_item")
+			expect(content).not.toContain("999")
 		})
 
 		test("throws missing root metadata", () => {
 			const json = {
 				crate_version: "1.0.0",
 				external_crates: {},
-				format_version: 43,
+				format_version: 57,
 				includes_private: false,
 				index: {},
-				paths: {}
-			} as RustdocJson
+				paths: {},
+				target
+			} as unknown as RustdocJson
 
 			expect(() => lookupCrate(json)).toThrow(RustdocParseError)
 		})
@@ -42,14 +49,15 @@ describe("query", () => {
 			const json: RustdocJson = {
 				crate_version: "1.0.0",
 				external_crates: {},
-				format_version: 43,
+				format_version: 57,
 				includes_private: false,
 				index: {},
 				paths: {},
-				root: "missing"
+				root: 42,
+				target
 			}
 
-			expect(() => lookupCrate(json)).toThrow("Root item 'missing' not found in index")
+			expect(() => lookupCrate(json)).toThrow("Root item '42' not found in index")
 		})
 	})
 
@@ -68,68 +76,144 @@ describe("query", () => {
 			expect(fallback).toBe(exact)
 		})
 
-		test("finds raw index name match", () => {
+		test("finds raw index type alias match", () => {
 			const content = lookupItem(createQueryJson(), "type.Alias")
 
 			expect(content).toContain("# Alias")
+			expect(content).toContain("**Type:** Type Alias")
+		})
+
+		test("uses index item kinds even when path metadata drifts", () => {
+			const json = createQueryJson()
+			json.paths["9"] = {
+				crate_id: 0,
+				kind: "macro",
+				path: [
+					"demo",
+					"Alias"
+				]
+			}
+
+			expect(lookupItem(json, "type.Alias")).toContain("**Type:** Type Alias")
 		})
 
 		test("falls back to index matches when path metadata is missing", () => {
 			const json = createQueryJson()
-			json.index.module_fallback = {
+			json.index["11"] = {
+				attrs: [],
 				crate_id: 0,
-				id: "module_fallback",
+				deprecation: null,
+				docs: null,
+				id: 11,
 				inner: {
 					module: {
 						is_crate: false,
+						is_stripped: false,
 						items: []
 					}
 				},
+				links: {},
 				name: "FallbackMod",
+				span: null,
 				visibility: "public"
 			}
-			json.index.struct_fallback = {
+			json.index["12"] = {
+				attrs: [],
 				crate_id: 0,
-				id: "struct_fallback",
+				deprecation: null,
+				docs: null,
+				id: 12,
 				inner: {
 					struct: {
-						struct_type: "tuple"
+						generics: {
+							params: [],
+							where_predicates: []
+						},
+						impls: [],
+						kind: "unit"
 					}
 				},
+				links: {},
 				name: "FallbackStruct",
+				span: null,
 				visibility: "public"
 			}
-			json.index.enum_fallback = {
+			json.index["13"] = {
+				attrs: [],
 				crate_id: 0,
-				id: "enum_fallback",
+				deprecation: null,
+				docs: null,
+				id: 13,
 				inner: {
-					enum: {}
+					enum: {
+						generics: {
+							params: [],
+							where_predicates: []
+						},
+						has_stripped_variants: false,
+						impls: [],
+						variants: []
+					}
 				},
+				links: {},
 				name: "FallbackEnum",
+				span: null,
 				visibility: "public"
 			}
-			json.index.function_fallback = {
+			json.index["14"] = {
+				attrs: [],
 				crate_id: 0,
-				id: "function_fallback",
+				deprecation: null,
+				docs: null,
+				id: 14,
 				inner: {
 					function: {
-						decl: {}
+						generics: {
+							params: [],
+							where_predicates: []
+						},
+						has_body: true,
+						header: {
+							abi: "rust",
+							is_async: false,
+							is_const: false,
+							is_unsafe: false
+						},
+						sig: {
+							inputs: [],
+							is_c_variadic: false,
+							output: null
+						}
 					}
 				},
+				links: {},
 				name: "fallbackFn",
+				span: null,
 				visibility: "public"
 			}
-			json.index.trait_fallback = {
+			json.index["15"] = {
+				attrs: [],
 				crate_id: 0,
-				id: "trait_fallback",
+				deprecation: null,
+				docs: null,
+				id: 15,
 				inner: {
 					trait: {
+						bounds: [],
+						generics: {
+							params: [],
+							where_predicates: []
+						},
+						implementations: [],
 						is_auto: false,
+						is_dyn_compatible: true,
 						is_unsafe: false,
 						items: []
 					}
 				},
+				links: {},
 				name: "FallbackTrait",
+				span: null,
 				visibility: "public"
 			}
 

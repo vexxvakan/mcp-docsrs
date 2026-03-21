@@ -30,7 +30,7 @@ const parseRustdoc = async (response: Response, url: string) => {
 		)
 
 		const payload = JSON.parse(raw) as RustdocJson
-		if (!(payload.root && payload.index && payload.paths)) {
+		if (payload.root === undefined || !payload.index || !payload.paths) {
 			throw new Error("Invalid payload")
 		}
 

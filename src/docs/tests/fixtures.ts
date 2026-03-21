@@ -1,12 +1,81 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc fixtures use upstream snake_case keys
+// biome-ignore-all lint/style/noMagicNumbers: fixture ids intentionally mirror rustdoc-style numeric ids
+// biome-ignore-all lint/complexity/useMaxParams: fixture helper keeps test data readable
 import type { ServerConfig } from "../../config/types.ts"
-import type { RustdocJson } from "../types.ts"
+import type { RustdocItem, RustdocItemInner, RustdocJson, RustdocVisibility } from "../types.ts"
+
+const TARGET = {
+	target_features: [],
+	triple: "x86_64-unknown-linux-gnu"
+}
+
+const EMPTY_GENERICS = {
+	params: [],
+	where_predicates: []
+}
 
 const createConfig = (requestTimeout = 50): ServerConfig => ({
 	cacheTtl: 60_000,
 	dbPath: undefined,
 	maxCacheSize: 8,
 	requestTimeout
+})
+
+const primitiveType = (name: string) => ({
+	primitive: name
+})
+
+const resolvedPathType = (id: number, path: string) => ({
+	resolved_path: {
+		args: null,
+		id,
+		path
+	}
+})
+
+const createFunction = (
+	flags?: Partial<{
+		is_async: boolean
+		is_const: boolean
+		is_unsafe: boolean
+	}>
+) =>
+	({
+		function: {
+			generics: EMPTY_GENERICS,
+			has_body: true,
+			header: {
+				abi: "rust",
+				is_async: false,
+				is_const: false,
+				is_unsafe: false,
+				...flags
+			},
+			sig: {
+				inputs: [],
+				is_c_variadic: false,
+				output: null
+			}
+		}
+	}) satisfies RustdocItemInner
+
+const createItem = (
+	id: number,
+	name: string | null,
+	visibility: RustdocVisibility,
+	inner: RustdocItemInner,
+	extra?: Partial<Pick<RustdocItem, "deprecation" | "docs">>
+): RustdocItem => ({
+	attrs: [],
+	crate_id: 0,
+	deprecation: extra?.deprecation ?? null,
+	docs: extra?.docs ?? null,
+	id,
+	inner,
+	links: {},
+	name,
+	span: null,
+	visibility
 })
 
 const toResponse = (body: string | Uint8Array | null, encoding?: string) =>
@@ -22,42 +91,40 @@ const toResponse = (body: string | Uint8Array | null, encoding?: string) =>
 const storeRustdocJson: RustdocJson = {
 	crate_version: "1.2.3",
 	external_crates: {},
-	format_version: 43,
+	format_version: 57,
 	includes_private: false,
 	index: {
-		connect: {
-			crate_id: 0,
-			docs: "Connects to the service.",
-			id: "connect",
-			inner: {
-				function: {
-					decl: {},
-					header: {
-						async: true
-					}
-				}
-			},
-			name: "connect",
-			visibility: "public"
-		},
-		root: {
-			crate_id: 0,
-			docs: "Demo crate docs",
-			id: "root",
-			inner: {
+		"0": createItem(
+			0,
+			"demo",
+			"public",
+			{
 				module: {
 					is_crate: true,
+					is_stripped: false,
 					items: [
-						"connect"
+						1
 					]
 				}
 			},
-			name: "demo",
-			visibility: "public"
-		}
+			{
+				docs: "Demo crate docs"
+			}
+		),
+		"1": createItem(
+			1,
+			"connect",
+			"public",
+			createFunction({
+				is_async: true
+			}),
+			{
+				docs: "Connects to the service."
+			}
+		)
 	},
 	paths: {
-		connect: {
+		"1": {
 			crate_id: 0,
 			kind: "function",
 			path: [
@@ -66,209 +133,434 @@ const storeRustdocJson: RustdocJson = {
 			]
 		}
 	},
-	root: "root"
+	root: 0,
+	target: TARGET
 }
 
 const queryRustdocJson: RustdocJson = {
 	crate_version: "1.2.3",
 	external_crates: {},
-	format_version: 43,
+	format_version: 57,
 	includes_private: false,
 	index: {
-		anon_struct: {
-			crate_id: 0,
-			docs: "Anonymous but public",
-			id: "anon_struct",
-			inner: {
-				struct: {
-					fields: [],
-					impls: [],
-					struct_type: "unit"
-				}
-			},
-			visibility: "public"
-		},
-		empty_inner_item: {
-			crate_id: 0,
-			docs: "No structured kind information",
-			id: "empty_inner_item",
-			inner: {},
-			name: "EmptyInner",
-			visibility: "public"
-		},
-		enum_item: {
-			crate_id: 0,
-			docs: "Modes for the runtime",
-			id: "enum_item",
-			inner: {
-				enum: {
-					impls: [
-						"enum_impl"
-					],
-					variants: [
-						"fast",
-						"slow"
+		"0": createItem(
+			0,
+			"demo",
+			"public",
+			{
+				module: {
+					is_crate: true,
+					is_stripped: false,
+					items: [
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						8,
+						999
 					]
 				}
 			},
-			name: "Mode",
-			visibility: "public"
-		},
-		function_item: {
-			crate_id: 0,
-			docs: "Connect to the backend",
-			id: "function_item",
-			inner: {
-				function: {
-					decl: {},
-					header: {
-						async: true,
-						const: true,
-						unsafe: true
+			{
+				docs: "Root crate docs"
+			}
+		),
+		"1": createItem(
+			1,
+			"net",
+			"public",
+			{
+				module: {
+					is_crate: false,
+					is_stripped: false,
+					items: []
+				}
+			},
+			{
+				docs: "Networking tools"
+			}
+		),
+		"2": createItem(
+			2,
+			"Client",
+			"public",
+			{
+				struct: {
+					generics: EMPTY_GENERICS,
+					impls: [
+						201
+					],
+					kind: {
+						plain: {
+							fields: [
+								101,
+								102
+							],
+							has_stripped_fields: false
+						}
 					}
 				}
 			},
-			name: "connect",
-			visibility: "public"
-		},
-		hidden_item: {
-			crate_id: 0,
-			docs: "Should not be listed",
-			id: "hidden_item",
-			inner: {
-				function: {
-					decl: {}
-				}
-			},
-			name: "hidden",
-			visibility: "default"
-		},
-		impl_item: {
-			crate_id: 0,
-			docs: "Implementation details",
-			id: "impl_item",
-			inner: {
-				impl: {
-					for: {},
-					is_unsafe: false,
-					items: []
-				}
-			},
-			name: "ClientImpl",
-			visibility: "public"
-		},
-		module_item: {
-			crate_id: 0,
-			docs: "Networking tools",
-			id: "module_item",
-			inner: {
-				module: {
-					is_crate: false,
-					items: []
-				}
-			},
-			name: "net",
-			visibility: "public"
-		},
-		root: {
-			crate_id: 0,
-			docs: "Root crate docs",
-			id: "root",
-			inner: {
-				module: {
-					is_crate: true,
-					items: [
-						"module_item",
-						"struct_item",
-						"anon_struct",
-						"enum_item",
-						"trait_item",
-						"function_item",
-						"hidden_item",
-						"missing_item"
+			{
+				docs: "This summary line is intentionally longer than one hundred characters so the preview formatter has to trim it.\nExtra details stay in the full item view."
+			}
+		),
+		"3": createItem(
+			3,
+			"Mode",
+			"public",
+			{
+				enum: {
+					generics: EMPTY_GENERICS,
+					has_stripped_variants: false,
+					impls: [
+						301
+					],
+					variants: [
+						401,
+						402
 					]
 				}
 			},
-			name: "demo",
-			visibility: "public"
-		},
-		struct_item: {
-			crate_id: 0,
-			docs: "This summary line is intentionally longer than one hundred characters so the preview formatter has to trim it.\nExtra details stay in the full item view.",
-			id: "struct_item",
-			inner: {
-				struct: {
-					fields: [
-						"field_one",
-						"field_two"
-					],
-					impls: [
-						"impl_one"
-					],
-					struct_type: "plain"
-				}
-			},
-			name: "Client",
-			visibility: "public"
-		},
-		trait_item: {
-			crate_id: 0,
-			docs: "Handles requests",
-			id: "trait_item",
-			inner: {
+			{
+				docs: "Modes for the runtime"
+			}
+		),
+		"4": createItem(
+			4,
+			"Handler",
+			"public",
+			{
 				trait: {
+					bounds: [],
+					generics: EMPTY_GENERICS,
+					implementations: [
+						501
+					],
 					is_auto: true,
+					is_dyn_compatible: true,
 					is_unsafe: true,
 					items: [
-						"method_one",
-						"method_two"
+						601,
+						602
 					]
 				}
 			},
-			name: "Handler",
-			visibility: "public"
-		},
-		typedef_item: {
-			crate_id: 0,
-			docs: "Shared alias",
-			id: "typedef_item",
-			inner: {
-				typedef: {
-					type: "String"
+			{
+				docs: "Handles requests"
+			}
+		),
+		"5": createItem(
+			5,
+			"connect",
+			"public",
+			createFunction({
+				is_async: true,
+				is_const: true,
+				is_unsafe: true
+			}),
+			{
+				docs: "Connect to the backend"
+			}
+		),
+		"6": createItem(6, "hidden", "default", createFunction(), {
+			docs: "Should not be listed"
+		}),
+		"7": createItem(
+			7,
+			"ClientImpl",
+			"public",
+			{
+				impl: {
+					blanket_impl: null,
+					for: resolvedPathType(2, "demo::runtime::Client"),
+					generics: EMPTY_GENERICS,
+					is_negative: true,
+					is_synthetic: true,
+					is_unsafe: false,
+					items: [
+						17,
+						18
+					],
+					provided_trait_methods: [
+						"clone_default"
+					],
+					trait: resolvedPathType(901, "demo::traits::Service")
 				}
 			},
-			name: "Alias",
-			visibility: "public"
-		},
-		unknown_item: {
-			crate_id: 0,
-			deprecation: {
-				note: "Old path"
+			{
+				docs: "Implementation details"
+			}
+		),
+		"8": createItem(
+			8,
+			null,
+			"public",
+			{
+				struct: {
+					generics: EMPTY_GENERICS,
+					impls: [],
+					kind: "unit"
+				}
 			},
-			docs: "Mysterious item docs",
-			id: "unknown_item",
-			name: "Mystery",
-			visibility: "crate"
-		}
+			{
+				docs: "Anonymous but public"
+			}
+		),
+		"9": createItem(
+			9,
+			"Alias",
+			"public",
+			{
+				type_alias: {
+					generics: EMPTY_GENERICS,
+					type: resolvedPathType(900, "std::string::String")
+				}
+			},
+			{
+				docs: "Shared alias"
+			}
+		),
+		"10": createItem(
+			10,
+			"Mystery",
+			"crate",
+			{
+				proc_macro: {
+					helpers: [
+						"default"
+					],
+					kind: "derive"
+				}
+			},
+			{
+				deprecation: {
+					note: "Old path"
+				},
+				docs: "Mysterious item docs"
+			}
+		),
+		"11": createItem(
+			11,
+			"UtilMod",
+			"public",
+			{
+				module: {
+					is_crate: false,
+					is_stripped: true,
+					items: [
+						12,
+						13
+					]
+				}
+			},
+			{
+				docs: "Utility module"
+			}
+		),
+		"12": createItem(
+			12,
+			"ClientAlias",
+			"public",
+			{
+				use: {
+					id: 2,
+					is_glob: false,
+					name: "ClientAlias",
+					source: "demo::runtime::Client"
+				}
+			},
+			{
+				docs: "Re-exported client"
+			}
+		),
+		"13": createItem(
+			13,
+			"Payload",
+			"public",
+			{
+				union: {
+					fields: [
+						103,
+						104
+					],
+					generics: {
+						params: [
+							{
+								name: "T"
+							}
+						],
+						where_predicates: []
+					},
+					has_stripped_fields: true,
+					impls: [
+						701
+					]
+				}
+			},
+			{
+				docs: "Union payload"
+			}
+		),
+		"14": createItem(
+			14,
+			"Ready",
+			"public",
+			{
+				variant: {
+					discriminant: {
+						expr: "1",
+						value: "1"
+					},
+					kind: {
+						struct: {
+							fields: [
+								105
+							],
+							has_stripped_fields: false
+						}
+					}
+				}
+			},
+			{
+				docs: "Ready state variant"
+			}
+		),
+		"15": createItem(
+			15,
+			"payload",
+			"public",
+			{
+				struct_field: resolvedPathType(900, "std::string::String")
+			},
+			{
+				docs: "Payload field"
+			}
+		),
+		"16": createItem(
+			16,
+			"MAX_RETRIES",
+			"public",
+			{
+				constant: {
+					const: {
+						expr: "42",
+						is_literal: true,
+						value: "42"
+					},
+					type: primitiveType("u32")
+				}
+			},
+			{
+				docs: "Retry count"
+			}
+		),
+		"17": createItem(
+			17,
+			"BUF_SIZE",
+			"public",
+			{
+				assoc_const: {
+					type: primitiveType("usize"),
+					value: "1024"
+				}
+			},
+			{
+				docs: "Buffer size"
+			}
+		),
+		"18": createItem(
+			18,
+			"Output",
+			"public",
+			{
+				assoc_type: {
+					bounds: [
+						{
+							trait_bound: "Clone"
+						}
+					],
+					generics: {
+						params: [
+							{
+								name: "T"
+							}
+						],
+						where_predicates: [
+							{
+								predicate: "T: Send"
+							}
+						]
+					},
+					type: resolvedPathType(900, "std::string::String")
+				}
+			},
+			{
+				docs: "Associated output type"
+			}
+		),
+		"19": createItem(
+			19,
+			"DEFAULT_TIMEOUT",
+			"public",
+			{
+				static: {
+					expr: "30_000",
+					is_mutable: true,
+					is_unsafe: false,
+					type: primitiveType("u64")
+				}
+			},
+			{
+				docs: "Default timeout"
+			}
+		),
+		"20": createItem(
+			20,
+			"ResultAlias",
+			"public",
+			{
+				type_alias: {
+					generics: {
+						params: [
+							{
+								name: "T"
+							}
+						],
+						where_predicates: [
+							{
+								predicate: "T: Debug"
+							}
+						]
+					},
+					type: resolvedPathType(902, "core::result::Result")
+				}
+			},
+			{
+				docs: "Result alias"
+			}
+		),
+		"21": createItem(
+			21,
+			"trace",
+			"public",
+			{
+				proc_macro: {
+					helpers: [
+						"trace_skip"
+					],
+					kind: "attr"
+				}
+			},
+			{
+				docs: "Tracing attribute"
+			}
+		)
 	},
 	paths: {
-		enum_item: {
-			crate_id: 0,
-			kind: "enum",
-			path: [
-				"demo",
-				"Mode"
-			]
-		},
-		function_item: {
-			crate_id: 0,
-			kind: "function",
-			path: [
-				"demo",
-				"connect"
-			]
-		},
-		module_item: {
+		"1": {
 			crate_id: 0,
 			kind: "module",
 			path: [
@@ -276,7 +568,7 @@ const queryRustdocJson: RustdocJson = {
 				"net"
 			]
 		},
-		struct_item: {
+		"2": {
 			crate_id: 0,
 			kind: "struct",
 			path: [
@@ -285,7 +577,15 @@ const queryRustdocJson: RustdocJson = {
 				"Client"
 			]
 		},
-		trait_item: {
+		"3": {
+			crate_id: 0,
+			kind: "enum",
+			path: [
+				"demo",
+				"Mode"
+			]
+		},
+		"4": {
 			crate_id: 0,
 			kind: "trait",
 			path: [
@@ -293,16 +593,41 @@ const queryRustdocJson: RustdocJson = {
 				"Handler"
 			]
 		},
-		unknown_path_item: {
+		"5": {
+			crate_id: 0,
+			kind: "function",
+			path: [
+				"demo",
+				"connect"
+			]
+		},
+		"9": {
+			crate_id: 0,
+			kind: "type_alias",
+			path: [
+				"demo",
+				"Alias"
+			]
+		},
+		"20": {
+			crate_id: 0,
+			kind: "type_alias",
+			path: [
+				"demo",
+				"ResultAlias"
+			]
+		},
+		"9999": {
 			crate_id: 0,
 			kind: "macro",
 			path: [
 				"demo",
-				"Mystery"
+				"Ghost"
 			]
 		}
 	},
-	root: "root"
+	root: 0,
+	target: TARGET
 }
 
 const createQueryJson = () => structuredClone(queryRustdocJson)
