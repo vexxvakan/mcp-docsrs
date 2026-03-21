@@ -1,0 +1,4 @@
+interface:
+  display_name: "MCP Reviewer"
+  short_description: "Capture verbatim docsrs MCP review runs."
+  default_prompt: "Use $mcp-reviewer to run a docsrs MCP review for the target crate and write the review artifacts."
