@@ -2,7 +2,8 @@
 // biome-ignore-all lint/style/noMagicNumbers: fixture ids intentionally mirror rustdoc-style numeric ids
 // biome-ignore-all lint/complexity/useMaxParams: fixture helper keeps test data readable
 import type { ServerConfig } from "../../config/types.ts"
-import type { RustdocItem, RustdocItemInner, RustdocJson, RustdocVisibility } from "../types.ts"
+import type { Visibility } from "../rustdoc/types/core.ts"
+import type { Item, ItemEnum, Json } from "../rustdoc/types/items.ts"
 
 const TARGET = {
 	target_features: [],
@@ -13,6 +14,39 @@ const EMPTY_GENERICS = {
 	params: [],
 	where_predicates: []
 }
+
+const createTypeParam = (name: string) => ({
+	kind: {
+		type: {
+			bounds: [],
+			default: null,
+			is_synthetic: false
+		}
+	},
+	name
+})
+
+const createPredicate = (name: string, path: string, id: number) => ({
+	bound_predicate: {
+		bounds: [
+			{
+				trait_bound: {
+					generic_params: [],
+					modifier: "none" as const,
+					trait: {
+						args: null,
+						id,
+						path
+					}
+				}
+			}
+		],
+		generic_params: [],
+		type: {
+			generic: name
+		}
+	}
+})
 
 const createConfig = (requestTimeout = 50): ServerConfig => ({
 	cacheTtl: 60_000,
@@ -57,15 +91,15 @@ const createFunction = (
 				output: null
 			}
 		}
-	}) satisfies RustdocItemInner
+	}) satisfies ItemEnum
 
 const createItem = (
 	id: number,
 	name: string | null,
-	visibility: RustdocVisibility,
-	inner: RustdocItemInner,
-	extra?: Partial<Pick<RustdocItem, "deprecation" | "docs">>
-): RustdocItem => ({
+	visibility: Visibility,
+	inner: ItemEnum,
+	extra?: Partial<Pick<Item, "deprecation" | "docs">>
+): Item => ({
 	attrs: [],
 	crate_id: 0,
 	deprecation: extra?.deprecation ?? null,
@@ -88,7 +122,7 @@ const toResponse = (body: string | Uint8Array | null, encoding?: string) =>
 		status: 200
 	})
 
-const storeRustdocJson: RustdocJson = {
+const storeRustdocJson: Json = {
 	crate_version: "1.2.3",
 	external_crates: {},
 	format_version: 57,
@@ -137,7 +171,7 @@ const storeRustdocJson: RustdocJson = {
 	target: TARGET
 }
 
-const queryRustdocJson: RustdocJson = {
+const queryRustdocJson: Json = {
 	crate_version: "1.2.3",
 	external_crates: {},
 	format_version: 57,
@@ -287,7 +321,11 @@ const queryRustdocJson: RustdocJson = {
 					provided_trait_methods: [
 						"clone_default"
 					],
-					trait: resolvedPathType(901, "demo::traits::Service")
+					trait: {
+						args: null,
+						id: 901,
+						path: "demo::traits::Service"
+					}
 				}
 			},
 			{
@@ -337,7 +375,8 @@ const queryRustdocJson: RustdocJson = {
 			},
 			{
 				deprecation: {
-					note: "Old path"
+					note: "Old path",
+					since: null
 				},
 				docs: "Mysterious item docs"
 			}
@@ -388,9 +427,7 @@ const queryRustdocJson: RustdocJson = {
 					],
 					generics: {
 						params: [
-							{
-								name: "T"
-							}
+							createTypeParam("T")
 						],
 						where_predicates: []
 					},
@@ -479,19 +516,23 @@ const queryRustdocJson: RustdocJson = {
 				assoc_type: {
 					bounds: [
 						{
-							trait_bound: "Clone"
+							trait_bound: {
+								generic_params: [],
+								modifier: "none",
+								trait: {
+									args: null,
+									id: 903,
+									path: "core::clone::Clone"
+								}
+							}
 						}
 					],
 					generics: {
 						params: [
-							{
-								name: "T"
-							}
+							createTypeParam("T")
 						],
 						where_predicates: [
-							{
-								predicate: "T: Send"
-							}
+							createPredicate("T", "core::marker::Send", 904)
 						]
 					},
 					type: resolvedPathType(900, "std::string::String")
@@ -525,14 +566,10 @@ const queryRustdocJson: RustdocJson = {
 				type_alias: {
 					generics: {
 						params: [
-							{
-								name: "T"
-							}
+							createTypeParam("T")
 						],
 						where_predicates: [
-							{
-								predicate: "T: Debug"
-							}
+							createPredicate("T", "core::fmt::Debug", 905)
 						]
 					},
 					type: resolvedPathType(902, "core::result::Result")

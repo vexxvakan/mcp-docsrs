@@ -1,9 +1,8 @@
 import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
-import type { RustdocJson } from "../docs/types.ts"
+import type { Crate } from "../docs/rustdoc/types/items.ts"
 import { CacheError, ErrorLogger } from "../errors.ts"
-import type { JsonValue } from "../shared/types.ts"
 import type { CacheEntry, CacheStatements, CacheStore } from "./types.ts"
 
 const MEMORY_DB = ":memory:"
@@ -55,7 +54,7 @@ const cleanupExpired = (db: Database) => {
 	])
 }
 
-const parseStoredValue = (value: string) => JSON.parse(value) as JsonValue
+const parseStoredValue = (value: string) => JSON.parse(value) as Crate
 
 const createStatements = (db: Database): CacheStatements => ({
 	clearStmt: db.prepare("DELETE FROM cache"),
@@ -71,7 +70,7 @@ const createStatements = (db: Database): CacheStatements => ({
 
 const createGet =
 	(db: Database, statements: CacheStatements) =>
-	(key: string): CacheEntry<RustdocJson> | null => {
+	(key: string): CacheEntry<Crate> | null => {
 		try {
 			cleanupExpired(db)
 			const result = statements.getStmt.get(key)
@@ -88,7 +87,7 @@ const createGet =
 			}
 
 			return {
-				data: parseStoredValue(result.data) as RustdocJson,
+				data: parseStoredValue(result.data) as Crate,
 				isHit: true
 			}
 		} catch (error) {
@@ -97,8 +96,7 @@ const createGet =
 	}
 
 const createSet =
-	(statements: CacheStatements, maxSize: number) =>
-	(key: string, value: JsonValue, ttl: number) => {
+	(statements: CacheStatements, maxSize: number) => (key: string, value: Crate, ttl: number) => {
 		try {
 			const count = statements.countStmt.get()?.count ?? 0
 			if (count >= maxSize) {

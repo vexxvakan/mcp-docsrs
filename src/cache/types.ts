@@ -1,6 +1,5 @@
 import type { Statement } from "bun:sqlite"
-import type { RustdocJson } from "../docs/types.ts"
-import type { JsonValue } from "../shared/types.ts"
+import type { Crate } from "../docs/rustdoc/types/items.ts"
 
 type CacheEntry<T> = {
 	data: T | null
@@ -34,8 +33,8 @@ type CacheStore = {
 	clear: () => void
 	close: () => void
 	delete: (key: string) => void
-	get: (key: string) => CacheEntry<RustdocJson> | null
-	set: (key: string, value: JsonValue, ttl: number) => void
+	get: (key: string) => CacheEntry<Crate> | null
+	set: (key: string, value: Crate, ttl: number) => void
 }
 
 export type {

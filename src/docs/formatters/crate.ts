@@ -1,6 +1,8 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc crate section keys mirror upstream snake_case kinds
+
+import type { Item, ItemKind, Json } from "../rustdoc/types/items.ts"
 import { KIND_LABELS } from "../shared.ts"
-import type { CrateBuckets, RustdocItem, RustdocItemKind, RustdocJson } from "../types.ts"
+import type { CrateBuckets } from "../types.ts"
 
 const CRATE_SECTION_ORDER = [
 	"module",
@@ -27,7 +29,7 @@ const CRATE_SECTION_ORDER = [
 	"extern_type",
 	"attribute",
 	"keyword"
-] as const satisfies RustdocItemKind[]
+] as const satisfies ItemKind[]
 
 const pluralizeWord = (word: string) => {
 	if (word.endsWith("y")) {
@@ -41,7 +43,7 @@ const pluralizeWord = (word: string) => {
 	return `${word}s`
 }
 
-const toSectionLabel = (kind: RustdocItemKind) => {
+const toSectionLabel = (kind: ItemKind) => {
 	const words = KIND_LABELS[kind].split(" ")
 	const tail = words.pop()
 	if (!tail) {
@@ -60,10 +62,9 @@ const createCrateBuckets = (): CrateBuckets =>
 		return buckets
 	}, {} as CrateBuckets)
 
-const formatCrateDocs = (root: RustdocItem) =>
-	root.docs ?? "No crate-level documentation available."
+const formatCrateDocs = (root: Item) => root.docs ?? "No crate-level documentation available."
 
-const formatCrate = (json: RustdocJson, root: RustdocItem, buckets: CrateBuckets) =>
+const formatCrate = (json: Json, root: Item, buckets: CrateBuckets) =>
 	[
 		root.name ? `# Crate: ${root.name}${json.crate_version ? ` v${json.crate_version}` : ""}` : "",
 		...CRATE_SECTION_ORDER.map((kind) =>

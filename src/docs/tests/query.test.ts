@@ -3,7 +3,8 @@
 import { describe, expect, test } from "bun:test"
 import { RustdocParseError } from "../../errors.ts"
 import { lookupCrate, lookupCrateDocs, lookupSymbol } from "../query.ts"
-import type { DocsSymbolRequest, RustdocJson } from "../types.ts"
+import type { Crate } from "../rustdoc/types/items.ts"
+import type { DocsSymbolRequest } from "../types.ts"
 import { createQueryJson } from "./fixtures.ts"
 
 const target = {
@@ -74,13 +75,13 @@ describe("query", () => {
 				index: {},
 				paths: {},
 				target
-			} as unknown as RustdocJson
+			} as unknown as Crate
 
 			expect(() => lookupCrate(json)).toThrow(RustdocParseError)
 		})
 
 		test("throws missing root item", () => {
-			const json: RustdocJson = {
+			const json: Crate = {
 				crate_version: "1.0.0",
 				external_crates: {},
 				format_version: 57,

@@ -3,8 +3,8 @@ import { describe, expect, spyOn, test } from "bun:test"
 import { ErrorLogger } from "../../errors.ts"
 import { createCrateBuckets, formatCrate, formatCrateDocs } from "../formatters/crate.ts"
 import { formatItem } from "../formatters/item.ts"
+import type { Item } from "../rustdoc/types/items.ts"
 import { ensureRoot } from "../shared.ts"
-import type { RustdocItem } from "../types.ts"
 import { createQueryJson } from "./fixtures.ts"
 
 const longDocs = Array.from(
@@ -209,7 +209,7 @@ describe("format", () => {
 				name: "PreviewedDocs",
 				span: null,
 				visibility: "public"
-			} as RustdocItem
+			} as Item
 
 			const content = formatItem(item, "module", false)
 
@@ -237,7 +237,7 @@ describe("format", () => {
 				name: "ExpandedDocs",
 				span: null,
 				visibility: "public"
-			} as RustdocItem
+			} as Item
 
 			const content = formatItem(item, "module", true)
 
@@ -253,12 +253,12 @@ describe("format", () => {
 				deprecation: null,
 				docs: "Unknown item docs",
 				id: 999,
-				inner: {} as RustdocItem["inner"],
+				inner: {} as Item["inner"],
 				links: {},
 				name: "UnknownKind",
 				span: null,
 				visibility: "public"
-			} as RustdocItem
+			} as Item
 
 			const content = formatItem(item)
 
@@ -296,7 +296,7 @@ describe("format", () => {
 				name: "OddAlias",
 				span: null,
 				visibility: "public"
-			} as RustdocItem
+			} as unknown as Item
 
 			const content = formatItem(item, "type_alias")
 

@@ -1,5 +1,5 @@
 import { ErrorLogger } from "../../errors.ts"
-import type { JsonObject, JsonValue } from "../../shared/types.ts"
+import type { JsonObject, JsonValue } from "../rustdoc/types/system.ts"
 
 const toObject = (value: JsonValue) =>
 	typeof value === "object" && value !== null && !Array.isArray(value)

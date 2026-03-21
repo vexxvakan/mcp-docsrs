@@ -1,9 +1,9 @@
-import type { RustdocItem, RustdocStructKind, RustdocVariantKind } from "../types.ts"
+import type { Item, StructKind, VariantKind } from "../rustdoc/types/items.ts"
 import { formatGenericDetails, formatInlineValue } from "./render.ts"
 
 const withLabel = (label: string, value: string | null) => (value ? `**${label}:** ${value}` : "")
 
-const getStructShape = (kind: RustdocStructKind) => {
+const getStructShape = (kind: StructKind) => {
 	if (kind === "unit") {
 		return {
 			fieldCount: 0,
@@ -23,7 +23,7 @@ const getStructShape = (kind: RustdocStructKind) => {
 	}
 }
 
-const getVariantShape = (kind: RustdocVariantKind) => {
+const getVariantShape = (kind: VariantKind) => {
 	if (kind === "plain") {
 		return {
 			fieldCount: 0,
@@ -43,7 +43,7 @@ const getVariantShape = (kind: RustdocVariantKind) => {
 	}
 }
 
-const formatFunctionDetails = (item: RustdocItem) => {
+const formatFunctionDetails = (item: Item) => {
 	const details =
 		typeof item.inner === "object" && "function" in item.inner ? item.inner.function : null
 	if (!details) {
@@ -62,7 +62,7 @@ const formatFunctionDetails = (item: RustdocItem) => {
 	].filter(Boolean)
 }
 
-const formatStructDetails = (item: RustdocItem) => {
+const formatStructDetails = (item: Item) => {
 	const details =
 		typeof item.inner === "object" && "struct" in item.inner ? item.inner.struct : null
 	if (!details) {
@@ -80,7 +80,7 @@ const formatStructDetails = (item: RustdocItem) => {
 	].filter(Boolean)
 }
 
-const formatEnumDetails = (item: RustdocItem) => {
+const formatEnumDetails = (item: Item) => {
 	const details = typeof item.inner === "object" && "enum" in item.inner ? item.inner.enum : null
 	if (!details) {
 		return []
@@ -97,7 +97,7 @@ const formatEnumDetails = (item: RustdocItem) => {
 	].filter(Boolean)
 }
 
-const formatTraitDetails = (item: RustdocItem) => {
+const formatTraitDetails = (item: Item) => {
 	const details = typeof item.inner === "object" && "trait" in item.inner ? item.inner.trait : null
 	if (!details) {
 		return []
@@ -120,7 +120,7 @@ const formatTraitDetails = (item: RustdocItem) => {
 	].filter(Boolean)
 }
 
-const formatAliasDetails = (item: RustdocItem) => {
+const formatAliasDetails = (item: Item) => {
 	if (typeof item.inner !== "object") {
 		return []
 	}
@@ -157,7 +157,7 @@ const formatAliasDetails = (item: RustdocItem) => {
 	return []
 }
 
-const formatImplDetails = (item: RustdocItem) => {
+const formatImplDetails = (item: Item) => {
 	const details = typeof item.inner === "object" && "impl" in item.inner ? item.inner.impl : null
 	if (!details) {
 		return []
@@ -207,7 +207,7 @@ const formatImplDetails = (item: RustdocItem) => {
 	].filter(Boolean)
 }
 
-const formatImportDetails = (item: RustdocItem) => {
+const formatImportDetails = (item: Item) => {
 	if (typeof item.inner !== "object") {
 		return []
 	}
@@ -230,7 +230,7 @@ const formatImportDetails = (item: RustdocItem) => {
 	return []
 }
 
-const formatValueDetails = (item: RustdocItem) => {
+const formatValueDetails = (item: Item) => {
 	if (typeof item.inner !== "object") {
 		return []
 	}
@@ -284,7 +284,7 @@ const formatValueDetails = (item: RustdocItem) => {
 	return []
 }
 
-const formatProcMacroDetails = (item: RustdocItem) => {
+const formatProcMacroDetails = (item: Item) => {
 	const details =
 		typeof item.inner === "object" && "proc_macro" in item.inner ? item.inner.proc_macro : null
 	if (!details) {
@@ -296,7 +296,7 @@ const formatProcMacroDetails = (item: RustdocItem) => {
 	].filter(Boolean)
 }
 
-const formatCompositeDetails = (item: RustdocItem) => {
+const formatCompositeDetails = (item: Item) => {
 	if (typeof item.inner !== "object") {
 		return []
 	}

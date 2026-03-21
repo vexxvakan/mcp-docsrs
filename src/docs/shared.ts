@@ -1,12 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc item kind tags use upstream snake_case
 import { RustdocParseError } from "../errors.ts"
-import type {
-	RustdocId,
-	RustdocItem,
-	RustdocItemInner,
-	RustdocItemKind,
-	RustdocJson
-} from "./types.ts"
+import type { Id } from "./rustdoc/types/core.ts"
+import type { Crate, Item, ItemEnum, ItemKind } from "./rustdoc/types/items.ts"
 
 const KIND_LABELS = {
 	assoc_const: "Associated Constant",
@@ -33,7 +28,7 @@ const KIND_LABELS = {
 	union: "Union",
 	use: "Use",
 	variant: "Variant"
-} as const satisfies Record<RustdocItemKind, string>
+} as const satisfies Record<ItemKind, string>
 
 const ITEM_KIND_BY_TAG = {
 	assoc_const: "assoc_const",
@@ -57,15 +52,15 @@ const ITEM_KIND_BY_TAG = {
 	use: "use",
 	variant: "variant"
 } as const satisfies Record<
-	Exclude<RustdocItemKind, "attribute" | "keyword" | "proc_attribute" | "proc_derive">,
-	RustdocItemKind
+	Exclude<ItemKind, "attribute" | "keyword" | "proc_attribute" | "proc_derive">,
+	ItemKind
 >
 
-const toIdKey = (id: RustdocId) => String(id)
+const toIdKey = (id: Id) => String(id)
 
-const getItemById = (json: RustdocJson, id: RustdocId) => json.index[toIdKey(id)]
+const getItemById = (json: Crate, id: Id) => json.index[toIdKey(id)]
 
-const ensureRoot = (json: RustdocJson) => {
+const ensureRoot = (json: Crate) => {
 	if (json.root === undefined || !json.index || !json.paths) {
 		throw new RustdocParseError("Invalid rustdoc JSON structure: missing root, index, or paths")
 	}
@@ -78,7 +73,7 @@ const ensureRoot = (json: RustdocJson) => {
 	return root
 }
 
-const getItemInnerTag = (inner: RustdocItemInner): string | undefined => {
+const getItemInnerTag = (inner: ItemEnum): string | undefined => {
 	if (typeof inner === "string") {
 		return inner
 	}
@@ -86,7 +81,7 @@ const getItemInnerTag = (inner: RustdocItemInner): string | undefined => {
 	return Object.keys(inner)[0]
 }
 
-const getKindFromItem = (item: RustdocItem): RustdocItemKind | undefined => {
+const getKindFromItem = (item: Item): ItemKind | undefined => {
 	const tag = getItemInnerTag(item.inner)
 	if (!tag) {
 		return

@@ -1,15 +1,9 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc kind aliases follow upstream snake_case naming
 import { createCrateBuckets, formatCrate, formatCrateDocs } from "./formatters/crate.ts"
 import { formatItem } from "./formatters/item.ts"
+import type { Item, ItemKind, Json } from "./rustdoc/types/items.ts"
 import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "./shared.ts"
-import type {
-	CrateBuckets,
-	DocsSymbolQuery,
-	DocsSymbolRequest,
-	RustdocItem,
-	RustdocItemKind,
-	RustdocJson
-} from "./types.ts"
+import type { CrateBuckets, DocsSymbolQuery, DocsSymbolRequest } from "./types.ts"
 
 const MAX_PREVIEW_LENGTH = 100
 const PREVIEW_SUFFIX = "..."
@@ -49,7 +43,7 @@ const KIND_ALIASES = {
 	union: "union",
 	use: "use",
 	variant: "variant"
-} as const satisfies Record<string, RustdocItemKind>
+} as const satisfies Record<string, ItemKind>
 
 const hasPathSuffix = (path: string[], suffix: string[]) => {
 	if (suffix.length > path.length) {
@@ -74,7 +68,7 @@ const getFirstLine = (docs: string) => {
 	return `${trimmed.slice(0, MAX_PREVIEW_LENGTH - PREVIEW_SUFFIX.length)}${PREVIEW_SUFFIX}`
 }
 
-const collectCrateBuckets = (json: RustdocJson, root: RustdocItem): CrateBuckets => {
+const collectCrateBuckets = (json: Json, root: Item): CrateBuckets => {
 	const buckets = createCrateBuckets()
 
 	const rootModule =
@@ -114,12 +108,12 @@ const parseSymbolQuery = (input: DocsSymbolRequest) => {
 	} satisfies DocsSymbolQuery
 }
 
-const buildIndexPaths = (json: RustdocJson) => {
+const buildIndexPaths = (json: Json) => {
 	const root = ensureRoot(json)
 	const paths: Record<string, string[]> = {}
 	const visited = new Set<string>()
 
-	const visit = (item: RustdocItem, prefix: string[]) => {
+	const visit = (item: Item, prefix: string[]) => {
 		const key = toIdKey(item.id)
 		const nextPath = item.name
 			? [
@@ -150,10 +144,10 @@ const buildIndexPaths = (json: RustdocJson) => {
 
 type CandidateScoreInput = {
 	indexPaths: Record<string, string[]>
-	item: RustdocItem
-	json: RustdocJson
+	item: Item
+	json: Json
 	key: string
-	kind?: RustdocItemKind
+	kind?: ItemKind
 	query: DocsSymbolQuery
 }
 
@@ -184,19 +178,19 @@ const scoreCandidate = ({ indexPaths, item, json, key, kind, query }: CandidateS
 	return score
 }
 
-const lookupCrate = (json: RustdocJson) => {
+const lookupCrate = (json: Json) => {
 	const root = ensureRoot(json)
 	const buckets = collectCrateBuckets(json, root)
 
 	return formatCrate(json, root, buckets)
 }
 
-const lookupCrateDocs = (json: RustdocJson) => {
+const lookupCrateDocs = (json: Json) => {
 	const root = ensureRoot(json)
 	return formatCrateDocs(root)
 }
 
-const lookupSymbol = (json: RustdocJson, input: DocsSymbolRequest) => {
+const lookupSymbol = (json: Json, input: DocsSymbolRequest) => {
 	ensureRoot(json)
 	const indexPaths = buildIndexPaths(json)
 	const query = parseSymbolQuery(input)

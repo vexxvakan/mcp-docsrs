@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc item kind labels use upstream snake_case tags
 import { ErrorLogger } from "../../errors.ts"
+import type { Item, ItemKind } from "../rustdoc/types/items.ts"
 import { getKindFromItem, KIND_LABELS } from "../shared.ts"
-import type { RustdocItem, RustdocItemKind } from "../types.ts"
 import {
 	formatAliasDetails,
 	formatCompositeDetails,
@@ -18,7 +18,7 @@ import {
 const DOC_PREVIEW_ROWS = 20
 const DOC_HINT = "Use `expandDocs: true` for more info."
 
-const toKindLabel = (kind: RustdocItemKind | undefined, item: RustdocItem) => {
+const toKindLabel = (kind: ItemKind | undefined, item: Item) => {
 	const resolvedKind = kind ?? getKindFromItem(item)
 	if (resolvedKind) {
 		return KIND_LABELS[resolvedKind]
@@ -43,7 +43,7 @@ const formatDocs = (docs: string, expandDocs: boolean) => {
 		: `## Documentation\n${preview}`
 }
 
-const formatItem = (item: RustdocItem, kind?: RustdocItemKind, expandDocs = true) =>
+const formatItem = (item: Item, kind?: ItemKind, expandDocs = true) =>
 	(() => {
 		const kindLabel = toKindLabel(kind, item)
 
