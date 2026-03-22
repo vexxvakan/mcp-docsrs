@@ -26,6 +26,3 @@ jobs:
 
       - name: Test
         run: bun test src
-        env:
-          BUN_ENV: test
-          LOG_EXPECTED_ERRORS: "false"

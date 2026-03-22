@@ -1,3 +1,8 @@
+telemetry = false
+
+[install]
+exact = true
+
 [test]
 coverage = true
 coverageThreshold = { lines = 0.9, functions = 0.9, statements = 0.9 }
