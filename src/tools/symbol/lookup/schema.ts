@@ -16,6 +16,20 @@ const lookupSymbolOutputSchema = z.object({
 	crateName: z.string(),
 	crateVersion: z.string().nullable(),
 	formatVersion: z.number(),
+	items: z
+		.object({
+			autoTraits: z.record(z.string(), z.string()).optional(),
+			blankets: z.record(z.string(), z.string()).optional(),
+			enums: z.record(z.string(), z.string()).optional(),
+			fields: z.record(z.string(), z.string()).optional(),
+			functions: z.record(z.string(), z.string()).optional(),
+			modules: z.record(z.string(), z.string()).optional(),
+			reexports: z.record(z.string(), z.string()).optional(),
+			structs: z.record(z.string(), z.string()).optional(),
+			traits: z.record(z.string(), z.string()).optional(),
+			variants: z.record(z.string(), z.string()).optional()
+		})
+		.optional(),
 	symbol: z.object({
 		deprecated: z.boolean(),
 		hasDocs: z.boolean(),

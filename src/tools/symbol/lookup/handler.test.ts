@@ -2,6 +2,11 @@
 import { describe, expect, test } from "bun:test"
 import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
 import { createQueryJson } from "../../../../tests/fixtures/docs.ts"
+import {
+	createEnumLookupJson,
+	createModuleLookupJson,
+	createStructLookupJson
+} from "../../../../tests/fixtures/symbol-lookup.ts"
 import { createLookupSymbolHandler } from "./handler.ts"
 
 const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({
@@ -19,7 +24,14 @@ const getText = (value: Awaited<ReturnType<ReturnType<typeof createLookupSymbolH
 
 describe("createLookupSymbolHandler", () => {
 	test("returns structured symbol overview", async () => {
-		const result = await createLookupSymbolHandler(createFetcher())({
+		const result = await createLookupSymbolHandler(
+			createFetcher({
+				load: async () => ({
+					data: createStructLookupJson(),
+					fromCache: true
+				})
+			})
+		)({
 			crateName: "demo",
 			symbolname: "runtime::Client",
 			symbolType: "struct"
@@ -33,6 +45,21 @@ describe("createLookupSymbolHandler", () => {
 			crateName: "demo",
 			crateVersion: "1.2.3",
 			formatVersion: 57,
+			items: {
+				autoTraits: {
+					"demo::traits::AutoService": "Auto implementation"
+				},
+				blankets: {
+					"demo::traits::Blanket": "Blanket implementation"
+				},
+				fields: {
+					config: "Configuration field",
+					state: "State field"
+				},
+				traits: {
+					"demo::traits::Service": "Implementation details"
+				}
+			},
 			symbol: {
 				deprecated: false,
 				hasDocs: true,
@@ -45,6 +72,85 @@ describe("createLookupSymbolHandler", () => {
 				visibility: "public"
 			},
 			target: "x86_64-unknown-linux-gnu"
+		})
+	})
+
+	test("returns enum items", async () => {
+		const result = await createLookupSymbolHandler(
+			createFetcher({
+				load: async () => ({
+					data: createEnumLookupJson(),
+					fromCache: true
+				})
+			})
+		)({
+			crateName: "demo",
+			symbolname: "Mode",
+			symbolType: "enum"
+		})
+
+		expect(result.isError ?? false).toBeFalse()
+		expect(result.structuredContent).toMatchObject({
+			items: {
+				autoTraits: {
+					"demo::traits::ModeAuto": "Mode auto implementation"
+				},
+				blankets: {
+					"demo::traits::ModeBlanket": "Mode blanket implementation"
+				},
+				traits: {
+					"demo::traits::ModeTrait": "Mode trait implementation"
+				},
+				variants: {
+					Busy: "Busy variant",
+					Ready: "Ready variant"
+				}
+			},
+			symbol: {
+				kind: "enum",
+				name: "Mode"
+			}
+		})
+	})
+
+	test("returns module items", async () => {
+		const result = await createLookupSymbolHandler(
+			createFetcher({
+				load: async () => ({
+					data: createModuleLookupJson(),
+					fromCache: true
+				})
+			})
+		)({
+			crateName: "demo",
+			symbolname: "demo",
+			symbolType: "module"
+		})
+
+		expect(result.isError ?? false).toBeFalse()
+		expect(result.structuredContent).toMatchObject({
+			items: {
+				enums: {
+					Mode: "Modes for the runtime"
+				},
+				functions: {
+					connect: "Connect to the backend"
+				},
+				modules: {
+					net: "Networking tools"
+				},
+				reexports: {
+					ClientAlias: "Re-exported client"
+				},
+				structs: {
+					Client:
+						"This summary line is intentionally longer than one hundred characters so the preview formatter ha..."
+				}
+			},
+			symbol: {
+				kind: "module",
+				name: "demo"
+			}
 		})
 	})
 
@@ -137,6 +243,13 @@ describe("createLookupSymbolHandler", () => {
 
 		expect(result.isError ?? false).toBeFalse()
 		expect(result.structuredContent).toMatchObject({
+			items: {
+				enums: {},
+				functions: {},
+				modules: {},
+				reexports: {},
+				structs: {}
+			},
 			symbol: {
 				kind: "module",
 				name: "FallbackMod",

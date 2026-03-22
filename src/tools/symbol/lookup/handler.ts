@@ -4,6 +4,7 @@ import { ItemNotFoundError } from "@mcp-docsrs/errors.ts"
 import { createErrorResult, createStructuredResult, toErrorMessage } from "../../shared.ts"
 import type { ToolHandler } from "../../types.ts"
 import { findSymbol, getFirstLine, getVisibility } from "../shared.ts"
+import { lookupSymbolItems } from "./details.ts"
 import type { SymbolLookupInput, SymbolLookupOutput } from "./types.ts"
 
 const lookupSymbol = (
@@ -20,6 +21,7 @@ const lookupSymbol = (
 		crateName: root.name ?? "unknown",
 		crateVersion: data.crate_version,
 		formatVersion: data.format_version,
+		items: lookupSymbolItems(data, match.item),
 		symbol: {
 			deprecated: Boolean(match.item.deprecation),
 			hasDocs: Boolean(match.item.docs),
