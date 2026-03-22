@@ -1,11 +1,11 @@
-import type { Crate, Item, ItemKind } from "../../../docs/rustdoc/types/items.ts"
+import type { Crate, Item, ItemKind } from "@mcp-docsrs/docs/rustdoc/types/items.ts"
 import {
 	ensureRoot,
 	getItemById,
 	getKindFromItem,
 	KIND_LABELS,
 	toIdKey
-} from "../../../docs/shared.ts"
+} from "@mcp-docsrs/docs/shared.ts"
 import type { CrateLookupItem, CrateLookupOutput, CrateLookupSection } from "./types.ts"
 
 const MAX_PREVIEW_LENGTH = 100

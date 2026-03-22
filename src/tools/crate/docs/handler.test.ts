@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
+import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
 import { createQueryJson } from "../../../../tests/fixtures/docs.ts"
-import type { DocsFetcher } from "../../../docs/types.ts"
 import { createCrateDocsHandler } from "./handler.ts"
 
 const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({

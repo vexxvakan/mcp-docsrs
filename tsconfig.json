@@ -19,6 +19,9 @@
 		"noUnusedParameters": true,
 		"outDir": "./dist",
 		"paths": {
+			"@mcp-docsrs/*": [
+				"./src/*"
+			],
 			"@mcp-docsrs/cache/*": [
 				"./src/cache/*"
 			],

@@ -1,8 +1,8 @@
 // biome-ignore-all lint/style/useNamingConvention: crates.io API uses snake_case keys
-import { rankCrates } from "../../docs/classifier/rank.ts"
-import type { SearchCrate } from "../../docs/classifier/types.ts"
-import { ErrorLogger, NetworkError } from "../../errors.ts"
-import { APP_USER_AGENT } from "../../meta.ts"
+import { rankCrates } from "@mcp-docsrs/docs/classifier/rank.ts"
+import type { SearchCrate } from "@mcp-docsrs/docs/classifier/types.ts"
+import { ErrorLogger, NetworkError } from "@mcp-docsrs/errors.ts"
+import { APP_USER_AGENT } from "@mcp-docsrs/meta.ts"
 import { FIND_LIMIT_DEFAULT } from "./find/schema.ts"
 import type { CratesIoCrate, CratesIoFindResponse } from "./find/types.ts"
 

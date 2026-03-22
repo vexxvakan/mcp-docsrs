@@ -1,5 +1,5 @@
+import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import type { DocsFetcher } from "../docs/types.ts"
 import { createCrateDocsHandler } from "./crate/docs/handler.ts"
 import { crateDocsTool } from "./crate/docs/schema.ts"
 import { createCrateFindHandler } from "./crate/find/handler.ts"

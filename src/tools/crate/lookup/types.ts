@@ -1,4 +1,4 @@
-import type { ItemKind } from "../../../docs/rustdoc/types/items.ts"
+import type { ItemKind } from "@mcp-docsrs/docs/rustdoc/types/items.ts"
 
 type CrateLookupInput = {
 	crateName: string

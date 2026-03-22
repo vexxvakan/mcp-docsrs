@@ -1,10 +1,10 @@
 // biome-ignore-all lint/style/noMagicNumbers: rustdoc fixture ids intentionally mirror rustdoc item ids
 // biome-ignore-all lint/style/useNamingConvention: crates.io API fixtures use snake_case keys
 import { describe, expect, test } from "bun:test"
+import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
 import { createCrate, createCratesIoResponse } from "../../../../tests/fixtures/crates.ts"
 import { createQueryJson } from "../../../../tests/fixtures/docs.ts"
 import { mockJsonFetch } from "../../../../tests/mocks/fetch.ts"
-import type { DocsFetcher } from "../../../docs/types.ts"
 import { createCrateLookupHandler } from "./handler.ts"
 
 const EXTRA_PUBLIC_ITEM_IDS = [

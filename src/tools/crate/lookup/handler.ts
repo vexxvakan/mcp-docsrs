@@ -1,4 +1,4 @@
-import type { DocsFetcher } from "../../../docs/types.ts"
+import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
 import { createErrorResult, createStructuredResult, toErrorMessage } from "../../shared.ts"
 import type { ToolHandler } from "../../types.ts"
 import { findSimilarCrates } from "../shared.ts"

@@ -1,5 +1,5 @@
+import { isCrateNotFoundError, isJsonParseError, isMcpDocsrsError } from "@mcp-docsrs/errors.ts"
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js"
-import { isCrateNotFoundError, isJsonParseError, isMcpDocsrsError } from "../errors.ts"
 
 const createTextResult = (text: string): CallToolResult => ({
 	content: [

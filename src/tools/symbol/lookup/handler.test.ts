@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc fixture objects use upstream snake_case keys
 import { describe, expect, test } from "bun:test"
+import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
 import { createQueryJson } from "../../../../tests/fixtures/docs.ts"
-import type { DocsFetcher } from "../../../docs/types.ts"
 import { createLookupSymbolHandler } from "./handler.ts"
 
 const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({

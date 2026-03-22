@@ -1,5 +1,5 @@
-import { ensureRoot } from "../../../docs/shared.ts"
-import type { DocsFetcher } from "../../../docs/types.ts"
+import { ensureRoot } from "@mcp-docsrs/docs/shared.ts"
+import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
 import { createErrorResult, createTextResult, toErrorMessage } from "../../shared.ts"
 import type { ToolHandler } from "../../types.ts"
 import type { CrateDocsInput } from "./types.ts"

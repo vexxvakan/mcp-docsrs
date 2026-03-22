@@ -1,8 +1,8 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc kind aliases follow upstream snake_case naming
 
-import type { Crate, Item, ItemKind } from "../../docs/rustdoc/types/items.ts"
-import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "../../docs/shared.ts"
-import type { DocsSymbolRequest } from "../../docs/types.ts"
+import type { Crate, Item, ItemKind } from "@mcp-docsrs/docs/rustdoc/types/items.ts"
+import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "@mcp-docsrs/docs/shared.ts"
+import type { DocsSymbolRequest } from "@mcp-docsrs/docs/types.ts"
 import type { CandidateScoreInput, DocsSymbolQuery, SymbolMatch } from "./types.ts"
 
 const MAX_PREVIEW_LENGTH = 100

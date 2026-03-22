@@ -1,4 +1,4 @@
-import type { SearchCrate } from "../../../docs/classifier/types.ts"
+import type { SearchCrate } from "@mcp-docsrs/docs/classifier/types.ts"
 import { createErrorResult, createStructuredResult, toErrorMessage } from "../../shared.ts"
 import type { ToolHandler } from "../../types.ts"
 import { loadRankedCrates } from "../shared.ts"
