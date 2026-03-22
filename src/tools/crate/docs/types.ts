@@ -1,8 +1,8 @@
-type CrateDocsArgs = {
+type CrateDocsInput = {
 	crateName: string
 	formatVersion?: number
 	target?: string
 	version?: string
 }
 
-export type { CrateDocsArgs }
+export type { CrateDocsInput }

@@ -1,5 +1,5 @@
 import type { DocsFetcher } from "../../../docs/types.ts"
-import { ErrorLogger, ItemNotFoundError } from "../../../errors.ts"
+import { ItemNotFoundError } from "../../../errors.ts"
 import { createErrorResult, createTextResult, toErrorMessage } from "../../shared.ts"
 import type { ToolHandler } from "../../types.ts"
 import type { SymbolLookupInput } from "./types.ts"
@@ -12,11 +12,6 @@ const createLookupSymbolHandler =
 			if (!result) {
 				throw new ItemNotFoundError(args.crateName, `${args.symbolType}.${args.symbolname}`)
 			}
-			ErrorLogger.logInfo("Item documentation retrieved", {
-				crateName: args.crateName,
-				fromCache: result.fromCache,
-				itemPath: `${args.symbolType}.${args.symbolname}`
-			})
 
 			return createTextResult(result.content)
 		} catch (error) {
