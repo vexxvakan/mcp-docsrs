@@ -63,7 +63,10 @@
 				"recommended": true
 			},
 			"performance": "error",
-			"security": "error",
+			"security": {
+				"noSecrets": "off",
+				"recommended": true
+			},
 			"style": {
 				"noCommonJs": "error",
 				"noDefaultExport": "error",

@@ -2,7 +2,7 @@ import { z } from "zod"
 import { createPromptResult } from "../../shared.ts"
 import type { PromptDefinition } from "../../types.ts"
 
-const lookupSymbolPromptArgs = {
+const symbolDocsPromptArgs = {
 	crateName: z.string().optional().describe("Name of the Rust crate"),
 	symbolname: z
 		.string()
@@ -16,9 +16,9 @@ const lookupSymbolPromptArgs = {
 	version: z.string().optional().describe("Specific version or semver range")
 }
 
-const lookupSymbolPrompt: PromptDefinition<"lookup_symbol", typeof lookupSymbolPromptArgs> = {
-	argsSchema: lookupSymbolPromptArgs,
-	description: "Inspect a specific Rust symbol from a crate",
+const symbolDocsPrompt: PromptDefinition<"symbol_docs", typeof symbolDocsPromptArgs> = {
+	argsSchema: symbolDocsPromptArgs,
+	description: "Retrieve the full docs body for a specific Rust symbol",
 	handler: (args) => {
 		if (!(args.crateName || args.symbolname || args.symbolType)) {
 			return createPromptResult(
@@ -37,16 +37,16 @@ const lookupSymbolPrompt: PromptDefinition<"lookup_symbol", typeof lookupSymbolP
 		}
 		if (!args.symbolname) {
 			return createPromptResult(
-				`What symbol name or path from the "${args.crateName}" crate would you like me to inspect as a ${args.symbolType}?`
+				`What symbol name or path from the "${args.crateName}" crate would you like me to retrieve docs for as a ${args.symbolType}?`
 			)
 		}
 
 		const versionText = args.version ? ` version ${args.version}` : ""
 		return createPromptResult(
-			`Please inspect the ${args.symbolType} "${args.symbolname}" from the Rust crate "${args.crateName}"${versionText} using the lookup_symbol tool. Summarize its purpose, the high-level symbol metadata, related items, and any notable constraints or caveats. Use symbol_docs only if the full documentation body is needed.`
+			`Please retrieve the full documentation for the ${args.symbolType} "${args.symbolname}" from the Rust crate "${args.crateName}"${versionText} using the symbol_docs tool. Focus on the primary usage guidance, important fields or parameters, related items, and any notable caveats.`
 		)
 	},
-	name: "lookup_symbol"
+	name: "symbol_docs"
 }
 
-export { lookupSymbolPrompt }
+export { symbolDocsPrompt }

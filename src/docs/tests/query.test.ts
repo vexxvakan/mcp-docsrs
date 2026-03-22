@@ -3,7 +3,7 @@
 import { describe, expect, test } from "bun:test"
 import { createQueryJson } from "../../../tests/fixtures/docs.ts"
 import { RustdocParseError } from "../../errors.ts"
-import { lookupCrate, lookupCrateDocs, lookupSymbol } from "../query.ts"
+import { lookupCrate, lookupCrateDocs, lookupSymbol, lookupSymbolDocs } from "../query.ts"
 import type { Crate } from "../rustdoc/types/items.ts"
 import type { DocsSymbolRequest } from "../types.ts"
 
@@ -12,13 +12,8 @@ const target = {
 	triple: "x86_64-unknown-linux-gnu"
 }
 
-const createLookupInput = (
-	symbolType: string,
-	symbolname: string,
-	expandDocs = true
-): DocsSymbolRequest => ({
+const createLookupInput = (symbolType: string, symbolname: string): DocsSymbolRequest => ({
 	crateName: "demo",
-	expandDocs,
 	symbolname,
 	symbolType
 })
@@ -181,7 +176,23 @@ describe("lookupSymbol", () => {
 	test("finds exact path match", () => {
 		const content = lookupSymbol(createQueryJson(), createLookupInput("struct", "runtime::Client"))
 
-		expect(content).toContain("# Client")
+		expect(content).toEqual({
+			crateName: "demo",
+			crateVersion: "1.2.3",
+			formatVersion: 57,
+			symbol: {
+				deprecated: false,
+				hasDocs: true,
+				kind: "struct",
+				label: "Struct",
+				name: "Client",
+				path: "demo::runtime::Client",
+				summary:
+					"This summary line is intentionally longer than one hundred characters so the preview formatter ha...",
+				visibility: "public"
+			},
+			target: "x86_64-unknown-linux-gnu"
+		})
 	})
 
 	test("finds fallback path match", () => {
@@ -189,14 +200,15 @@ describe("lookupSymbol", () => {
 		const exact = lookupSymbol(json, createLookupInput("struct", "runtime::Client"))
 		const fallback = lookupSymbol(json, createLookupInput("struct", "Client"))
 
-		expect(fallback).toBe(exact)
+		expect(fallback).toEqual(exact)
 	})
 
 	test("finds raw index type alias match", () => {
 		const content = lookupSymbol(createQueryJson(), createLookupInput("type", "Alias"))
 
-		expect(content).toContain("# Alias")
-		expect(content).toContain("**Type:** Type Alias")
+		expect(content?.symbol.kind).toBe("type_alias")
+		expect(content?.symbol.label).toBe("Type Alias")
+		expect(content?.symbol.name).toBe("Alias")
 	})
 
 	test("uses index item kinds even when path metadata drifts", () => {
@@ -210,7 +222,7 @@ describe("lookupSymbol", () => {
 			]
 		}
 
-		expect(lookupSymbol(json, createLookupInput("type", "Alias"))).toContain("**Type:** Type Alias")
+		expect(lookupSymbol(json, createLookupInput("type", "Alias"))?.symbol.kind).toBe("type_alias")
 	})
 
 	test("falls back to index matches when path metadata is missing", () => {
@@ -333,20 +345,16 @@ describe("lookupSymbol", () => {
 			visibility: "public"
 		}
 
-		expect(lookupSymbol(json, createLookupInput("module", "FallbackMod"))).toContain(
-			"**Type:** Module"
+		expect(lookupSymbol(json, createLookupInput("module", "FallbackMod"))?.symbol.kind).toBe(
+			"module"
 		)
-		expect(lookupSymbol(json, createLookupInput("struct", "FallbackStruct"))).toContain(
-			"**Type:** Struct"
+		expect(lookupSymbol(json, createLookupInput("struct", "FallbackStruct"))?.symbol.kind).toBe(
+			"struct"
 		)
-		expect(lookupSymbol(json, createLookupInput("enum", "FallbackEnum"))).toContain(
-			"**Type:** Enum"
-		)
-		expect(lookupSymbol(json, createLookupInput("fn", "fallbackFn"))).toContain(
-			"**Type:** Function"
-		)
-		expect(lookupSymbol(json, createLookupInput("trait", "FallbackTrait"))).toContain(
-			"**Type:** Trait"
+		expect(lookupSymbol(json, createLookupInput("enum", "FallbackEnum"))?.symbol.kind).toBe("enum")
+		expect(lookupSymbol(json, createLookupInput("fn", "fallbackFn"))?.symbol.kind).toBe("function")
+		expect(lookupSymbol(json, createLookupInput("trait", "FallbackTrait"))?.symbol.kind).toBe(
+			"trait"
 		)
 	})
 
@@ -359,25 +367,39 @@ describe("lookupSymbol", () => {
 		expect(lookupSymbol(json, createLookupInput("missing", "Client"))).toBeNull()
 	})
 
-	test("limits docs by default and expands them on demand", () => {
+	test("returns symbol docs", () => {
 		const json = createQueryJson()
-		json.index["2"] = {
-			...json.index["2"],
-			docs: Array.from(
-				{
-					length: 24
-				},
-				(_, index) => `Doc line ${index + 1}`
-			).join("\n")
+		const docs = lookupSymbolDocs(json, createLookupInput("struct", "runtime::Client"))
+
+		expect(docs).toContain("This summary line is intentionally longer")
+		expect(docs).toContain("Extra details stay in the full item view.")
+	})
+
+	test("returns missing docs fallback for symbols without docs", () => {
+		const json = createQueryJson()
+		json.index["22"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 22,
+			inner: {
+				struct: {
+					generics: {
+						params: [],
+						where_predicates: []
+					},
+					impls: [],
+					kind: "unit"
+				}
+			},
+			links: {},
+			name: "Undocumented",
+			span: null,
+			visibility: "public"
 		}
+		const docs = lookupSymbolDocs(json, createLookupInput("struct", "Undocumented"))
 
-		const preview = lookupSymbol(json, createLookupInput("struct", "runtime::Client", false))
-		const expanded = lookupSymbol(json, createLookupInput("struct", "runtime::Client", true))
-
-		expect(preview).toContain("Doc line 20")
-		expect(preview).not.toContain("Doc line 21")
-		expect(preview).toContain("Use `expandDocs: true` for more info.")
-		expect(expanded).toContain("Doc line 24")
-		expect(expanded).not.toContain("Use `expandDocs: true` for more info.")
+		expect(docs).toBe("No symbol documentation available.")
 	})
 })

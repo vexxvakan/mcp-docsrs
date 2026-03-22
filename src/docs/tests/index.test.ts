@@ -11,6 +11,7 @@ describe("createDocsFetcher", () => {
 			expect(fetcher).toHaveProperty("lookupCrate")
 			expect(fetcher).toHaveProperty("lookupCrateDocs")
 			expect(fetcher).toHaveProperty("lookupSymbol")
+			expect(fetcher).toHaveProperty("lookupSymbolDocs")
 			expect(fetcher).toHaveProperty("clearCache")
 			expect(fetcher).toHaveProperty("close")
 		} finally {
@@ -31,7 +32,11 @@ describe("createDocsFetcher", () => {
 			})
 			const symbol = await fetcher.lookupSymbol({
 				crateName: "demo",
-				expandDocs: false,
+				symbolname: "runtime::Client",
+				symbolType: "struct"
+			})
+			const symbolDocs = await fetcher.lookupSymbolDocs({
+				crateName: "demo",
 				symbolname: "runtime::Client",
 				symbolType: "struct"
 			})
@@ -42,8 +47,14 @@ describe("createDocsFetcher", () => {
 			expect(overview.structuredContent.crateName).toBe("demo")
 			expect(docs.content).toBe("Root crate docs")
 			expect(docs.fromCache).toBeTrue()
-			expect(symbol?.content).toContain("# Client")
+			expect(symbol?.content).toBe(
+				"Retrieved overview for struct demo::runtime::Client from demo v1.2.3."
+			)
+			expect(symbol?.structuredContent.symbol.kind).toBe("struct")
+			expect(symbol?.structuredContent.symbol.path).toBe("demo::runtime::Client")
 			expect(symbol?.fromCache).toBeTrue()
+			expect(symbolDocs?.content).toContain("This summary line is intentionally longer")
+			expect(symbolDocs?.fromCache).toBeTrue()
 		} finally {
 			fetcher.clearCache()
 			fetcher.close()

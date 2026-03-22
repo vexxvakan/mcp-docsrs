@@ -6,6 +6,8 @@ import { createCrateFindHandler } from "./crate/find/handler.ts"
 import { crateFindTool } from "./crate/find/schema.ts"
 import { createCrateLookupHandler } from "./crate/lookup/handler.ts"
 import { crateLookupTool } from "./crate/lookup/schema.ts"
+import { createSymbolDocsHandler } from "./symbol/docs/handler.ts"
+import { symbolDocsTool } from "./symbol/docs/schema.ts"
 import { createLookupSymbolHandler } from "./symbol/lookup/handler.ts"
 import { lookupSymbolTool } from "./symbol/lookup/schema.ts"
 
@@ -26,7 +28,8 @@ const registerTools = (server: McpServer, fetcher: DocsFetcher) => {
 		{
 			annotations: lookupSymbolTool.annotations,
 			description: lookupSymbolTool.description,
-			inputSchema: lookupSymbolTool.inputSchema
+			inputSchema: lookupSymbolTool.inputSchema,
+			outputSchema: lookupSymbolTool.outputSchema
 		},
 		createLookupSymbolHandler(fetcher)
 	)
@@ -39,6 +42,16 @@ const registerTools = (server: McpServer, fetcher: DocsFetcher) => {
 			inputSchema: crateDocsTool.inputSchema
 		},
 		createCrateDocsHandler(fetcher)
+	)
+
+	server.registerTool(
+		symbolDocsTool.name,
+		{
+			annotations: symbolDocsTool.annotations,
+			description: symbolDocsTool.description,
+			inputSchema: symbolDocsTool.inputSchema
+		},
+		createSymbolDocsHandler(fetcher)
 	)
 
 	server.registerTool(

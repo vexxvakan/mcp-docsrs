@@ -5,8 +5,7 @@ import type {
 	CrateLookupOutput,
 	CrateLookupSection
 } from "../tools/crate/lookup/types.ts"
-import { formatCrateDocs } from "./formatters/crate.ts"
-import { formatItem } from "./formatters/item.ts"
+import type { SymbolLookupOutput } from "../tools/symbol/lookup/types.ts"
 import type { Crate, Item, ItemKind } from "./rustdoc/types/items.ts"
 import { ensureRoot, getItemById, getKindFromItem, KIND_LABELS, toIdKey } from "./shared.ts"
 import type { DocsSymbolQuery, DocsSymbolRequest } from "./types.ts"
@@ -193,7 +192,6 @@ const parseSymbolQuery = (input: DocsSymbolRequest) => {
 	const name = segments.at(-1) ?? pathText.split(".").at(-1) ?? pathText
 
 	return {
-		expandDocs: input.expandDocs,
 		kind,
 		name,
 		segments
@@ -243,6 +241,13 @@ type CandidateScoreInput = {
 	query: DocsSymbolQuery
 }
 
+type SymbolMatch = {
+	item: Item
+	key: string
+	kind: ItemKind
+	path: string | null
+}
+
 const scoreCandidate = ({ indexPaths, item, json, key, kind, query }: CandidateScoreInput) => {
 	if (item.name !== query.name) {
 		return -1
@@ -270,6 +275,62 @@ const scoreCandidate = ({ indexPaths, item, json, key, kind, query }: CandidateS
 	return score
 }
 
+const getVisibility = (item: Item) =>
+	typeof item.visibility === "string" ? item.visibility : "restricted"
+
+const findSymbol = (json: Crate, input: DocsSymbolRequest): SymbolMatch | null => {
+	ensureRoot(json)
+	const indexPaths = buildIndexPaths(json)
+	const query = parseSymbolQuery(input)
+
+	type ScoredCandidate = {
+		item: Item
+		key: string
+		kind?: ItemKind
+		score: number
+	}
+
+	const best = Object.entries(json.index)
+		.map(([key, item]): ScoredCandidate => {
+			const kind = getKindFromItem(item)
+
+			return {
+				item,
+				key,
+				kind,
+				score: scoreCandidate({
+					indexPaths,
+					item,
+					json,
+					key,
+					kind,
+					query
+				})
+			}
+		})
+		.filter(
+			(
+				candidate
+			): candidate is ScoredCandidate & {
+				kind: ItemKind
+			} => candidate.score >= 0 && candidate.kind !== undefined
+		)
+		.sort((left, right) => right.score - left.score)[0]
+
+	if (!best) {
+		return null
+	}
+
+	const summaryPath = json.paths[best.key]?.path
+	const derivedPath = indexPaths[best.key]
+	return {
+		item: best.item,
+		key: best.key,
+		kind: best.kind,
+		path: summaryPath?.join("::") ?? derivedPath?.join("::") ?? null
+	}
+}
+
 const lookupCrate = (json: Crate): CrateLookupOutput => {
 	const root = ensureRoot(json)
 	const sections = collectCrateSections(json, root)
@@ -287,40 +348,37 @@ const lookupCrate = (json: Crate): CrateLookupOutput => {
 
 const lookupCrateDocs = (json: Crate) => {
 	const root = ensureRoot(json)
-	return formatCrateDocs(root)
+	return root.docs ?? "No crate-level documentation available."
 }
 
-const lookupSymbol = (json: Crate, input: DocsSymbolRequest) => {
-	ensureRoot(json)
-	const indexPaths = buildIndexPaths(json)
-	const query = parseSymbolQuery(input)
-
-	const best = Object.entries(json.index)
-		.map(([key, item]) => {
-			const kind = getKindFromItem(item)
-
-			return {
-				item,
-				key,
-				kind,
-				score: scoreCandidate({
-					indexPaths,
-					item,
-					json,
-					key,
-					kind,
-					query
-				})
-			}
-		})
-		.filter((candidate) => candidate.score >= 0)
-		.sort((left, right) => right.score - left.score)[0]
-
-	if (!best) {
+const lookupSymbol = (json: Crate, input: DocsSymbolRequest): SymbolLookupOutput | null => {
+	const root = ensureRoot(json)
+	const match = findSymbol(json, input)
+	if (!match) {
 		return null
 	}
 
-	return formatItem(best.item, best.kind ?? json.paths[best.key]?.kind, query.expandDocs)
+	return {
+		crateName: root.name ?? "unknown",
+		crateVersion: json.crate_version,
+		formatVersion: json.format_version,
+		symbol: {
+			deprecated: Boolean(match.item.deprecation),
+			hasDocs: Boolean(match.item.docs),
+			kind: match.kind,
+			label: KIND_LABELS[match.kind],
+			name: match.item.name ?? "unknown",
+			path: match.path,
+			summary: match.item.docs ? getFirstLine(match.item.docs) : null,
+			visibility: getVisibility(match.item)
+		},
+		target: json.target.triple
+	}
 }
 
-export { lookupCrate, lookupCrateDocs, lookupSymbol }
+const lookupSymbolDocs = (json: Crate, input: DocsSymbolRequest) => {
+	const match = findSymbol(json, input)
+	return match ? (match.item.docs ?? "No symbol documentation available.") : null
+}
+
+export { lookupCrate, lookupCrateDocs, lookupSymbol, lookupSymbolDocs }

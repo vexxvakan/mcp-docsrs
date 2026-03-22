@@ -1,6 +1,6 @@
 import { createCache } from "../cache/index.ts"
 import type { ServerConfig } from "../config/types.ts"
-import { lookupCrate, lookupCrateDocs, lookupSymbol } from "./query.ts"
+import { lookupCrate, lookupCrateDocs, lookupSymbol, lookupSymbolDocs } from "./query.ts"
 import { buildJsonUrl, getCachedDocument, getRemoteDocument } from "./store.ts"
 import type { DocsFetcher, DocsLoadResult, DocsRequest } from "./types.ts"
 
@@ -38,7 +38,18 @@ const createDocsFetcher = (config: ServerConfig): DocsFetcher => {
 		},
 		lookupSymbol: async (input) => {
 			const { data, fromCache } = await load(input)
-			const content = lookupSymbol(data, input)
+			const structuredContent = lookupSymbol(data, input)
+			return structuredContent
+				? {
+						content: `Retrieved overview for ${structuredContent.symbol.label.toLowerCase()} ${structuredContent.symbol.path ?? structuredContent.symbol.name} from ${structuredContent.crateName}${structuredContent.crateVersion ? ` v${structuredContent.crateVersion}` : ""}.`,
+						fromCache,
+						structuredContent
+					}
+				: null
+		},
+		lookupSymbolDocs: async (input) => {
+			const { data, fromCache } = await load(input)
+			const content = lookupSymbolDocs(data, input)
 			return content
 				? {
 						content,

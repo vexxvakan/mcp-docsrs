@@ -1,4 +1,5 @@
 import type { CrateLookupOutput } from "../tools/crate/lookup/types.ts"
+import type { SymbolLookupOutput } from "../tools/symbol/lookup/types.ts"
 import type { Crate, ItemKind } from "./rustdoc/types/items.ts"
 
 type DocsRequest = {
@@ -9,7 +10,6 @@ type DocsRequest = {
 }
 
 type DocsSymbolRequest = DocsRequest & {
-	expandDocs: boolean
 	symbolType: string
 	symbolname: string
 }
@@ -34,11 +34,15 @@ type DocsFetcher = {
 	lookupSymbol: (input: DocsSymbolRequest) => Promise<{
 		content: string
 		fromCache: boolean
+		structuredContent: SymbolLookupOutput
+	} | null>
+	lookupSymbolDocs: (input: DocsSymbolRequest) => Promise<{
+		content: string
+		fromCache: boolean
 	} | null>
 }
 
 type DocsSymbolQuery = {
-	expandDocs: boolean
 	kind: ItemKind | null
 	name: string
 	segments: string[]

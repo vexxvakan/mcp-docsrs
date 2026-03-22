@@ -39,6 +39,7 @@ const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({
 		fromCache: true
 	}),
 	lookupSymbol: async () => null,
+	lookupSymbolDocs: async () => null,
 	...overrides
 })
 

@@ -153,20 +153,42 @@ Searches crates.io for matching crates and returns ranked results using fuzzy an
 
 #### `lookup_symbol`
 
-Retrieves documentation for one symbol inside a crate. By default the response includes a preview of the docs. Set `expandDocs` to `true` to return the full documentation text.
+Retrieves structured symbol metadata for one symbol inside a crate.
 
 | Parameter | Type | Required | Description |
 | ---------- | ---------- | ---------- | ---------- |
 | `crateName` | string | Yes | Name of the Rust crate |
 | `symbolType` | string | Yes | Rustdoc symbol type, for example `"struct"`, `"function"`, or `"trait"` |
 | `symbolname` | string | Yes | Symbol name or path, for example `"runtime::Runtime"` or `"spawn"` |
-| `expandDocs` | boolean | No | When `true`, return the full documentation text instead of the preview |
 | `version` | string | No | Specific version or semver range |
 | `target` | string | No | Target platform |
 
 ```json
 {
   "tool": "lookup_symbol",
+  "arguments": {
+    "crateName": "tokio",
+    "symbolType": "struct",
+    "symbolname": "runtime::Runtime"
+  }
+}
+```
+
+#### `symbol_docs`
+
+Retrieves the full documentation body for one symbol inside a crate.
+
+| Parameter | Type | Required | Description |
+| ---------- | ---------- | ---------- | ---------- |
+| `crateName` | string | Yes | Name of the Rust crate |
+| `symbolType` | string | Yes | Rustdoc symbol type, for example `"struct"`, `"function"`, or `"trait"` |
+| `symbolname` | string | Yes | Symbol name or path, for example `"runtime::Runtime"` or `"spawn"` |
+| `version` | string | No | Specific version or semver range |
+| `target` | string | No | Target platform |
+
+```json
+{
+  "tool": "symbol_docs",
   "arguments": {
     "crateName": "tokio",
     "symbolType": "struct",

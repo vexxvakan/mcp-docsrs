@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { DocsFetcher } from "../../../docs/types.ts"
-import { createCrateDocsHandler } from "./handler.ts"
+import { createSymbolDocsHandler } from "./handler.ts"
 
 const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({
 	clearCache: () => undefined,
@@ -19,36 +19,49 @@ const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({
 		}
 	}),
 	lookupCrateDocs: async () => ({
-		content: "Demo crate documentation",
+		content: "docs",
 		fromCache: true
 	}),
 	lookupSymbol: async () => null,
-	lookupSymbolDocs: async () => null,
+	lookupSymbolDocs: async () => ({
+		content: "Client docs",
+		fromCache: true
+	}),
 	...overrides
 })
 
-const getText = (value: Awaited<ReturnType<ReturnType<typeof createCrateDocsHandler>>>) =>
+const getText = (value: Awaited<ReturnType<ReturnType<typeof createSymbolDocsHandler>>>) =>
 	value.content[0]?.type === "text" ? value.content[0].text : ""
 
-describe("createCrateDocsHandler", () => {
+describe("createSymbolDocsHandler", () => {
 	test.each([
 		[
 			"success",
 			createFetcher(),
 			false,
-			"Demo crate documentation"
+			"Client docs"
+		],
+		[
+			"missing",
+			createFetcher({
+				lookupSymbolDocs: async () => null
+			}),
+			true,
+			"Error: Item 'struct.runtime::Client' not found in crate 'demo'"
 		],
 		[
 			"error",
 			createFetcher({
-				lookupCrateDocs: async () => Promise.reject(new Error("missing docs"))
+				lookupSymbolDocs: async () => Promise.reject(new Error("missing docs"))
 			}),
 			true,
 			"Error: missing docs"
 		]
 	])("%s", async (_name, fetcher, isError, text) => {
-		const result = await createCrateDocsHandler(fetcher)({
-			crateName: "demo"
+		const result = await createSymbolDocsHandler(fetcher)({
+			crateName: "demo",
+			symbolname: "runtime::Client",
+			symbolType: "struct"
 		})
 
 		expect(result.isError ?? false).toBe(isError)
