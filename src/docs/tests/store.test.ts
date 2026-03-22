@@ -1,19 +1,14 @@
-import { afterEach, describe, expect, mock, spyOn, test } from "bun:test"
+import { describe, expect, spyOn, test } from "bun:test"
+import { createConfig, createStoreJson, toResponse } from "../../../tests/fixtures/docs.ts"
+import { createCacheEntry, createCacheStoreMock } from "../../../tests/mocks/cache.ts"
 import { CrateNotFoundError, NetworkError, TimeoutError } from "../../errors.ts"
 import { APP_USER_AGENT } from "../../meta.ts"
 import { buildJsonUrl, getCachedDocument, getRemoteDocument } from "../store.ts"
-import { createConfig, createStoreJson, toResponse } from "./fixtures.ts"
-import { createCacheEntry, createCacheStoreMock } from "./mocks/cache.ts"
 
 const DEFAULT_CACHE_TTL = 60_000
 const TEST_URL = "https://docs.rs/crate/demo/latest/json.zst"
 
 describe("store", () => {
-	afterEach(() => {
-		mock.restore()
-		mock.clearAllMocks()
-	})
-
 	describe("buildJsonUrl", () => {
 		test("creates url with version target and format version", () => {
 			const url = buildJsonUrl({

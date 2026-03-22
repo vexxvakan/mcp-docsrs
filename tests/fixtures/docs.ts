@@ -1,9 +1,9 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc fixtures use upstream snake_case keys
 // biome-ignore-all lint/style/noMagicNumbers: fixture ids intentionally mirror rustdoc-style numeric ids
 // biome-ignore-all lint/complexity/useMaxParams: fixture helper keeps test data readable
-import type { ServerConfig } from "../../config/types.ts"
-import type { Visibility } from "../rustdoc/types/core.ts"
-import type { Crate, Item, ItemEnum } from "../rustdoc/types/items.ts"
+import type { ServerConfig } from "../../src/config/types.ts"
+import type { Visibility } from "../../src/docs/rustdoc/types/core.ts"
+import type { Crate, Item, ItemEnum } from "../../src/docs/rustdoc/types/items.ts"
 
 const TARGET = {
 	target_features: [],

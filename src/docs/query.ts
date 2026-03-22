@@ -1,9 +1,15 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc kind aliases follow upstream snake_case naming
-import { createCrateBuckets, formatCrate, formatCrateDocs } from "./formatters/crate.ts"
+
+import type {
+	CrateLookupItem,
+	CrateLookupOutput,
+	CrateLookupSection
+} from "../tools/crate/lookup/types.ts"
+import { formatCrateDocs } from "./formatters/crate.ts"
 import { formatItem } from "./formatters/item.ts"
 import type { Crate, Item, ItemKind } from "./rustdoc/types/items.ts"
-import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "./shared.ts"
-import type { CrateBuckets, DocsSymbolQuery, DocsSymbolRequest } from "./types.ts"
+import { ensureRoot, getItemById, getKindFromItem, KIND_LABELS, toIdKey } from "./shared.ts"
+import type { DocsSymbolQuery, DocsSymbolRequest } from "./types.ts"
 
 const MAX_PREVIEW_LENGTH = 100
 const PREVIEW_SUFFIX = "..."
@@ -12,6 +18,32 @@ const NAME_MATCH_SCORE = 10
 const INDEX_PATH_MATCH_SCORE = 100
 const SUMMARY_PATH_MATCH_SCORE = 50
 const SUMMARY_KIND_MATCH_SCORE = 1
+const CRATE_SECTION_ORDER = [
+	"module",
+	"struct",
+	"enum",
+	"trait",
+	"function",
+	"macro",
+	"proc_attribute",
+	"proc_derive",
+	"primitive",
+	"constant",
+	"static",
+	"union",
+	"variant",
+	"type_alias",
+	"trait_alias",
+	"assoc_type",
+	"assoc_const",
+	"struct_field",
+	"use",
+	"impl",
+	"extern_crate",
+	"extern_type",
+	"attribute",
+	"keyword"
+] as const satisfies ItemKind[]
 
 const KIND_ALIASES = {
 	assoc_const: "assoc_const",
@@ -68,29 +100,89 @@ const getFirstLine = (docs: string) => {
 	return `${trimmed.slice(0, MAX_PREVIEW_LENGTH - PREVIEW_SUFFIX.length)}${PREVIEW_SUFFIX}`
 }
 
-const collectCrateBuckets = (json: Crate, root: Item): CrateBuckets => {
-	const buckets = createCrateBuckets()
+const pluralizeWord = (word: string) => {
+	if (word.endsWith("y")) {
+		return `${word.slice(0, -1)}ies`
+	}
 
+	if (word.endsWith("s")) {
+		return `${word}es`
+	}
+
+	return `${word}s`
+}
+
+const toSectionLabel = (kind: ItemKind) => {
+	const words = KIND_LABELS[kind].split(" ")
+	const tail = words.pop()
+	if (!tail) {
+		return KIND_LABELS[kind]
+	}
+
+	return [
+		...words,
+		pluralizeWord(tail)
+	].join(" ")
+}
+
+const getItemPath = (json: Crate, root: Item, item: Item): string | null => {
+	const summaryPath = json.paths[toIdKey(item.id)]?.path
+	if (summaryPath && summaryPath.length > 0) {
+		return summaryPath.join("::")
+	}
+
+	const fallbackPath = [
+		root.name,
+		item.name
+	].filter((segment): segment is string => Boolean(segment))
+	return fallbackPath.length > 0 ? fallbackPath.join("::") : null
+}
+
+const createCrateLookupItem = (json: Crate, root: Item, item: Item): CrateLookupItem => ({
+	name: item.name ?? "unknown",
+	path: getItemPath(json, root, item),
+	summary: item.docs ? getFirstLine(item.docs) : null
+})
+
+const collectCrateSections = (json: Crate, root: Item): CrateLookupSection[] => {
 	const rootModule =
 		typeof root.inner === "object" && "module" in root.inner ? root.inner.module : null
 	if (!rootModule) {
-		return buckets
+		return []
 	}
 
+	const sections = new Map<ItemKind, CrateLookupItem[]>()
 	for (const itemId of rootModule.items) {
 		const item = getItemById(json, itemId)
 		if (!item || item.visibility !== "public") {
 			continue
 		}
 
-		const line = `- **${item.name ?? "unknown"}**${item.docs ? `: ${getFirstLine(item.docs)}` : ""}`
 		const kind = getKindFromItem(item)
-		if (kind) {
-			buckets[kind].push(line)
+		if (!kind) {
+			continue
 		}
+
+		const items = sections.get(kind) ?? []
+		items.push(createCrateLookupItem(json, root, item))
+		sections.set(kind, items)
 	}
 
-	return buckets
+	return CRATE_SECTION_ORDER.flatMap((kind) => {
+		const items = sections.get(kind)
+		if (!items || items.length === 0) {
+			return []
+		}
+
+		return [
+			{
+				count: items.length,
+				items,
+				kind,
+				label: toSectionLabel(kind)
+			}
+		]
+	})
 }
 
 const parseSymbolQuery = (input: DocsSymbolRequest) => {
@@ -178,11 +270,19 @@ const scoreCandidate = ({ indexPaths, item, json, key, kind, query }: CandidateS
 	return score
 }
 
-const lookupCrate = (json: Crate) => {
+const lookupCrate = (json: Crate): CrateLookupOutput => {
 	const root = ensureRoot(json)
-	const buckets = collectCrateBuckets(json, root)
+	const sections = collectCrateSections(json, root)
 
-	return formatCrate(json, root, buckets)
+	return {
+		crateName: root.name ?? "unknown",
+		crateVersion: json.crate_version,
+		formatVersion: json.format_version,
+		sections,
+		summary: root.docs ? getFirstLine(root.docs) : null,
+		target: json.target.triple,
+		totalItems: sections.reduce((total, section) => total + section.count, 0)
+	}
 }
 
 const lookupCrateDocs = (json: Crate) => {

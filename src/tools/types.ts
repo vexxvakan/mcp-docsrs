@@ -1,15 +1,17 @@
-import type { ZodRawShapeCompat } from "@modelcontextprotocol/sdk/server/zod-compat.js"
+import type { AnySchema, ZodRawShapeCompat } from "@modelcontextprotocol/sdk/server/zod-compat.js"
 import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js"
 
-type ToolInputSchema = ZodRawShapeCompat
-
-type ToolDefinition<Name extends string, InputSchema extends ToolInputSchema> = {
+type ToolDefinition<
+	InputSchema extends AnySchema | ZodRawShapeCompat,
+	OutputSchema extends AnySchema | ZodRawShapeCompat | undefined = undefined
+> = {
 	annotations: ToolAnnotations
 	description: string
 	inputSchema: InputSchema
-	name: Name
+	name: string
+	outputSchema?: OutputSchema
 }
 
 type ToolHandler<Args> = (args: Args) => Promise<CallToolResult>
 
-export type { ToolDefinition, ToolHandler, ToolInputSchema }
+export type { ToolDefinition, ToolHandler }

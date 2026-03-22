@@ -5,5 +5,7 @@ exact = true
 
 [test]
 coverage = true
+coveragePathIgnorePatterns = ["tests/**"]
 coverageThreshold = { lines = 0.9, functions = 0.9, statements = 0.9 }
 coverageSkipTestFiles = true
+preload = ["./tests/preload.ts"]

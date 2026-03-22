@@ -10,6 +10,14 @@ const createTextResult = (text: string): CallToolResult => ({
 	]
 })
 
+const createStructuredResult = (
+	structuredContent: Record<string, unknown>,
+	text: string
+): CallToolResult => ({
+	...createTextResult(text),
+	structuredContent
+})
+
 const createErrorResult = (message: string): CallToolResult => ({
 	...createTextResult(message),
 	isError: true
@@ -29,4 +37,4 @@ const toErrorMessage = (error: unknown) => {
 	return "Unknown error occurred"
 }
 
-export { createErrorResult, createTextResult, toErrorMessage }
+export { createErrorResult, createStructuredResult, createTextResult, toErrorMessage }

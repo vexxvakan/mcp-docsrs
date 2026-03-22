@@ -22,9 +22,11 @@ const createDocsFetcher = (config: ServerConfig): DocsFetcher => {
 		close: () => cache.close(),
 		lookupCrate: async (input) => {
 			const { data, fromCache } = await load(input)
+			const structuredContent = lookupCrate(data)
 			return {
-				content: lookupCrate(data),
-				fromCache
+				content: `Retrieved overview for ${structuredContent.crateName}${structuredContent.crateVersion ? ` v${structuredContent.crateVersion}` : ""}.`,
+				fromCache,
+				structuredContent
 			}
 		},
 		lookupCrateDocs: async (input) => {

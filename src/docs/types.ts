@@ -1,3 +1,4 @@
+import type { CrateLookupOutput } from "../tools/crate/lookup/types.ts"
 import type { Crate, ItemKind } from "./rustdoc/types/items.ts"
 
 type DocsRequest = {
@@ -24,6 +25,7 @@ type DocsFetcher = {
 	lookupCrate: (input: DocsRequest) => Promise<{
 		content: string
 		fromCache: boolean
+		structuredContent: CrateLookupOutput
 	}>
 	lookupCrateDocs: (input: DocsRequest) => Promise<{
 		content: string
@@ -42,13 +44,4 @@ type DocsSymbolQuery = {
 	segments: string[]
 }
 
-type CrateBuckets = Record<ItemKind, string[]>
-
-export type {
-	CrateBuckets,
-	DocsFetcher,
-	DocsLoadResult,
-	DocsRequest,
-	DocsSymbolQuery,
-	DocsSymbolRequest
-}
+export type { DocsFetcher, DocsLoadResult, DocsRequest, DocsSymbolQuery, DocsSymbolRequest }

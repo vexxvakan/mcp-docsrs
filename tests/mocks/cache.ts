@@ -1,6 +1,6 @@
 import { mock } from "bun:test"
-import type { CacheEntry, CacheStore } from "../../../cache/types.ts"
-import type { Crate } from "../../rustdoc/types/items.ts"
+import type { CacheEntry, CacheStore } from "../../src/cache/types.ts"
+import type { Crate } from "../../src/docs/rustdoc/types/items.ts"
 
 const createCacheEntry = (data: Crate | null): CacheEntry<Crate> => ({
 	data,

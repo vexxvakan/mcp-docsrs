@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
+import { createStoreJson, toResponse } from "../../../tests/fixtures/docs.ts"
 import { DecompressionError, JsonParseError } from "../../errors.ts"
 import { decodeBytes, parseRustdoc } from "../parse.ts"
-import { createStoreJson, toResponse } from "./fixtures.ts"
 
 const TEST_URL = "https://docs.rs/test"
 const INVALID_ZSTD_BYTES = new TextEncoder().encode("not-zstd")
