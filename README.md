@@ -1,27 +1,21 @@
-# MCP Rust Docs Server
+# Docs.rs MCP Server
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?style=for-the-badge?logo=apache)](https://opensource.org/licenses/Apache-2.0)
 
->A **Model Context Protocol** (MCP) server for **fetching Rust crate documentation** from [docs.rs](https://docs.rs) using the **rustdoc JSON API**
+>A **Model Context Protocol** (MCP) server for **fetching Rust crate documentation** from [docs.rs](https://docs.rs)
 
-[Features](#features) • [Installation](#installation) • [Building](#building) • [Development](#development) • [Acknowledgments](#acknowledgments) • [License](#license)
+[Features](#features) • [Getting Started](#getting-started) • [Tools](#tools) • [Contributing](#contributing) • [Acknowledgments](#acknowledgments) • [License](#license)
 
 ## Features
 <a id="features"></a>
 
-- **Documentation Fetching** - Direct access to rustdoc JSON API for comprehensive crate documentation
-- **Symbol-Level Lookup** - Query specific structs, functions, traits, and more within crates
+- **Find New Crates** - Search crates by exact name, partial match, or fuzzy query to discover relevant libraries
+- **Inspect Crate Symbols** - Inspect structs, traits, functions, and any other symbol inside a crate
+- **Review Crate Summaries** - Get a crate overview with its structure and public API surface
+- **Read Full Documentation** - Read crate-level documentation
 
-## Installation
-<a id="installation"></a>
-
-### Using Bun
-
-```bash
-bun install
-bun run build:bytecode
-./dist/mcp-docsrs
-```
+## Getting Started
+<a id="getting-started"></a>
 
 ### Using Pre-built Executables
 
@@ -64,80 +58,18 @@ Available tags:
 - `latest` - Latest stable release (multi-arch)
 - `v1.0.0` - Specific version (multi-arch)
 
-### 🛠️ Available Tools
+### MCP Setup
 
-#### `lookup_crate`
+| Client | Command |
+| ---------- | ---------- |
+| Codex | `codex mcp add docsrs -- path/to/mcp-docsrs` |
+| Claude Code | `claude mcp add --transport stdio docsrs -- path/to/mcp-docsrs` |
+| Gemini CLI | `gemini mcp add -s user docsrs path/to/mcp-docsrs` |
+| OpenCode | Run `opencode mcp add`, choose a local MCP server, then point it at `path/to/mcp-docsrs`. |
+| VS Code | Open Command Palette (`Cmd/Ctrl+Shift+P`) → `MCP: Add Server` → choose `Workspace` or `User` → `Command (stdio)` → enter `path/to/mcp-docsrs`. |
+| Cursor | Open Settings (`Cmd/Ctrl+Shift+J`) → `Tools & Integrations` → `New MCP Server` → choose a local/stdio server → enter `path/to/mcp-docsrs`. |
 
-Fetches comprehensive documentation for an entire Rust crate.
-
-**Parameters:**
-
-| Parameter | Type | Required | Description |
-| ----------- | ------ | ---------- | ------------- |
-| `crateName` | string | ✅ | Name of the Rust crate |
-| `version` | string | ❌ | Specific version or semver range (e.g., "1.0.0", "~4") |
-| `target` | string | ❌ | Target platform (e.g., "i686-pc-windows-msvc") |
-| `formatVersion` | string | ❌ | Rustdoc JSON format version |
-
-**Example:**
-
-```json
-{
-  "tool": "lookup_crate",
-  "arguments": {
-    "crateName": "serde",
-    "version": "latest"
-  }
-}
-```
-
-#### `lookup_symbol`
-
-Fetches documentation for a specific item within a crate.
-
-**Parameters:**
-
-| Parameter | Type | Required | Description |
-| ----------- | ------ | ---------- | ------------- |
-| `crateName` | string | ✅ | Name of the Rust crate |
-| `itemPath` | string | ✅ | Path to the item (e.g., "struct.MyStruct", "fn.my_function") |
-| `version` | string | ❌ | Specific version or semver range |
-| `target` | string | ❌ | Target platform |
-
-**Example:**
-
-```json
-{
-  "tool": "lookup_symbol",
-  "arguments": {
-    "crateName": "tokio",
-    "symbolPath": "runtime.Runtime"
-  }
-}
-```
-
-#### `search_crates`
-
-Search for Rust crates on crates.io with fuzzy/partial name matching.
-
-**Parameters:**
-
-| Parameter | Type | Required | Description |
-| ----------- | ------ | ---------- | ------------- |
-| `query` | string | ✅ | Search query for crate names (supports partial matches) |
-| `limit` | number | ❌ | Maximum number of results to return (default: 10) |
-
-**Example:**
-
-```json
-{
-  "tool": "search_crates",
-  "arguments": {
-    "query": "serde",
-    "limit": 5
-  }
-}
-```
+After adding the server, restart the client if it does not discover the tools immediately.
 
 ### Configuration
 
@@ -148,115 +80,106 @@ Configure the server using environment variables or command-line arguments:
 | `CACHE_TTL` | `--cache-ttl` | 3600000 | Cache time-to-live in milliseconds |
 | `MAX_CACHE_SIZE` | `--max-cache-size` | 100 | Maximum number of cached entries |
 | `REQUEST_TIMEOUT` | `--request-timeout` | 30000 | HTTP request timeout in milliseconds |
-| `DB_PATH` | `--db-path` | :memory: | Path to SQLite database file (use `:memory:` for in-memory) |
+| `DB_PATH` | `--db-path` | :memory: | Path to SQLite database file |
 
-### MCP Configuration
+## Tools
+<a id="tools"></a>
 
-Add to your MCP configuration file:
+The server exposes four MCP tools:
+
+### Crate
+
+#### `crate_lookup`
+
+Retrieves a crate overview with its structure and public API surface from docs.rs.
+
+| Parameter | Type | Required | Description |
+| ---------- | ---------- | ---------- | ---------- |
+| `crateName` | string | Yes | Name of the Rust crate to inspect |
+| `version` | string | No | Specific version or semver range, for example `"1.0.0"` or `"~4"` |
+| `target` | string | No | Target platform, for example `"i686-pc-windows-msvc"` |
+| `formatVersion` | number | No | Rustdoc JSON format version |
 
 ```json
 {
-  "mcpServers": {
-    "docsrs": {
-      "command": "/path/to/mcp-docsrs"
-    }
+  "tool": "crate_lookup",
+  "arguments": {
+    "crateName": "tokio",
+    "version": "1.48.0"
   }
 }
 ```
 
-Or using Docker:
+#### `crate_docs`
+
+Retrieves the crate-level documentation page from docs.rs.
+
+| Parameter | Type | Required | Description |
+| ---------- | ---------- | ---------- | ---------- |
+| `crateName` | string | Yes | Name of the Rust crate to inspect |
+| `version` | string | No | Specific version or semver range, for example `"1.0.0"` or `"~4"` |
+| `target` | string | No | Target platform, for example `"i686-pc-windows-msvc"` |
+| `formatVersion` | number | No | Rustdoc JSON format version |
 
 ```json
 {
-  "mcpServers": {
-    "docsrs": {
-      "command": "docker",
-      "args": ["run", "--rm", "-i", "ghcr.io/vexxvakan/mcp-docsrs:latest"]
-    }
+  "tool": "crate_docs",
+  "arguments": {
+    "crateName": "serde"
   }
 }
 ```
 
-## Building
-<a id="building"></a>
+#### `crate_find`
 
-### Prerequisites
+Searches crates.io for matching crates and returns ranked results using fuzzy and partial name matching.
 
-- Bun v1.3.11 or later
+| Parameter | Type | Required | Description |
+| ---------- | ---------- | ---------- | ---------- |
+| `query` | string | Yes | Search query for crate names |
+| `limit` | number | No | Maximum number of results to return. Defaults to `10` |
 
-### Build Commands
-
-```bash
-# Build for current platform
-bun run build
-
-# Build with bytecode compilation (standalone, requires Bun runtime)
-bun run build:bytecode
-
-# Build for all platforms
-bun run build:all
-
-# Linux builds (GLIBC - standard)
-bun run build:linux-x64      # Linux x64/AMD64
-bun run build:linux-arm64    # Linux ARM64
-
-# Linux builds (MUSL - for Alpine/containers)
-bun run build:linux-x64-musl    # Linux x64/AMD64 (Alpine)
-bun run build:linux-arm64-musl  # Linux ARM64 (Alpine)
-
-# macOS builds
-bun run build:darwin-x64     # macOS Intel
-bun run build:darwin-arm64   # macOS Apple Silicon
-
-# Windows build
-bun run build:windows-x64    # Windows x64
+```json
+{
+  "tool": "crate_find",
+  "arguments": {
+    "query": "rustdoc json",
+    "limit": 5
+  }
+}
 ```
 
-## Development
-<a id="development"></a>
+### Symbol
 
-### Development Workflow
+#### `lookup_symbol`
 
-```bash
-# Install dependencies
-bun install
+Retrieves documentation for one symbol inside a crate. By default the response includes a preview of the docs. Set `expandDocs` to `true` to return the full documentation text.
 
-# Run in development mode
-bun run dev
+| Parameter | Type | Required | Description |
+| ---------- | ---------- | ---------- | ---------- |
+| `crateName` | string | Yes | Name of the Rust crate |
+| `symbolType` | string | Yes | Rustdoc symbol type, for example `"struct"`, `"function"`, or `"trait"` |
+| `symbolname` | string | Yes | Symbol name or path, for example `"runtime::Runtime"` or `"spawn"` |
+| `expandDocs` | boolean | No | When `true`, return the full documentation text instead of the preview |
+| `version` | string | No | Specific version or semver range |
+| `target` | string | No | Target platform |
 
-# Run tests
-bun run test
-
-# Lint code
-bun run lint
-
-# Type checking
-bun run check
+```json
+{
+  "tool": "lookup_symbol",
+  "arguments": {
+    "crateName": "tokio",
+    "symbolType": "struct",
+    "symbolname": "runtime::Runtime"
+  }
+}
 ```
 
-### Testing
+## Contributing
+<a id="contributing"></a>
 
-The project includes comprehensive tests for all major components:
-
-```bash
-# Run all tests
-bun test
-
-# Run tests in watch mode
-bun test --watch
-
-# Run specific test file
-bun test src/server/tests/server.test.ts
-
-```
-
-#### Test Output
-
-Tests are configured to provide clean output by default:
-
-- Expected errors (like `CrateNotFoundError` in 404 tests) show as green checkmarks: `✓ Expected CrateNotFoundError thrown`
-- Unexpected errors are shown with full stack traces in red
-- Info logs are shown to track test execution
+- See [CONTRIBUTING.md](CONTRIBUTING.md).
+- See [TESTING.md](TESTING.md).
 
 ## Acknowledgments
 <a id="acknowledgments"></a>
@@ -268,7 +191,7 @@ Tests are configured to provide clean output by default:
 ## License
 <a id="license"></a>
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for the license text and [NOTICE](NOTICE) for attribution details.
 
 ---
 
