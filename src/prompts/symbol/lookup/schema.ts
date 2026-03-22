@@ -19,7 +19,7 @@ const lookupSymbolPromptArgsSchema = z.object({
 const lookupSymbolPrompt: PromptDefinition<typeof lookupSymbolPromptArgsSchema.shape> = {
 	argsSchema: lookupSymbolPromptArgsSchema.shape,
 	description: "Inspect a specific Rust symbol from a crate",
-	name: "lookup_symbol"
+	name: "symbol_lookup"
 }
 
 export { lookupSymbolPrompt, lookupSymbolPromptArgsSchema }

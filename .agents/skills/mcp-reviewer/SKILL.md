@@ -20,7 +20,8 @@ Use the active docsrs MCP tools directly:
 - `crate_find`
 - `crate_lookup`
 - `crate_docs`
-- `lookup_symbol`
+- `symbol_lookup`
+- `symbol_docs`
 
 ## Artifact Rules
 
@@ -29,6 +30,8 @@ Capture verbatim tool evidence only.
 - Record the exact tool name used.
 - Record the exact parameters passed.
 - Record the exact markdown/text response from the tool output `text` field.
+- Record the exact structured content response from the tool output `structuredContent` field.
+- Format the received structured tool output JSON into a Markdown table below the direct tool output.
 - Preserve failures verbatim; they are valid review evidence.
 - Rewrite affected files completely if the review scope changes.
 
@@ -48,14 +51,15 @@ For `lookup.md`:
 
 For `docs.md`:
 
-- Run `crate_docs`.
+- Run `crate_docs` once.
 - Store the full returned documentation.
 - Do not trim or summarize the docs output.
 
 For `symbols/**.md`:
 
 - Extract every available symbol from the `crate_lookup` result.
-- Run `lookup_symbol` for every listed symbol.
+- Run `symbol_lookup` for every listed symbol.
+- Run `symbol_docs` for every listed symbol.
 - Use the kind and symbol name exactly as exposed by the crate overview.
 - Show parameters and the exact returned text for every symbol lookup.
 

@@ -66,7 +66,7 @@ const lookupSymbolTool: ToolDefinition<
 	},
 	description: "Lookup Rust symbol structure and metadata from docs.rs",
 	inputSchema: lookupSymbolInputSchema,
-	name: "lookup_symbol",
+	name: "symbol_lookup",
 	outputSchema: lookupSymbolOutputSchema
 }
 

@@ -151,7 +151,7 @@ Searches crates.io for matching crates and returns ranked results using fuzzy an
 
 ### Symbol
 
-#### `lookup_symbol`
+#### `symbol_lookup`
 
 Retrieves structured symbol metadata for one symbol inside a crate.
 
@@ -165,7 +165,7 @@ Retrieves structured symbol metadata for one symbol inside a crate.
 
 ```json
 {
-  "tool": "lookup_symbol",
+  "tool": "symbol_lookup",
   "arguments": {
     "crateName": "tokio",
     "symbolType": "struct",

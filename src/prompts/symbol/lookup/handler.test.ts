@@ -53,7 +53,7 @@ describe("createLookupSymbolPromptHandler", () => {
 				})
 			)
 		).toContain(
-			'Please inspect the struct "runtime::Runtime" from the Rust crate "tokio" version 1.0.0 for target x86_64-unknown-linux-gnu using the lookup_symbol tool.'
+			'Please inspect the struct "runtime::Runtime" from the Rust crate "tokio" version 1.0.0 for target x86_64-unknown-linux-gnu using the symbol_lookup tool.'
 		)
 	})
 })

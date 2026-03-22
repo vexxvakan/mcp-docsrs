@@ -37,7 +37,7 @@ describe("registerPrompts", () => {
 
 		expect(calls.map((call) => call.name)).toEqual([
 			"crate_lookup",
-			"lookup_symbol",
+			"symbol_lookup",
 			"crate_docs",
 			"symbol_docs",
 			"crate_find"

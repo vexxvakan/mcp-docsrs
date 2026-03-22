@@ -25,7 +25,7 @@ const createLookupSymbolPromptHandler = (): PromptHandler<SymbolLookupPromptArgs
 	}
 
 	return createPromptResult(
-		`Please inspect the ${args.symbolType} "${args.symbolname}" from the Rust crate "${args.crateName}"${createVersionText(args.version)}${createTargetText(args.target)} using the lookup_symbol tool. Summarize its purpose, the high-level symbol metadata, related items, and any notable constraints or caveats. Use symbol_docs only if the full documentation body is needed.`
+		`Please inspect the ${args.symbolType} "${args.symbolname}" from the Rust crate "${args.crateName}"${createVersionText(args.version)}${createTargetText(args.target)} using the symbol_lookup tool. Summarize its purpose, the high-level symbol metadata, related items, and any notable constraints or caveats. Use symbol_docs only if the full documentation body is needed.`
 	)
 }
 
