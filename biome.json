@@ -55,6 +55,7 @@
 			"complexity": "error",
 			"correctness": {
 				"noNodejsModules": "off",
+				"noUndeclaredDependencies": "off",
 				"noUnresolvedImports": "off",
 				"recommended": true
 			},

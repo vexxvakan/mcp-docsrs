@@ -1,29 +1,15 @@
 import { describe, expect, test } from "bun:test"
+import { createQueryJson } from "../../../../tests/fixtures/docs.ts"
 import type { DocsFetcher } from "../../../docs/types.ts"
 import { createCrateDocsHandler } from "./handler.ts"
 
 const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({
 	clearCache: () => undefined,
 	close: () => undefined,
-	lookupCrate: async () => ({
-		content: "overview",
-		fromCache: true,
-		structuredContent: {
-			crateName: "demo",
-			crateVersion: "1.2.3",
-			formatVersion: 57,
-			sections: [],
-			summary: "Demo crate",
-			target: "x86_64-unknown-linux-gnu",
-			totalItems: 0
-		}
-	}),
-	lookupCrateDocs: async () => ({
-		content: "Demo crate documentation",
+	load: async () => ({
+		data: createQueryJson(),
 		fromCache: true
 	}),
-	lookupSymbol: async () => null,
-	lookupSymbolDocs: async () => null,
 	...overrides
 })
 
@@ -36,12 +22,30 @@ describe("createCrateDocsHandler", () => {
 			"success",
 			createFetcher(),
 			false,
-			"Demo crate documentation"
+			"Root crate docs"
+		],
+		[
+			"missing-docs",
+			createFetcher({
+				load: () => {
+					const data = createQueryJson()
+					data.index["0"] = {
+						...data.index["0"],
+						docs: null
+					}
+					return Promise.resolve({
+						data,
+						fromCache: true
+					})
+				}
+			}),
+			false,
+			"No crate-level documentation available."
 		],
 		[
 			"error",
 			createFetcher({
-				lookupCrateDocs: async () => Promise.reject(new Error("missing docs"))
+				load: async () => Promise.reject(new Error("missing docs"))
 			}),
 			true,
 			"Error: missing docs"

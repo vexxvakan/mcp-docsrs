@@ -19,38 +19,20 @@
 		"noUnusedParameters": true,
 		"outDir": "./dist",
 		"paths": {
-			"@mcp-docsrs/cache": [
-				"./src/cache/index.ts"
-			],
 			"@mcp-docsrs/cache/*": [
 				"./src/cache/*"
-			],
-			"@mcp-docsrs/config": [
-				"./src/config/index.ts"
 			],
 			"@mcp-docsrs/config/*": [
 				"./src/config/*"
 			],
-			"@mcp-docsrs/docs": [
-				"./src/docs/index.ts"
-			],
 			"@mcp-docsrs/docs/*": [
 				"./src/docs/*"
-			],
-			"@mcp-docsrs/prompts": [
-				"./src/prompts/index.ts"
 			],
 			"@mcp-docsrs/prompts/*": [
 				"./src/prompts/*"
 			],
-			"@mcp-docsrs/server": [
-				"./src/server/server.ts"
-			],
 			"@mcp-docsrs/server/*": [
 				"./src/server/*"
-			],
-			"@mcp-docsrs/tools": [
-				"./src/tools/register.ts"
 			],
 			"@mcp-docsrs/tools/*": [
 				"./src/tools/*"

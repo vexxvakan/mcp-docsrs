@@ -1,51 +1,14 @@
+// biome-ignore-all lint/style/useNamingConvention: rustdoc fixture objects use upstream snake_case keys
 import { describe, expect, test } from "bun:test"
+import { createQueryJson } from "../../../../tests/fixtures/docs.ts"
 import type { DocsFetcher } from "../../../docs/types.ts"
 import { createLookupSymbolHandler } from "./handler.ts"
-
-const symbolOverview = {
-	crateName: "demo",
-	crateVersion: "1.2.3",
-	formatVersion: 57,
-	symbol: {
-		deprecated: false,
-		hasDocs: true,
-		kind: "struct" as const,
-		label: "Struct",
-		name: "Client",
-		path: "demo::runtime::Client",
-		summary: "Runtime client",
-		visibility: "public"
-	},
-	target: "x86_64-unknown-linux-gnu"
-}
 
 const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({
 	clearCache: () => undefined,
 	close: () => undefined,
-	lookupCrate: async () => ({
-		content: "overview",
-		fromCache: true,
-		structuredContent: {
-			crateName: "demo",
-			crateVersion: "1.2.3",
-			formatVersion: 57,
-			sections: [],
-			summary: "Demo crate",
-			target: "x86_64-unknown-linux-gnu",
-			totalItems: 0
-		}
-	}),
-	lookupCrateDocs: async () => ({
-		content: "docs",
-		fromCache: true
-	}),
-	lookupSymbol: async () => ({
-		content: "Retrieved overview for struct demo::runtime::Client from demo v1.2.3.",
-		fromCache: true,
-		structuredContent: symbolOverview
-	}),
-	lookupSymbolDocs: async () => ({
-		content: "Client docs",
+	load: async () => ({
+		data: createQueryJson(),
 		fromCache: true
 	}),
 	...overrides
@@ -55,40 +18,170 @@ const getText = (value: Awaited<ReturnType<ReturnType<typeof createLookupSymbolH
 	value.content[0]?.type === "text" ? value.content[0].text : ""
 
 describe("createLookupSymbolHandler", () => {
-	test.each([
-		[
-			"success",
-			createFetcher(),
-			false,
-			"Retrieved overview for struct demo::runtime::Client from demo v1.2.3."
-		],
-		[
-			"missing",
-			createFetcher({
-				lookupSymbol: async () => null
-			}),
-			true,
-			"Error: Item 'struct.runtime::Client' not found in crate 'demo'"
-		],
-		[
-			"error",
-			createFetcher({
-				lookupSymbol: async () => Promise.reject(new Error("missing symbol"))
-			}),
-			true,
-			"Error: missing symbol"
-		]
-	])("%s", async (_name, fetcher, isError, text) => {
-		const result = await createLookupSymbolHandler(fetcher)({
+	test("returns structured symbol overview", async () => {
+		const result = await createLookupSymbolHandler(createFetcher())({
 			crateName: "demo",
 			symbolname: "runtime::Client",
 			symbolType: "struct"
 		})
 
-		expect(result.isError ?? false).toBe(isError)
-		expect(getText(result)).toBe(text)
-		expect("structuredContent" in result ? result.structuredContent : undefined).toEqual(
-			isError ? undefined : symbolOverview
+		expect(result.isError ?? false).toBeFalse()
+		expect(getText(result)).toBe(
+			"Retrieved overview for struct demo::runtime::Client from demo v1.2.3."
 		)
+		expect(result.structuredContent).toEqual({
+			crateName: "demo",
+			crateVersion: "1.2.3",
+			formatVersion: 57,
+			symbol: {
+				deprecated: false,
+				hasDocs: true,
+				kind: "struct",
+				label: "Struct",
+				name: "Client",
+				path: "demo::runtime::Client",
+				summary:
+					"This summary line is intentionally longer than one hundred characters so the preview formatter ha...",
+				visibility: "public"
+			},
+			target: "x86_64-unknown-linux-gnu"
+		})
+	})
+
+	test("falls back to short symbol paths", async () => {
+		const result = await createLookupSymbolHandler(createFetcher())({
+			crateName: "demo",
+			symbolname: "Client",
+			symbolType: "struct"
+		})
+
+		expect(result.isError ?? false).toBeFalse()
+		expect(result.structuredContent).toMatchObject({
+			symbol: {
+				kind: "struct",
+				name: "Client",
+				path: "demo::runtime::Client"
+			}
+		})
+	})
+
+	test("uses raw item kinds even when path metadata drifts", async () => {
+		const result = await createLookupSymbolHandler(
+			createFetcher({
+				load: () => {
+					const data = createQueryJson()
+					data.paths["9"] = {
+						crate_id: 0,
+						kind: "macro",
+						path: [
+							"demo",
+							"Alias"
+						]
+					}
+					return Promise.resolve({
+						data,
+						fromCache: true
+					})
+				}
+			})
+		)({
+			crateName: "demo",
+			symbolname: "Alias",
+			symbolType: "type"
+		})
+
+		expect(result.isError ?? false).toBeFalse()
+		expect(result.structuredContent).toMatchObject({
+			symbol: {
+				kind: "type_alias",
+				label: "Type Alias",
+				name: "Alias"
+			}
+		})
+	})
+
+	test("falls back to index matches when path metadata is missing", async () => {
+		const result = await createLookupSymbolHandler(
+			createFetcher({
+				load: () => {
+					const data = createQueryJson()
+					data.index["11"] = {
+						attrs: [],
+						crate_id: 0,
+						deprecation: null,
+						docs: null,
+						id: 11,
+						inner: {
+							module: {
+								is_crate: false,
+								is_stripped: false,
+								items: []
+							}
+						},
+						links: {},
+						name: "FallbackMod",
+						span: null,
+						visibility: "public"
+					}
+					return Promise.resolve({
+						data,
+						fromCache: true
+					})
+				}
+			})
+		)({
+			crateName: "demo",
+			symbolname: "FallbackMod",
+			symbolType: "module"
+		})
+
+		expect(result.isError ?? false).toBeFalse()
+		expect(result.structuredContent).toMatchObject({
+			symbol: {
+				kind: "module",
+				name: "FallbackMod",
+				visibility: "public"
+			}
+		})
+	})
+
+	test.each([
+		[
+			"missing",
+			createFetcher(),
+			{
+				crateName: "demo",
+				symbolname: "other::Ghost",
+				symbolType: "struct"
+			},
+			"Error: Item 'struct.other::Ghost' not found in crate 'demo'"
+		],
+		[
+			"invalid-kind",
+			createFetcher(),
+			{
+				crateName: "demo",
+				symbolname: "Client",
+				symbolType: "missing"
+			},
+			"Error: Item 'missing.Client' not found in crate 'demo'"
+		],
+		[
+			"error",
+			createFetcher({
+				load: async () => Promise.reject(new Error("missing symbol"))
+			}),
+			{
+				crateName: "demo",
+				symbolname: "runtime::Client",
+				symbolType: "struct"
+			},
+			"Error: missing symbol"
+		]
+	])("%s", async (_name, fetcher, args, text) => {
+		const result = await createLookupSymbolHandler(fetcher)(args)
+
+		expect(result.isError ?? false).toBeTrue()
+		expect(getText(result)).toBe(text)
 	})
 })

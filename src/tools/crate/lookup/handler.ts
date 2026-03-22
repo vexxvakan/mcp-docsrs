@@ -2,14 +2,19 @@ import type { DocsFetcher } from "../../../docs/types.ts"
 import { createErrorResult, createStructuredResult, toErrorMessage } from "../../shared.ts"
 import type { ToolHandler } from "../../types.ts"
 import { findSimilarCrates } from "../shared.ts"
+import { lookupCrate } from "./logic.ts"
 import type { CrateLookupInput } from "./types.ts"
 
 const createCrateLookupHandler =
 	(fetcher: DocsFetcher): ToolHandler<CrateLookupInput> =>
 	async (args) => {
 		try {
-			const result = await fetcher.lookupCrate(args)
-			return createStructuredResult(result.structuredContent, result.content)
+			const { data } = await fetcher.load(args)
+			const structuredContent = lookupCrate(data)
+			return createStructuredResult(
+				structuredContent,
+				`Retrieved overview for ${structuredContent.crateName}${structuredContent.crateVersion ? ` v${structuredContent.crateVersion}` : ""}.`
+			)
 		} catch (error) {
 			let message = toErrorMessage(error)
 			const suggestions = await findSimilarCrates(args.crateName)

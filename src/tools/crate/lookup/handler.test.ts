@@ -1,45 +1,34 @@
+// biome-ignore-all lint/style/noMagicNumbers: rustdoc fixture ids intentionally mirror rustdoc item ids
 // biome-ignore-all lint/style/useNamingConvention: crates.io API fixtures use snake_case keys
 import { describe, expect, test } from "bun:test"
 import { createCrate, createCratesIoResponse } from "../../../../tests/fixtures/crates.ts"
+import { createQueryJson } from "../../../../tests/fixtures/docs.ts"
 import { mockJsonFetch } from "../../../../tests/mocks/fetch.ts"
 import type { DocsFetcher } from "../../../docs/types.ts"
 import { createCrateLookupHandler } from "./handler.ts"
 
+const EXTRA_PUBLIC_ITEM_IDS = [
+	9,
+	10,
+	11,
+	12,
+	13,
+	14,
+	16,
+	17,
+	18,
+	19,
+	20,
+	21
+]
+
 const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({
 	clearCache: () => undefined,
 	close: () => undefined,
-	lookupCrate: async () => ({
-		content: "Retrieved overview for demo v1.2.3.",
-		fromCache: true,
-		structuredContent: {
-			crateName: "demo",
-			crateVersion: "1.2.3",
-			formatVersion: 57,
-			sections: [
-				{
-					count: 1,
-					items: [
-						{
-							name: "Client",
-							path: "demo::runtime::Client",
-							summary: "Runtime client"
-						}
-					],
-					kind: "struct",
-					label: "Structs"
-				}
-			],
-			summary: "Demo crate",
-			target: "x86_64-unknown-linux-gnu",
-			totalItems: 1
-		}
-	}),
-	lookupCrateDocs: async () => ({
-		content: "docs",
+	load: async () => ({
+		data: createQueryJson(),
 		fromCache: true
 	}),
-	lookupSymbol: async () => null,
-	lookupSymbolDocs: async () => null,
 	...overrides
 })
 
@@ -50,38 +39,150 @@ const getText = (value: Awaited<ReturnType<ReturnType<typeof createCrateLookupHa
 	value.content[0]?.type === "text" ? value.content[0].text : ""
 
 describe("createCrateLookupHandler", () => {
-	test.each([
-		{
-			arrange: undefined,
-			assertResult: (result: Awaited<ReturnType<ReturnType<typeof createCrateLookupHandler>>>) => {
-				expect(result.isError ?? false).toBeFalse()
-				expect(getText(result)).toContain("Retrieved overview for demo v1.2.3.")
-				expect(result.structuredContent).toEqual({
-					crateName: "demo",
-					crateVersion: "1.2.3",
-					formatVersion: 57,
-					sections: [
+	test("returns structured crate overview", async () => {
+		const result = await createCrateLookupHandler(createFetcher())({
+			crateName: "demo"
+		})
+
+		expect(result.isError ?? false).toBeFalse()
+		expect(getText(result)).toContain("Retrieved overview for demo v1.2.3.")
+		expect(result.structuredContent).toEqual({
+			crateName: "demo",
+			crateVersion: "1.2.3",
+			formatVersion: 57,
+			sections: [
+				{
+					count: 1,
+					items: [
 						{
-							count: 1,
-							items: [
-								{
-									name: "Client",
-									path: "demo::runtime::Client",
-									summary: "Runtime client"
-								}
-							],
-							kind: "struct",
-							label: "Structs"
+							name: "net",
+							path: "demo::net",
+							summary: "Networking tools"
 						}
 					],
-					summary: "Demo crate",
-					target: "x86_64-unknown-linux-gnu",
-					totalItems: 1
-				})
-			},
-			fetcher: createFetcher(),
-			name: "success"
-		},
+					kind: "module",
+					label: "Modules"
+				},
+				{
+					count: 2,
+					items: [
+						{
+							name: "Client",
+							path: "demo::runtime::Client",
+							summary:
+								"This summary line is intentionally longer than one hundred characters so the preview formatter ha..."
+						},
+						{
+							name: "unknown",
+							path: "demo",
+							summary: "Anonymous but public"
+						}
+					],
+					kind: "struct",
+					label: "Structs"
+				},
+				{
+					count: 1,
+					items: [
+						{
+							name: "Mode",
+							path: "demo::Mode",
+							summary: "Modes for the runtime"
+						}
+					],
+					kind: "enum",
+					label: "Enums"
+				},
+				{
+					count: 1,
+					items: [
+						{
+							name: "Handler",
+							path: "demo::Handler",
+							summary: "Handles requests"
+						}
+					],
+					kind: "trait",
+					label: "Traits"
+				},
+				{
+					count: 1,
+					items: [
+						{
+							name: "connect",
+							path: "demo::connect",
+							summary: "Connect to the backend"
+						}
+					],
+					kind: "function",
+					label: "Functions"
+				}
+			],
+			summary: "Root crate docs",
+			target: "x86_64-unknown-linux-gnu",
+			totalItems: 6
+		})
+	})
+
+	test("returns expanded rustdoc kinds in structured sections", async () => {
+		const result = await createCrateLookupHandler(
+			createFetcher({
+				load: () => {
+					const data = createQueryJson()
+					const root = data.index["0"]
+					if (typeof root.inner === "string" || !("module" in root.inner)) {
+						throw new Error("Expected module root fixture")
+					}
+
+					data.index["10"].visibility = "public"
+					root.inner.module.items.push(...EXTRA_PUBLIC_ITEM_IDS)
+					return Promise.resolve({
+						data,
+						fromCache: true
+					})
+				}
+			})
+		)({
+			crateName: "demo"
+		})
+
+		expect(result.isError ?? false).toBeFalse()
+		expect(result.structuredContent).toMatchObject({
+			sections: expect.arrayContaining([
+				{
+					count: 2,
+					items: [
+						{
+							name: "Alias",
+							path: "demo::Alias",
+							summary: "Shared alias"
+						},
+						{
+							name: "ResultAlias",
+							path: "demo::ResultAlias",
+							summary: "Result alias"
+						}
+					],
+					kind: "type_alias",
+					label: "Type Aliases"
+				},
+				{
+					count: 1,
+					items: [
+						{
+							name: "trace",
+							path: "demo::trace",
+							summary: "Tracing attribute"
+						}
+					],
+					kind: "proc_attribute",
+					label: "Proc Attributes"
+				}
+			])
+		})
+	})
+
+	test.each([
 		{
 			arrange: () =>
 				mockSuggestions([
@@ -95,7 +196,7 @@ describe("createCrateLookupHandler", () => {
 				expect(result.structuredContent).toBeUndefined()
 			},
 			fetcher: createFetcher({
-				lookupCrate: async () => Promise.reject(new Error("missing crate"))
+				load: async () => Promise.reject(new Error("missing crate"))
 			}),
 			name: "suggest"
 		},
@@ -111,7 +212,7 @@ describe("createCrateLookupHandler", () => {
 				expect(result.structuredContent).toBeUndefined()
 			},
 			fetcher: createFetcher({
-				lookupCrate: async () => Promise.reject(new Error("missing crate"))
+				load: async () => Promise.reject(new Error("missing crate"))
 			}),
 			name: "plain"
 		}
