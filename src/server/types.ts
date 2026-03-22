@@ -1,5 +1,5 @@
+import type { ServerConfig } from "@mcp-docsrs/config/types.ts"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import type { ServerConfig } from "../config/types.ts"
 
 type RustDocsServer = {
 	close: () => Promise<void>

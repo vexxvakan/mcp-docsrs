@@ -1,13 +1,12 @@
-import type { PromptCallback } from "@modelcontextprotocol/sdk/server/mcp.js"
 import type { ZodRawShapeCompat } from "@modelcontextprotocol/sdk/server/zod-compat.js"
+import type { GetPromptResult } from "@modelcontextprotocol/sdk/types.js"
 
-type PromptArgsSchema = ZodRawShapeCompat
-
-type PromptDefinition<Name extends string, ArgsSchema extends PromptArgsSchema> = {
+type PromptDefinition<ArgsSchema extends ZodRawShapeCompat> = {
 	argsSchema: ArgsSchema
 	description: string
-	handler: PromptCallback<ArgsSchema>
-	name: Name
+	name: string
 }
 
-export type { PromptArgsSchema, PromptDefinition }
+type PromptHandler<Args> = (args: Args) => GetPromptResult | Promise<GetPromptResult>
+
+export type { PromptDefinition, PromptHandler }

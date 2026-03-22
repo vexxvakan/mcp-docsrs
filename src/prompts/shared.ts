@@ -12,4 +12,8 @@ const createPromptResult = (text: string): GetPromptResult => ({
 	]
 })
 
-export { createPromptResult }
+const createTargetText = (target?: string) => (target ? ` for target ${target}` : "")
+
+const createVersionText = (version?: string) => (version ? ` version ${version}` : "")
+
+export { createPromptResult, createTargetText, createVersionText }
