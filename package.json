@@ -9,7 +9,7 @@
 	},
 	"description": "MCP server for fetching Rust crate documentation via docs.rs RustDoc API",
 	"devDependencies": {
-		"@biomejs/biome": "2.4.8",
+		"@biomejs/biome": "2.4.9",
 		"@commitlint/cli": "20.5.0",
 		"@commitlint/config-conventional": "20.5.0",
 		"@modelcontextprotocol/inspector": "0.21.1",
