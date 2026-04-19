@@ -4,6 +4,7 @@ telemetry = false
 exact = true
 
 [test]
+root = "src"
 coverage = true
 coveragePathIgnorePatterns = ["tests/**", "src/main.ts"]
 coverageThreshold = { lines = 1.0, functions = 1.0, statements = 1.0 }
