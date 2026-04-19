@@ -119,63 +119,69 @@ const buildIndexPaths = (json: Crate) => {
 const getVisibility = (item: Item) =>
 	typeof item.visibility === "string" ? item.visibility : "restricted"
 
+type ScoredCandidate = {
+	item: Item
+	key: string
+	kind: ItemKind
+	score: number
+}
+
+type ScoreContext = {
+	indexPaths: Record<string, string[]>
+	json: Crate
+	query: DocsSymbolQuery
+}
+
+const scoreCandidate = (item: Item, key: string, context: ScoreContext): ScoredCandidate | null => {
+	const kind = getKindFromItem(item)
+	const { indexPaths, json, query } = context
+	if (!(item.name && query.kind) || kind !== query.kind || item.name !== query.name) {
+		return null
+	}
+
+	let score = NAME_MATCH_SCORE + KIND_MATCH_SCORE
+	const derivedPath = indexPaths[key]
+	if (query.segments.length > 1 && derivedPath && hasPathSuffix(derivedPath, query.segments)) {
+		score += INDEX_PATH_MATCH_SCORE
+	}
+
+	const summaryPath = json.paths[key]
+	if (query.segments.length > 1 && summaryPath && hasPathSuffix(summaryPath.path, query.segments)) {
+		score += SUMMARY_PATH_MATCH_SCORE
+	}
+	if (summaryPath?.kind === kind) {
+		score += SUMMARY_KIND_MATCH_SCORE
+	}
+
+	return {
+		item,
+		key,
+		kind,
+		score
+	}
+}
+
+const findBestCandidate = (
+	json: Crate,
+	query: DocsSymbolQuery,
+	indexPaths: Record<string, string[]>
+) =>
+	Object.entries(json.index)
+		.map(([key, item]) =>
+			scoreCandidate(item, key, {
+				indexPaths,
+				json,
+				query
+			})
+		)
+		.filter((candidate): candidate is ScoredCandidate => candidate !== null)
+		.sort((left, right) => right.score - left.score)[0] ?? null
+
 const findSymbol = (json: Crate, input: DocsSymbolRequest): SymbolMatch | null => {
 	ensureRoot(json)
 	const indexPaths = buildIndexPaths(json)
 	const query = parseSymbolQuery(input)
-
-	type ScoredCandidate = {
-		item: Item
-		key: string
-		kind?: ItemKind
-		score: number
-	}
-
-	const best = Object.entries(json.index)
-		.map(([key, item]): ScoredCandidate => {
-			const kind = getKindFromItem(item)
-			let score = -1
-
-			if (item.name === query.name && query.kind && kind === query.kind) {
-				score = NAME_MATCH_SCORE + KIND_MATCH_SCORE
-
-				const derivedPath = indexPaths[key]
-				if (
-					query.segments.length > 1 &&
-					derivedPath &&
-					hasPathSuffix(derivedPath, query.segments)
-				) {
-					score += INDEX_PATH_MATCH_SCORE
-				}
-
-				const summaryPath = json.paths[key]
-				if (
-					query.segments.length > 1 &&
-					summaryPath &&
-					hasPathSuffix(summaryPath.path, query.segments)
-				) {
-					score += SUMMARY_PATH_MATCH_SCORE
-				}
-				if (summaryPath?.kind === kind) {
-					score += SUMMARY_KIND_MATCH_SCORE
-				}
-			}
-
-			return {
-				item,
-				key,
-				kind,
-				score
-			}
-		})
-		.filter(
-			(
-				candidate
-			): candidate is ScoredCandidate & {
-				kind: ItemKind
-			} => candidate.score >= 0 && candidate.kind !== undefined
-		)
-		.sort((left, right) => right.score - left.score)[0]
+	const best = findBestCandidate(json, query, indexPaths)
 
 	if (!best) {
 		return null

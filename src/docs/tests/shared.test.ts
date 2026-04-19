@@ -4,19 +4,23 @@ import { createQueryJson } from "../../../tests/fixtures/docs.ts"
 import type { Item } from "../rustdoc/types/items.ts"
 import { ensureRoot, getItemById, getItemInnerTag, getKindFromItem, toIdKey } from "../shared.ts"
 
+const ROOT_ITEM_ID = 999_999
+const CLIENT_ITEM_ID = 2
+const ID_KEY_SAMPLE = 42
+
 describe("docs shared helpers", () => {
 	test("looks up items and formats ids", () => {
 		const json = createQueryJson()
 
-		expect(toIdKey(42)).toBe("42")
-		expect(getItemById(json, 2)?.name).toBe("Client")
+		expect(toIdKey(ID_KEY_SAMPLE)).toBe("42")
+		expect(getItemById(json, CLIENT_ITEM_ID)?.name).toBe("Client")
 	})
 
 	test.each([
 		{
 			message: "Invalid rustdoc JSON structure: missing root, index, or paths",
 			mutate: (json: ReturnType<typeof createQueryJson>) => {
-				json.root = undefined
+				json.root = undefined as never
 			}
 		},
 		{
@@ -34,7 +38,7 @@ describe("docs shared helpers", () => {
 		{
 			message: "Root item '999999' not found in index",
 			mutate: (json: ReturnType<typeof createQueryJson>) => {
-				json.root = 999_999
+				json.root = ROOT_ITEM_ID
 			}
 		}
 	])("ensureRoot rejects invalid structures", ({ message, mutate }) => {
@@ -45,69 +49,83 @@ describe("docs shared helpers", () => {
 	})
 
 	test("reads item kinds from tags and proc macros", () => {
-		expect(getItemInnerTag({} as Item)).toBeUndefined()
-		expect(getItemInnerTag("module")).toBe("module")
+		expect(getItemInnerTag({} as never)).toBeUndefined()
+		expect(
+			getItemInnerTag({
+				module: {
+					is_crate: false,
+					is_stripped: false,
+					items: []
+				}
+			})
+		).toBe("module")
 		expect(
 			getItemInnerTag({
 				proc_macro: {
+					helpers: [],
 					kind: "bang"
 				}
-			} as never)
+			})
 		).toBe("proc_macro")
 		expect(
 			getItemInnerTag({
 				module: {}
 			} as never)
 		).toBe("module")
+		const createItem = (inner: Item["inner"]) =>
+			({
+				attrs: [],
+				crate_id: 0,
+				deprecation: null,
+				docs: null,
+				id: 0 as never,
+				inner,
+				links: {},
+				name: null,
+				span: null,
+				visibility: "public"
+			}) as Item
+		expect(getKindFromItem(createItem({} as never))).toBeUndefined()
+		expect(getKindFromItem(createItem("proc_macro" as never))).toBeUndefined()
 		expect(
-			getKindFromItem({
-				inner: {}
-			} as Item)
-		).toBeUndefined()
-		expect(
-			getKindFromItem({
-				inner: "proc_macro"
-			} as Item)
-		).toBeUndefined()
-		expect(
-			getKindFromItem({
-				inner: {
+			getKindFromItem(
+				createItem({
 					proc_macro: {
 						helpers: [],
 						kind: "attr"
 					}
-				}
-			} as Item)
+				} as never)
+			)
 		).toBe("proc_attribute")
 		expect(
-			getKindFromItem({
-				inner: {
+			getKindFromItem(
+				createItem({
 					proc_macro: {
 						helpers: [],
 						kind: "derive"
 					}
-				}
-			} as Item)
+				} as never)
+			)
 		).toBe("proc_derive")
 		expect(
-			getKindFromItem({
-				inner: {
+			getKindFromItem(
+				createItem({
 					proc_macro: {
 						helpers: [],
 						kind: "bang"
 					}
-				}
-			} as Item)
+				} as never)
+			)
 		).toBe("macro")
 		expect(
-			getKindFromItem({
-				inner: {
+			getKindFromItem(
+				createItem({
 					proc_macro: {
 						helpers: [],
 						kind: "unexpected" as never
 					}
-				}
-			} as Item)
+				} as never)
+			)
 		).toBeUndefined()
 	})
 })

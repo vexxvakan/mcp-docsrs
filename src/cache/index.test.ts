@@ -19,6 +19,13 @@ type CacheScenario = {
 	setError?: Error
 }
 
+const EXPIRATION_OFFSET_MS = 120_000
+const OLDEST_OFFSET_MS = 10_000
+const NEWER_OFFSET_MS = 1000
+const SET_TTL_MS = 30_000
+const ERROR_TTL_MS = 1000
+const SQLITE_DATABASE_KEY = "Database" as const
+
 const createScenario = (): CacheScenario => ({
 	deleteCalls: [],
 	finalizeCalls: [],
@@ -36,7 +43,11 @@ const freshRow = (data = createQueryJson(), ttl = 60_000): CacheRecordRow => ({
 })
 
 class FakeStatement {
-	constructor(private readonly sql: string) {}
+	private readonly sql: string
+
+	constructor(sql: string) {
+		this.sql = sql
+	}
 
 	finalize() {
 		scenario.finalizeCalls.push(this.sql)
@@ -148,7 +159,7 @@ class FakeDatabase {
 }
 
 mock.module("bun:sqlite", () => ({
-	Database: FakeDatabase
+	[SQLITE_DATABASE_KEY]: FakeDatabase
 }))
 
 let createCache: typeof import("./index.ts").createCache
@@ -176,7 +187,7 @@ afterEach(() => {
 })
 
 describe("createCache", () => {
-	test("normalizes cache paths and skips directory creation for memory databases", async () => {
+	test("normalizes cache paths and skips directory creation for memory databases", () => {
 		const memoryCache = createCache(1)
 		expect(scenario.path).toBe(":memory:")
 
@@ -197,7 +208,7 @@ describe("createCache", () => {
 		fileCache.close()
 	})
 
-	test("returns fresh hits and deletes stale entries on read", async () => {
+	test("returns fresh hits and deletes stale entries on read", () => {
 		const cache = createCache(2)
 		const fresh = createQueryJson()
 		const expired = createQueryJson()
@@ -209,8 +220,8 @@ describe("createCache", () => {
 		})
 		scenario.records.set("expired", {
 			data: JSON.stringify(expired),
-			timestamp: Date.now() - 120_000,
-			ttl: 1
+			timestamp: Date.now() - EXPIRATION_OFFSET_MS,
+			ttl: ERROR_TTL_MS
 		})
 
 		expect(cache.get("fresh")).toEqual({
@@ -227,22 +238,22 @@ describe("createCache", () => {
 		cache.close()
 	})
 
-	test("evicts the oldest record and supports delete and clear", async () => {
+	test("evicts the oldest record and supports delete and clear", () => {
 		const cache = createCache(1)
 
 		scenario.records.set("oldest", {
 			data: JSON.stringify(createQueryJson()),
-			timestamp: Date.now() - 10_000,
+			timestamp: Date.now() - OLDEST_OFFSET_MS,
 			ttl: 60_000
 		})
 		scenario.records.set("newer", {
 			data: JSON.stringify(createQueryJson()),
-			timestamp: Date.now() - 1000,
+			timestamp: Date.now() - NEWER_OFFSET_MS,
 			ttl: 60_000
 		})
 		scenario.countOverride = 2
 
-		cache.set("latest", createQueryJson(), 30_000)
+		cache.set("latest", createQueryJson(), SET_TTL_MS)
 		cache.delete("latest")
 		cache.clear()
 
@@ -279,7 +290,7 @@ describe("createCache", () => {
 		{
 			arrange: () => {
 				scenario.setError = new Error("set failed")
-				return () => createCache(1).set("boom", createQueryJson(), 1000)
+				return () => createCache(1).set("boom", createQueryJson(), ERROR_TTL_MS)
 			},
 			error: "set"
 		}

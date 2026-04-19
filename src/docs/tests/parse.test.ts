@@ -5,6 +5,14 @@ import { decodeBytes, parseRustdoc } from "../parse.ts"
 
 const TEST_URL = "https://docs.rs/test"
 const INVALID_ZSTD_BYTES = new TextEncoder().encode("not-zstd")
+const INVALID_GZIP_BYTE_ONE = 1
+const INVALID_GZIP_BYTE_TWO = 2
+const INVALID_GZIP_BYTE_THREE = 3
+const INVALID_GZIP_BYTES = new Uint8Array([
+	INVALID_GZIP_BYTE_ONE,
+	INVALID_GZIP_BYTE_TWO,
+	INVALID_GZIP_BYTE_THREE
+])
 
 describe("parse", () => {
 	describe("decodeBytes", () => {
@@ -76,18 +84,11 @@ describe("parse", () => {
 		test("rethrows decompression failures", async () => {
 			try {
 				await parseRustdoc(
-					new Response(
-						new Uint8Array([
-							1,
-							2,
-							3
-						]),
-						{
-							headers: {
-								"content-encoding": "gzip"
-							}
+					new Response(INVALID_GZIP_BYTES, {
+						headers: {
+							"content-encoding": "gzip"
 						}
-					),
+					}),
 					TEST_URL
 				)
 				throw new Error("Expected parseRustdoc to throw for invalid encoding")

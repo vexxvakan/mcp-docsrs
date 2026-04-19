@@ -1,16 +1,17 @@
+// biome-ignore-all lint/style/useNamingConvention: rustdoc fixture data uses upstream snake_case keys
 import { describe, expect, it } from "bun:test"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import { ShutdownError, StartupError } from "../../errors.ts"
+import { ShutdownError } from "../../errors.ts"
 import { closeServer, createServer, startServer } from "../server.ts"
 
 describe("createServer", () => {
 	it("returns ok when already closed", async () => {
 		let closeCount = 0
 		const server = {
-			close: async () => {
+			close: () => {
 				closeCount += 1
 			}
-		} as McpServer
+		} as unknown as McpServer
 		const fetcher = {
 			close: () => undefined
 		}
@@ -18,17 +19,17 @@ describe("createServer", () => {
 			isClosed: true
 		}
 
-		expect((await closeServer(server, fetcher, state)).isOk()).toBe(true)
+		await closeServer(server, fetcher, state)
 		expect(closeCount).toBe(0)
 	})
 
 	it("closes once and then short-circuits repeated close calls", async () => {
 		let closeCount = 0
 		const server = {
-			close: async () => {
+			close: () => {
 				closeCount += 1
 			}
-		} as McpServer
+		} as unknown as McpServer
 		const fetcher = {
 			close: () => undefined
 		}
@@ -36,18 +37,18 @@ describe("createServer", () => {
 			isClosed: false
 		}
 
-		expect((await closeServer(server, fetcher, state)).isOk()).toBe(true)
-		expect((await closeServer(server, fetcher, state)).isOk()).toBe(true)
+		await closeServer(server, fetcher, state)
+		await closeServer(server, fetcher, state)
 		expect(closeCount).toBe(1)
 	})
 
 	it("continues when close is not connected", async () => {
 		let fetchCount = 0
 		const server = {
-			close: async () => {
+			close: () => {
 				throw new Error("not connected")
 			}
-		} as McpServer
+		} as unknown as McpServer
 		const fetcher = {
 			close: () => {
 				fetchCount += 1
@@ -57,37 +58,33 @@ describe("createServer", () => {
 			isClosed: false
 		}
 
-		expect((await closeServer(server, fetcher, state)).isOk()).toBe(true)
+		await closeServer(server, fetcher, state)
 		expect(fetchCount).toBe(1)
 	})
 
 	it("starts the server through the helper", async () => {
 		let connectCount = 0
 		const server = {
-			connect: async () => {
+			connect: () => {
 				connectCount += 1
 			}
-		} as McpServer
+		} as unknown as McpServer
 
-		expect(
-			(
-				await startServer(server, {
-					cacheTtl: 1,
-					dbPath: undefined,
-					maxCacheSize: 1,
-					requestTimeout: 1
-				})
-			).isOk()
-		).toBe(true)
+		await startServer(server, {
+			cacheTtl: 1,
+			dbPath: undefined,
+			maxCacheSize: 1,
+			requestTimeout: 1
+		})
 		expect(connectCount).toBe(1)
 	})
 
 	it("wraps helper start failures", async () => {
 		const server = {
-			connect: async () => {
+			connect: () => {
 				throw new Error("connect failed")
 			}
-		} as McpServer
+		} as unknown as McpServer
 
 		try {
 			await startServer(server, {

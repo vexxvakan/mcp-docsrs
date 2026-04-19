@@ -7,7 +7,6 @@ import { registerPrompts } from "@mcp-docsrs/prompts/register.ts"
 import { registerTools } from "@mcp-docsrs/tools/register.ts"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
-import { okAsync } from "neverthrow"
 import type { RustDocsServer } from "./types.ts"
 
 type ServerDeps = {
@@ -25,7 +24,7 @@ const closeServer = async (
 	}
 ) => {
 	if (state.isClosed) {
-		return okAsync(undefined)
+		return
 	}
 
 	state.isClosed = true
@@ -35,8 +34,6 @@ const closeServer = async (
 		ErrorLogger.logInfo("Server close skipped because transport was not connected")
 	}
 	fetcher.close()
-
-	return okAsync(undefined)
 }
 
 const startServer = async (server: McpServer, config: ReturnType<typeof resolveConfig>) => {
@@ -44,8 +41,6 @@ const startServer = async (server: McpServer, config: ReturnType<typeof resolveC
 	ErrorLogger.logInfo("MCP Rust Docs Server is running", {
 		config
 	})
-
-	return okAsync(undefined)
 }
 
 const createServer = (

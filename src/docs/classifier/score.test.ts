@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test"
 import { scoreCrate } from "./score.ts"
 
+const DEFAULT_RECENT_DOWNLOADS = 5
+
 const createSearchCrate = (
 	name: string,
 	description: string | null = null,
@@ -16,7 +18,7 @@ const createSearchCrate = (
 	homepage: null,
 	maxVersion: "1.0.0",
 	name,
-	recentDownloads: extra.recentDownloads ?? 5,
+	recentDownloads: extra.recentDownloads ?? DEFAULT_RECENT_DOWNLOADS,
 	repository: null,
 	updatedAt: null
 })

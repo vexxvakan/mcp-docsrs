@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test"
 import { getTierOrder, rankCrates } from "./rank.ts"
 
+const EXACT_NAME_SCORE = 5
+const NAME_PREFIX_SCORE = 4
+const NAME_TOKENS_SCORE = 3
+const TEXT_TOKENS_SCORE = 2
+const PARTIAL_NAME_SCORE = 1
+const DISCARDED_SCORE = 0
+
 const createSearchCrate = (
 	name: string,
 	extra: Partial<Parameters<typeof rankCrates>[1][number]> = {}
@@ -22,31 +29,31 @@ describe("rankCrates", () => {
 	test.each([
 		[
 			"exact_name",
-			5
+			EXACT_NAME_SCORE
 		],
 		[
 			"name_prefix",
-			4
+			NAME_PREFIX_SCORE
 		],
 		[
 			"name_tokens",
-			3
+			NAME_TOKENS_SCORE
 		],
 		[
 			"text_tokens",
-			2
+			TEXT_TOKENS_SCORE
 		],
 		[
 			"partial_name",
-			1
+			PARTIAL_NAME_SCORE
 		],
 		[
 			"discarded",
-			0
+			DISCARDED_SCORE
 		],
 		[
 			"unexpected",
-			0
+			DISCARDED_SCORE
 		]
 	])("maps tier %s", (tier, expected) => {
 		expect(getTierOrder(tier as Parameters<typeof getTierOrder>[0])).toBe(expected)

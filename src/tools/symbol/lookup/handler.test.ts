@@ -10,27 +10,34 @@ import {
 import { lookupSymbolItems } from "./details.ts"
 import { createLookupSymbolHandler } from "./handler.ts"
 
+const TUPLE_FIELD_ID = 101
+const FALLBACK_FIELD_ID = 102
+const IGNORED_IMPL_ID = 41
+const MISSING_MODULE_CHILD_ID = 9999
+
 const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({
 	clearCache: () => undefined,
 	close: () => undefined,
-	load: async () => ({
-		data: createQueryJson(),
-		fromCache: true
-	}),
+	load: () =>
+		Promise.resolve({
+			data: createQueryJson(),
+			fromCache: true
+		}),
 	...overrides
 })
 
 const getText = (value: Awaited<ReturnType<ReturnType<typeof createLookupSymbolHandler>>>) =>
 	value.content[0]?.type === "text" ? value.content[0].text : ""
 
-describe("createLookupSymbolHandler", () => {
+describe("createLookupSymbolHandler overview", () => {
 	test("returns structured symbol overview", async () => {
 		const result = await createLookupSymbolHandler(
 			createFetcher({
-				load: async () => ({
-					data: createStructLookupJson(),
-					fromCache: true
-				})
+				load: () =>
+					Promise.resolve({
+						data: createStructLookupJson(),
+						fromCache: true
+					})
 			})
 		)({
 			crateName: "demo",
@@ -79,10 +86,11 @@ describe("createLookupSymbolHandler", () => {
 	test("returns enum items", async () => {
 		const result = await createLookupSymbolHandler(
 			createFetcher({
-				load: async () => ({
-					data: createEnumLookupJson(),
-					fromCache: true
-				})
+				load: () =>
+					Promise.resolve({
+						data: createEnumLookupJson(),
+						fromCache: true
+					})
 			})
 		)({
 			crateName: "demo",
@@ -117,10 +125,11 @@ describe("createLookupSymbolHandler", () => {
 	test("returns module items", async () => {
 		const result = await createLookupSymbolHandler(
 			createFetcher({
-				load: async () => ({
-					data: createModuleLookupJson(),
-					fromCache: true
-				})
+				load: () =>
+					Promise.resolve({
+						data: createModuleLookupJson(),
+						fromCache: true
+					})
 			})
 		)({
 			crateName: "demo",
@@ -171,7 +180,9 @@ describe("createLookupSymbolHandler", () => {
 			}
 		})
 	})
+})
 
+describe("createLookupSymbolHandler item shapes", () => {
 	test("uses raw item kinds even when path metadata drifts", async () => {
 		const result = await createLookupSymbolHandler(
 			createFetcher({
@@ -209,12 +220,12 @@ describe("createLookupSymbolHandler", () => {
 
 	test("handles unit and tuple structs plus malformed item shapes", () => {
 		const json = createQueryJson()
-		json.index["101"] = {
+		json.index[String(TUPLE_FIELD_ID)] = {
 			attrs: [],
 			crate_id: 0,
 			deprecation: null,
 			docs: "Tuple field",
-			id: 101,
+			id: TUPLE_FIELD_ID,
 			inner: {
 				struct_field: {
 					primitive: "u32"
@@ -261,7 +272,7 @@ describe("createLookupSymbolHandler", () => {
 					impls: [],
 					kind: {
 						tuple: [
-							101
+							TUPLE_FIELD_ID
 						]
 					}
 				}
@@ -277,7 +288,7 @@ describe("createLookupSymbolHandler", () => {
 			deprecation: null,
 			docs: null,
 			id: 32,
-			inner: "module",
+			inner: "module" as never,
 			links: {},
 			name: "StringModule",
 			span: null,
@@ -289,7 +300,7 @@ describe("createLookupSymbolHandler", () => {
 			deprecation: null,
 			docs: null,
 			id: 33,
-			inner: "struct",
+			inner: "struct" as never,
 			links: {},
 			name: "StringStruct",
 			span: null,
@@ -316,12 +327,12 @@ describe("createLookupSymbolHandler", () => {
 
 	test("uses path and id fallbacks for unnamed struct fields", () => {
 		const json = createQueryJson()
-		json.index["101"] = {
+		json.index[String(TUPLE_FIELD_ID)] = {
 			attrs: [],
 			crate_id: 0,
 			deprecation: null,
 			docs: null,
-			id: 101,
+			id: TUPLE_FIELD_ID,
 			inner: {
 				struct_field: {
 					primitive: "u32"
@@ -332,12 +343,12 @@ describe("createLookupSymbolHandler", () => {
 			span: null,
 			visibility: "public"
 		}
-		json.index["102"] = {
+		json.index[String(FALLBACK_FIELD_ID)] = {
 			attrs: [],
 			crate_id: 0,
 			deprecation: null,
 			docs: "Detailed fallback docs",
-			id: 102,
+			id: FALLBACK_FIELD_ID,
 			inner: {
 				struct_field: {
 					primitive: "u64"
@@ -364,9 +375,10 @@ describe("createLookupSymbolHandler", () => {
 					kind: {
 						plain: {
 							fields: [
-								101,
-								102
-							]
+								TUPLE_FIELD_ID,
+								FALLBACK_FIELD_ID
+							],
+							has_stripped_fields: false
 						}
 					}
 				}
@@ -376,7 +388,7 @@ describe("createLookupSymbolHandler", () => {
 			span: null,
 			visibility: "public"
 		}
-		json.paths["101"] = {
+		json.paths[String(TUPLE_FIELD_ID)] = {
 			crate_id: 0,
 			kind: "struct_field",
 			path: [
@@ -399,12 +411,12 @@ describe("createLookupSymbolHandler", () => {
 
 	test("keeps the first value when struct field keys collide", () => {
 		const json = createQueryJson()
-		json.index["101"] = {
+		json.index[String(TUPLE_FIELD_ID)] = {
 			attrs: [],
 			crate_id: 0,
 			deprecation: null,
 			docs: "First value",
-			id: 101,
+			id: TUPLE_FIELD_ID,
 			inner: {
 				struct_field: {
 					primitive: "u32"
@@ -415,12 +427,12 @@ describe("createLookupSymbolHandler", () => {
 			span: null,
 			visibility: "public"
 		}
-		json.index["102"] = {
+		json.index[String(FALLBACK_FIELD_ID)] = {
 			attrs: [],
 			crate_id: 0,
 			deprecation: null,
 			docs: "Second value",
-			id: 102,
+			id: FALLBACK_FIELD_ID,
 			inner: {
 				struct_field: {
 					primitive: "u64"
@@ -447,9 +459,10 @@ describe("createLookupSymbolHandler", () => {
 					kind: {
 						plain: {
 							fields: [
-								101,
-								102
-							]
+								TUPLE_FIELD_ID,
+								FALLBACK_FIELD_ID
+							],
+							has_stripped_fields: false
 						}
 					}
 				}
@@ -459,7 +472,7 @@ describe("createLookupSymbolHandler", () => {
 			span: null,
 			visibility: "public"
 		}
-		json.paths["101"] = {
+		json.paths[String(TUPLE_FIELD_ID)] = {
 			crate_id: 0,
 			kind: "struct_field",
 			path: [
@@ -468,7 +481,7 @@ describe("createLookupSymbolHandler", () => {
 				"duplicate"
 			]
 		}
-		json.paths["102"] = {
+		json.paths[String(FALLBACK_FIELD_ID)] = {
 			crate_id: 0,
 			kind: "struct_field",
 			path: [
@@ -487,26 +500,32 @@ describe("createLookupSymbolHandler", () => {
 			traits: {}
 		})
 	})
+})
 
+describe("createLookupSymbolHandler impl item shapes", () => {
 	test("skips impls that do not point at a trait", () => {
 		const json = createQueryJson()
-		json.index["41"] = {
+		json.index[String(IGNORED_IMPL_ID)] = {
 			attrs: [],
 			crate_id: 0,
 			deprecation: null,
 			docs: null,
-			id: 41,
+			id: IGNORED_IMPL_ID,
 			inner: {
 				impl: {
 					blanket_impl: null,
-					for_: {
+					for: {
 						primitive: "u32"
 					},
 					generics: {
 						params: [],
 						where_predicates: []
 					},
-					negative: false,
+					is_negative: false,
+					is_synthetic: false,
+					is_unsafe: false,
+					items: [],
+					provided_trait_methods: [],
 					trait: null
 				}
 			},
@@ -528,7 +547,7 @@ describe("createLookupSymbolHandler", () => {
 						where_predicates: []
 					},
 					impls: [
-						41
+						IGNORED_IMPL_ID
 					],
 					kind: "unit"
 				}
@@ -549,12 +568,12 @@ describe("createLookupSymbolHandler", () => {
 
 	test("uses the traits bucket when impl trait metadata is missing", () => {
 		const json = createQueryJson()
-		json.index["41"] = {
+		json.index[String(IGNORED_IMPL_ID)] = {
 			attrs: [],
 			crate_id: 0,
 			deprecation: null,
 			docs: "Fallback implementation",
-			id: 41,
+			id: IGNORED_IMPL_ID,
 			inner: {
 				impl: {
 					blanket_impl: null,
@@ -595,7 +614,7 @@ describe("createLookupSymbolHandler", () => {
 						where_predicates: []
 					},
 					impls: [
-						41
+						IGNORED_IMPL_ID
 					],
 					kind: "unit"
 				}
@@ -624,7 +643,7 @@ describe("createLookupSymbolHandler", () => {
 			deprecation: null,
 			docs: null,
 			id: 30,
-			inner: "enum",
+			inner: "enum" as never,
 			links: {},
 			name: "BrokenEnum",
 			span: null,
@@ -633,17 +652,19 @@ describe("createLookupSymbolHandler", () => {
 
 		expect(lookupSymbolItems(json, json.index["30"])).toBeUndefined()
 	})
+})
 
+describe("createLookupSymbolHandler impl fixtures", () => {
 	test("uses the implementation fallback text when docs are missing", async () => {
 		const result = await createLookupSymbolHandler(
 			createFetcher({
-				load: async () => {
+				load: () => {
 					const data = createStructLookupJson()
 					data.index["23"].docs = null
-					return {
+					return Promise.resolve({
 						data,
 						fromCache: true
-					}
+					})
 				}
 			})
 		)({
@@ -667,7 +688,7 @@ describe("createLookupSymbolHandler", () => {
 				load: () => {
 					const data = createModuleLookupJson()
 					if (typeof data.index["0"].inner === "object" && "module" in data.index["0"].inner) {
-						data.index["0"].inner.module.items.push(9999)
+						data.index["0"].inner.module.items.push(MISSING_MODULE_CHILD_ID)
 					}
 					return Promise.resolve({
 						data,
@@ -767,7 +788,7 @@ describe("createLookupSymbolHandler", () => {
 		[
 			"error",
 			createFetcher({
-				load: async () => Promise.reject(new Error("missing symbol"))
+				load: () => Promise.reject(new Error("missing symbol"))
 			}),
 			{
 				crateName: "demo",

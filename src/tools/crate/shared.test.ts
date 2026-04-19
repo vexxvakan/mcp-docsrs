@@ -92,13 +92,13 @@ describe("fetchFindResponse", () => {
 		const originalSetTimeout = globalThis.setTimeout
 		const fetchSpy = mockJsonFetch(createCratesIoResponse([], FIND_TOTAL))
 
-		globalThis.setTimeout = ((handler: TimerHandler, _timeout?: number) => {
+		globalThis.setTimeout = ((handler: Parameters<typeof setTimeout>[0], _timeout?: number) => {
 			if (typeof handler === "function") {
 				handler()
 			}
 
 			return 1 as never
-		}) as typeof setTimeout
+		}) as unknown as typeof setTimeout
 
 		try {
 			const result = await fetchFindResponse("rustdoc", 10)

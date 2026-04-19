@@ -2,39 +2,29 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { parseCliFlags, readEnvConfig, renderHelp, resolveConfig, validateConfig } from "./index.ts"
 
 const previousEnv = {
-	BUN_ENV: Bun.env.BUN_ENV,
-	CACHE_TTL: Bun.env.CACHE_TTL,
-	DB_PATH: Bun.env.DB_PATH,
-	MAX_CACHE_SIZE: Bun.env.MAX_CACHE_SIZE,
-	REQUEST_TIMEOUT: Bun.env.REQUEST_TIMEOUT
+	bunEnv: Bun.env.BUN_ENV,
+	cacheTtl: Bun.env.CACHE_TTL,
+	dbPath: Bun.env.DB_PATH,
+	maxCacheSize: Bun.env.MAX_CACHE_SIZE,
+	requestTimeout: Bun.env.REQUEST_TIMEOUT
+}
+
+const restoreEnv = (key: keyof typeof previousEnv, name: string) => {
+	const value = previousEnv[key]
+	if (value === undefined) {
+		Reflect.deleteProperty(Bun.env, name)
+		return
+	}
+
+	Bun.env[name] = value
 }
 
 afterEach(() => {
-	if (previousEnv.BUN_ENV === undefined) {
-		delete Bun.env.BUN_ENV
-	} else {
-		Bun.env.BUN_ENV = previousEnv.BUN_ENV
-	}
-	if (previousEnv.CACHE_TTL === undefined) {
-		delete Bun.env.CACHE_TTL
-	} else {
-		Bun.env.CACHE_TTL = previousEnv.CACHE_TTL
-	}
-	if (previousEnv.DB_PATH === undefined) {
-		delete Bun.env.DB_PATH
-	} else {
-		Bun.env.DB_PATH = previousEnv.DB_PATH
-	}
-	if (previousEnv.MAX_CACHE_SIZE === undefined) {
-		delete Bun.env.MAX_CACHE_SIZE
-	} else {
-		Bun.env.MAX_CACHE_SIZE = previousEnv.MAX_CACHE_SIZE
-	}
-	if (previousEnv.REQUEST_TIMEOUT === undefined) {
-		delete Bun.env.REQUEST_TIMEOUT
-	} else {
-		Bun.env.REQUEST_TIMEOUT = previousEnv.REQUEST_TIMEOUT
-	}
+	restoreEnv("bunEnv", "BUN_ENV")
+	restoreEnv("cacheTtl", "CACHE_TTL")
+	restoreEnv("dbPath", "DB_PATH")
+	restoreEnv("maxCacheSize", "MAX_CACHE_SIZE")
+	restoreEnv("requestTimeout", "REQUEST_TIMEOUT")
 })
 
 describe("config helpers", () => {
@@ -116,10 +106,10 @@ describe("config helpers", () => {
 	})
 
 	test("reads empty env config as undefined overrides", () => {
-		delete Bun.env.CACHE_TTL
-		delete Bun.env.DB_PATH
-		delete Bun.env.MAX_CACHE_SIZE
-		delete Bun.env.REQUEST_TIMEOUT
+		Reflect.deleteProperty(Bun.env, "CACHE_TTL")
+		Reflect.deleteProperty(Bun.env, "DB_PATH")
+		Reflect.deleteProperty(Bun.env, "MAX_CACHE_SIZE")
+		Reflect.deleteProperty(Bun.env, "REQUEST_TIMEOUT")
 
 		expect(readEnvConfig()).toEqual({
 			cacheTtl: undefined,

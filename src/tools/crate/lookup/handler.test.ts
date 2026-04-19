@@ -253,7 +253,7 @@ describe("createCrateLookupHandler", () => {
 
 	test("falls back to the root path when summary path metadata is missing", () => {
 		const json = createQueryJson()
-		delete json.paths["8"]
+		json.paths["8"] = undefined as never
 		const sections = lookupCrate(json).sections
 
 		expect(sections.find((section) => section.kind === "struct")?.items).toEqual(

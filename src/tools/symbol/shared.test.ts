@@ -4,6 +4,10 @@ import { createQueryJson } from "../../../tests/fixtures/docs.ts"
 import type { Item } from "../../docs/rustdoc/types/items.ts"
 import { findSymbol, getFirstLine, getVisibility } from "./shared.ts"
 
+const RECENT_CHILD_ID = 999_999
+const SECOND_CHILD_ID = 202
+const PREVIEW_SLICE_START = 97
+
 describe("symbol shared helpers", () => {
 	test("finds symbols even when the query includes extra path segments", () => {
 		const json = createQueryJson()
@@ -48,7 +52,7 @@ describe("symbol shared helpers", () => {
 	test("skips missing module children while building index paths", () => {
 		const json = createQueryJson()
 		if (typeof json.index["0"].inner === "object" && "module" in json.index["0"].inner) {
-			json.index["0"].inner.module.items.push(999_999)
+			json.index["0"].inner.module.items.push(RECENT_CHILD_ID)
 		}
 
 		const match = findSymbol(json, {
@@ -75,7 +79,7 @@ describe("symbol shared helpers", () => {
 
 	test("uses derived paths when summary metadata is missing", () => {
 		const json = createQueryJson()
-		delete json.paths["2"]
+		json.paths["2"] = undefined as never
 
 		const match = findSymbol(json, {
 			crateName: "demo",
@@ -116,7 +120,7 @@ describe("symbol shared helpers", () => {
 			visibility: "public"
 		}
 		if (typeof json.index["0"].inner === "object" && "module" in json.index["0"].inner) {
-			json.index["0"].inner.module.items.push(202)
+			json.index["0"].inner.module.items.push(SECOND_CHILD_ID)
 		}
 
 		const match = findSymbol(json, {
@@ -164,7 +168,7 @@ describe("symbol shared helpers", () => {
 			"The preview formatter intentionally trims this line because it is well beyond one hundred characters long."
 
 		expect(getFirstLine(" first line \nsecond line")).toBe("first line")
-		expect(getFirstLine(longLine)).toBe(`${longLine.slice(0, 97)}...`)
+		expect(getFirstLine(longLine)).toBe(`${longLine.slice(0, PREVIEW_SLICE_START)}...`)
 		expect(
 			getVisibility({
 				visibility: "public"
@@ -173,7 +177,7 @@ describe("symbol shared helpers", () => {
 		expect(
 			getVisibility({
 				visibility: undefined
-			} as Item)
+			} as unknown as Item)
 		).toBe("restricted")
 	})
 })
