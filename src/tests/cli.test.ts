@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { errAsync, okAsync } from "neverthrow"
-import { createShutdownHandlers, installShutdown, run } from "../cli.ts"
 import { ShutdownError, StartupError } from "../errors.ts"
+import { createShutdownHandlers, installShutdown, run } from "../main.ts"
 import { APP_VERSION } from "../meta.ts"
 
 const DEFAULT_VALUE = 1
@@ -193,6 +193,28 @@ describe("cli", () => {
 		expect(logs).toHaveLength(2)
 		expect(logs[0]).toBeInstanceOf(Error)
 		expect(logs[1]).toBeInstanceOf(ShutdownError)
+	})
+
+	test("logs and exits when an unhandled rejection triggers shutdown", async () => {
+		const exits: number[] = []
+		const logs: unknown[] = []
+		const handlers = createShutdownHandlers(
+			() => okAsync(undefined),
+			(code) => {
+				exits.push(code)
+			},
+			(error) => {
+				logs.push(error)
+			}
+		)
+
+		await handlers.unhandledRejection(new Error("boom"))
+
+		expect(exits).toEqual([
+			EXIT_FAILURE
+		])
+		expect(logs).toHaveLength(1)
+		expect(logs[0]).toBeInstanceOf(Error)
 	})
 
 	test("registers shutdown handlers on process", () => {

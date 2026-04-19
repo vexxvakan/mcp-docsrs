@@ -48,4 +48,4 @@ const rankCrates = (query: string, crates: SearchCrate[]) =>
 		.filter((candidate) => candidate.scores.tier !== "discarded")
 		.sort(compareRankedCrates)
 
-export { rankCrates }
+export { getTierOrder, rankCrates }

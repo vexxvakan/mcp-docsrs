@@ -72,5 +72,37 @@ describe("parse", () => {
 				expect(error).toBeInstanceOf(JsonParseError)
 			}
 		})
+
+		test("rethrows decompression failures", async () => {
+			try {
+				await parseRustdoc(
+					new Response(
+						new Uint8Array([
+							1,
+							2,
+							3
+						]),
+						{
+							headers: {
+								"content-encoding": "gzip"
+							}
+						}
+					),
+					TEST_URL
+				)
+				throw new Error("Expected parseRustdoc to throw for invalid encoding")
+			} catch (error) {
+				expect(error).toBeInstanceOf(DecompressionError)
+			}
+		})
+
+		test("rethrows json parsing failures", async () => {
+			try {
+				await parseRustdoc(new Response(new Uint8Array()), TEST_URL)
+				throw new Error("Expected parseRustdoc to throw for empty payload")
+			} catch (error) {
+				expect(error).toBeInstanceOf(JsonParseError)
+			}
+		})
 	})
 })

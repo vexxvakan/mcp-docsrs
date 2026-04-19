@@ -5,7 +5,9 @@ import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
 import { createCrate, createCratesIoResponse } from "../../../../tests/fixtures/crates.ts"
 import { createQueryJson } from "../../../../tests/fixtures/docs.ts"
 import { mockJsonFetch } from "../../../../tests/mocks/fetch.ts"
+import { KIND_LABELS } from "../../../docs/shared.ts"
 import { createCrateLookupHandler } from "./handler.ts"
+import { lookupCrate } from "./logic.ts"
 
 const EXTRA_PUBLIC_ITEM_IDS = [
 	9,
@@ -223,5 +225,52 @@ describe("createCrateLookupHandler", () => {
 		})
 
 		assertResult(result)
+	})
+
+	test("uses localized section label pluralization rules", () => {
+		const labels = KIND_LABELS as Record<"module", string>
+		const original = labels.module
+
+		try {
+			labels.module = "Company"
+			expect(lookupCrate(createQueryJson()).sections[0]?.label).toBe("Companies")
+		} finally {
+			labels.module = original
+		}
+	})
+
+	test("falls back to the raw label when the tail is empty", () => {
+		const labels = KIND_LABELS as Record<"module", string>
+		const original = labels.module
+
+		try {
+			labels.module = ""
+			expect(lookupCrate(createQueryJson()).sections[0]?.label).toBe("")
+		} finally {
+			labels.module = original
+		}
+	})
+
+	test("falls back to the root path when summary path metadata is missing", () => {
+		const json = createQueryJson()
+		delete json.paths["8"]
+		const sections = lookupCrate(json).sections
+
+		expect(sections.find((section) => section.kind === "struct")?.items).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "unknown",
+					path: "demo",
+					summary: "Anonymous but public"
+				})
+			])
+		)
+	})
+
+	test("returns no sections when the root item is not a module", () => {
+		const json = createQueryJson()
+		json.index["0"].inner = "struct" as never
+
+		expect(lookupCrate(json).sections).toEqual([])
 	})
 })

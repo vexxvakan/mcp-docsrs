@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 import { errAsync, okAsync } from "neverthrow"
 import {
 	parseCliFlags,
@@ -26,8 +24,6 @@ const createExitOnFailure =
 		exit(1)
 		return undefined as never
 	}
-
-const exitOnFailure = createExitOnFailure((code) => process.exit(code))
 
 const createShutdownHandlers = (
 	close: ReturnType<typeof createServer>["close"],
@@ -74,7 +70,7 @@ const defaultDeps: CliDeps = {
 	createServer,
 	installShutdown,
 	readEnvConfig,
-	write: (message) => process.stdout.write(message)
+	write: (message: string) => process.stdout.write(message)
 }
 
 const run = (args?: string[], deps: CliDeps = defaultDeps) => {
@@ -106,12 +102,6 @@ const run = (args?: string[], deps: CliDeps = defaultDeps) => {
 	deps.installShutdown(app.close)
 
 	return app.start()
-}
-
-if (import.meta.main) {
-	run()
-		.match(() => undefined, exitOnFailure)
-		.then(() => undefined)
 }
 
 export { createShutdownHandlers, installShutdown, run }

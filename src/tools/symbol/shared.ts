@@ -3,7 +3,7 @@
 import type { Crate, Item, ItemKind } from "@mcp-docsrs/docs/rustdoc/types/items.ts"
 import { ensureRoot, getItemById, getKindFromItem, toIdKey } from "@mcp-docsrs/docs/shared.ts"
 import type { DocsSymbolRequest } from "@mcp-docsrs/docs/types.ts"
-import type { CandidateScoreInput, DocsSymbolQuery, SymbolMatch } from "./types.ts"
+import type { DocsSymbolQuery, SymbolMatch } from "./types.ts"
 
 const MAX_PREVIEW_LENGTH = 100
 const PREVIEW_SUFFIX = "..."
@@ -116,32 +116,6 @@ const buildIndexPaths = (json: Crate) => {
 	return paths
 }
 
-const scoreCandidate = ({ indexPaths, item, json, key, kind, query }: CandidateScoreInput) => {
-	if (item.name !== query.name) {
-		return -1
-	}
-	if (!query.kind || kind !== query.kind) {
-		return -1
-	}
-
-	let score = NAME_MATCH_SCORE + KIND_MATCH_SCORE
-
-	const derivedPath = indexPaths[key]
-	if (query.segments.length > 1 && derivedPath && hasPathSuffix(derivedPath, query.segments)) {
-		score += INDEX_PATH_MATCH_SCORE
-	}
-
-	const summaryPath = json.paths[key]
-	if (query.segments.length > 1 && summaryPath && hasPathSuffix(summaryPath.path, query.segments)) {
-		score += SUMMARY_PATH_MATCH_SCORE
-	}
-	if (summaryPath?.kind === kind) {
-		score += SUMMARY_KIND_MATCH_SCORE
-	}
-
-	return score
-}
-
 const getVisibility = (item: Item) =>
 	typeof item.visibility === "string" ? item.visibility : "restricted"
 
@@ -160,19 +134,38 @@ const findSymbol = (json: Crate, input: DocsSymbolRequest): SymbolMatch | null =
 	const best = Object.entries(json.index)
 		.map(([key, item]): ScoredCandidate => {
 			const kind = getKindFromItem(item)
+			let score = -1
+
+			if (item.name === query.name && query.kind && kind === query.kind) {
+				score = NAME_MATCH_SCORE + KIND_MATCH_SCORE
+
+				const derivedPath = indexPaths[key]
+				if (
+					query.segments.length > 1 &&
+					derivedPath &&
+					hasPathSuffix(derivedPath, query.segments)
+				) {
+					score += INDEX_PATH_MATCH_SCORE
+				}
+
+				const summaryPath = json.paths[key]
+				if (
+					query.segments.length > 1 &&
+					summaryPath &&
+					hasPathSuffix(summaryPath.path, query.segments)
+				) {
+					score += SUMMARY_PATH_MATCH_SCORE
+				}
+				if (summaryPath?.kind === kind) {
+					score += SUMMARY_KIND_MATCH_SCORE
+				}
+			}
 
 			return {
 				item,
 				key,
 				kind,
-				score: scoreCandidate({
-					indexPaths,
-					item,
-					json,
-					key,
-					kind,
-					query
-				})
+				score
 			}
 		})
 		.filter(

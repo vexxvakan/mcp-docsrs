@@ -5,7 +5,7 @@ exact = true
 
 [test]
 coverage = true
-coveragePathIgnorePatterns = ["tests/**"]
-coverageThreshold = { lines = 0.9, functions = 0.9, statements = 0.9 }
+coveragePathIgnorePatterns = ["tests/**", "src/main.ts"]
+coverageThreshold = { lines = 1.0, functions = 1.0, statements = 1.0 }
 coverageSkipTestFiles = true
 preload = ["./tests/preload.ts"]

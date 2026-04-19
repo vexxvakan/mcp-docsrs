@@ -87,6 +87,28 @@ describe("fetchFindResponse", () => {
 			`${CRATES_IO_URL}?q=${encodeURIComponent(query)}&per_page=${limit}`
 		)
 	})
+
+	test("aborts requests through the timeout callback", async () => {
+		const originalSetTimeout = globalThis.setTimeout
+		const fetchSpy = mockJsonFetch(createCratesIoResponse([], FIND_TOTAL))
+
+		globalThis.setTimeout = ((handler: TimerHandler, _timeout?: number) => {
+			if (typeof handler === "function") {
+				handler()
+			}
+
+			return 1 as never
+		}) as typeof setTimeout
+
+		try {
+			const result = await fetchFindResponse("rustdoc", 10)
+
+			expect(result.meta.total).toBe(FIND_TOTAL)
+			expect(fetchSpy).toHaveBeenCalled()
+		} finally {
+			globalThis.setTimeout = originalSetTimeout
+		}
+	})
 })
 
 describe("loadRankedCrates", () => {

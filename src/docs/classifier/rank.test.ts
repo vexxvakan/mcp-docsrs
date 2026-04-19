@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { rankCrates } from "./rank.ts"
+import { getTierOrder, rankCrates } from "./rank.ts"
 
 const createSearchCrate = (
 	name: string,
@@ -19,6 +19,39 @@ const createSearchCrate = (
 })
 
 describe("rankCrates", () => {
+	test.each([
+		[
+			"exact_name",
+			5
+		],
+		[
+			"name_prefix",
+			4
+		],
+		[
+			"name_tokens",
+			3
+		],
+		[
+			"text_tokens",
+			2
+		],
+		[
+			"partial_name",
+			1
+		],
+		[
+			"discarded",
+			0
+		],
+		[
+			"unexpected",
+			0
+		]
+	])("maps tier %s", (tier, expected) => {
+		expect(getTierOrder(tier as Parameters<typeof getTierOrder>[0])).toBe(expected)
+	})
+
 	test.each([
 		{
 			crates: [

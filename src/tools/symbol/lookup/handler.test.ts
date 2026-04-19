@@ -7,6 +7,7 @@ import {
 	createModuleLookupJson,
 	createStructLookupJson
 } from "../../../../tests/fixtures/symbol-lookup.ts"
+import { lookupSymbolItems } from "./details.ts"
 import { createLookupSymbolHandler } from "./handler.ts"
 
 const createFetcher = (overrides: Partial<DocsFetcher> = {}): DocsFetcher => ({
@@ -202,6 +203,490 @@ describe("createLookupSymbolHandler", () => {
 				kind: "type_alias",
 				label: "Type Alias",
 				name: "Alias"
+			}
+		})
+	})
+
+	test("handles unit and tuple structs plus malformed item shapes", () => {
+		const json = createQueryJson()
+		json.index["101"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: "Tuple field",
+			id: 101,
+			inner: {
+				struct_field: {
+					primitive: "u32"
+				}
+			},
+			links: {},
+			name: "tupleField",
+			span: null,
+			visibility: "public"
+		}
+		json.index["30"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 30,
+			inner: {
+				struct: {
+					generics: {
+						params: [],
+						where_predicates: []
+					},
+					impls: [],
+					kind: "unit"
+				}
+			},
+			links: {},
+			name: "UnitThing",
+			span: null,
+			visibility: "public"
+		}
+		json.index["31"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 31,
+			inner: {
+				struct: {
+					generics: {
+						params: [],
+						where_predicates: []
+					},
+					impls: [],
+					kind: {
+						tuple: [
+							101
+						]
+					}
+				}
+			},
+			links: {},
+			name: "TupleThing",
+			span: null,
+			visibility: "public"
+		}
+		json.index["32"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 32,
+			inner: "module",
+			links: {},
+			name: "StringModule",
+			span: null,
+			visibility: "public"
+		}
+		json.index["33"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 33,
+			inner: "struct",
+			links: {},
+			name: "StringStruct",
+			span: null,
+			visibility: "public"
+		}
+
+		expect(lookupSymbolItems(json, json.index["30"])).toEqual({
+			autoTraits: {},
+			blankets: {},
+			fields: {},
+			traits: {}
+		})
+		expect(lookupSymbolItems(json, json.index["31"])).toEqual({
+			autoTraits: {},
+			blankets: {},
+			fields: {
+				tupleField: "Tuple field"
+			},
+			traits: {}
+		})
+		expect(lookupSymbolItems(json, json.index["32"])).toBeUndefined()
+		expect(lookupSymbolItems(json, json.index["33"])).toBeUndefined()
+	})
+
+	test("uses path and id fallbacks for unnamed struct fields", () => {
+		const json = createQueryJson()
+		json.index["101"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 101,
+			inner: {
+				struct_field: {
+					primitive: "u32"
+				}
+			},
+			links: {},
+			name: null,
+			span: null,
+			visibility: "public"
+		}
+		json.index["102"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: "Detailed fallback docs",
+			id: 102,
+			inner: {
+				struct_field: {
+					primitive: "u64"
+				}
+			},
+			links: {},
+			name: null,
+			span: null,
+			visibility: "public"
+		}
+		json.index["30"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 30,
+			inner: {
+				struct: {
+					generics: {
+						params: [],
+						where_predicates: []
+					},
+					impls: [],
+					kind: {
+						plain: {
+							fields: [
+								101,
+								102
+							]
+						}
+					}
+				}
+			},
+			links: {},
+			name: "FallbackThing",
+			span: null,
+			visibility: "public"
+		}
+		json.paths["101"] = {
+			crate_id: 0,
+			kind: "struct_field",
+			path: [
+				"demo",
+				"runtime",
+				"namedField"
+			]
+		}
+
+		expect(lookupSymbolItems(json, json.index["30"])).toEqual({
+			autoTraits: {},
+			blankets: {},
+			fields: {
+				"102": "Detailed fallback docs",
+				namedField: "Struct Field"
+			},
+			traits: {}
+		})
+	})
+
+	test("keeps the first value when struct field keys collide", () => {
+		const json = createQueryJson()
+		json.index["101"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: "First value",
+			id: 101,
+			inner: {
+				struct_field: {
+					primitive: "u32"
+				}
+			},
+			links: {},
+			name: null,
+			span: null,
+			visibility: "public"
+		}
+		json.index["102"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: "Second value",
+			id: 102,
+			inner: {
+				struct_field: {
+					primitive: "u64"
+				}
+			},
+			links: {},
+			name: null,
+			span: null,
+			visibility: "public"
+		}
+		json.index["30"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 30,
+			inner: {
+				struct: {
+					generics: {
+						params: [],
+						where_predicates: []
+					},
+					impls: [],
+					kind: {
+						plain: {
+							fields: [
+								101,
+								102
+							]
+						}
+					}
+				}
+			},
+			links: {},
+			name: "CollisionThing",
+			span: null,
+			visibility: "public"
+		}
+		json.paths["101"] = {
+			crate_id: 0,
+			kind: "struct_field",
+			path: [
+				"demo",
+				"runtime",
+				"duplicate"
+			]
+		}
+		json.paths["102"] = {
+			crate_id: 0,
+			kind: "struct_field",
+			path: [
+				"demo",
+				"runtime",
+				"duplicate"
+			]
+		}
+
+		expect(lookupSymbolItems(json, json.index["30"])).toEqual({
+			autoTraits: {},
+			blankets: {},
+			fields: {
+				duplicate: "First value"
+			},
+			traits: {}
+		})
+	})
+
+	test("skips impls that do not point at a trait", () => {
+		const json = createQueryJson()
+		json.index["41"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 41,
+			inner: {
+				impl: {
+					blanket_impl: null,
+					for_: {
+						primitive: "u32"
+					},
+					generics: {
+						params: [],
+						where_predicates: []
+					},
+					negative: false,
+					trait: null
+				}
+			},
+			links: {},
+			name: "IgnoredImpl",
+			span: null,
+			visibility: "public"
+		}
+		json.index["40"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 40,
+			inner: {
+				struct: {
+					generics: {
+						params: [],
+						where_predicates: []
+					},
+					impls: [
+						41
+					],
+					kind: "unit"
+				}
+			},
+			links: {},
+			name: "NoTraitImpl",
+			span: null,
+			visibility: "public"
+		}
+
+		expect(lookupSymbolItems(json, json.index["40"])).toEqual({
+			autoTraits: {},
+			blankets: {},
+			fields: {},
+			traits: {}
+		})
+	})
+
+	test("uses the traits bucket when impl trait metadata is missing", () => {
+		const json = createQueryJson()
+		json.index["41"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: "Fallback implementation",
+			id: 41,
+			inner: {
+				impl: {
+					blanket_impl: null,
+					for: {
+						primitive: "u32"
+					},
+					generics: {
+						params: [],
+						where_predicates: []
+					},
+					is_negative: false,
+					is_synthetic: false,
+					is_unsafe: false,
+					items: [],
+					provided_trait_methods: [],
+					trait: {
+						args: null,
+						id: 999_999,
+						path: "demo::traits::Missing"
+					}
+				}
+			},
+			links: {},
+			name: "FallbackImpl",
+			span: null,
+			visibility: "public"
+		}
+		json.index["40"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 40,
+			inner: {
+				struct: {
+					generics: {
+						params: [],
+						where_predicates: []
+					},
+					impls: [
+						41
+					],
+					kind: "unit"
+				}
+			},
+			links: {},
+			name: "MissingTraitImpl",
+			span: null,
+			visibility: "public"
+		}
+
+		expect(lookupSymbolItems(json, json.index["40"])).toEqual({
+			autoTraits: {},
+			blankets: {},
+			fields: {},
+			traits: {
+				"demo::traits::Missing": "Fallback implementation"
+			}
+		})
+	})
+
+	test("returns undefined for malformed enum items", () => {
+		const json = createQueryJson()
+		json.index["30"] = {
+			attrs: [],
+			crate_id: 0,
+			deprecation: null,
+			docs: null,
+			id: 30,
+			inner: "enum",
+			links: {},
+			name: "BrokenEnum",
+			span: null,
+			visibility: "public"
+		}
+
+		expect(lookupSymbolItems(json, json.index["30"])).toBeUndefined()
+	})
+
+	test("uses the implementation fallback text when docs are missing", async () => {
+		const result = await createLookupSymbolHandler(
+			createFetcher({
+				load: async () => {
+					const data = createStructLookupJson()
+					data.index["23"].docs = null
+					return {
+						data,
+						fromCache: true
+					}
+				}
+			})
+		)({
+			crateName: "demo",
+			symbolname: "runtime::Client",
+			symbolType: "struct"
+		})
+
+		expect(result.structuredContent).toMatchObject({
+			items: {
+				blankets: {
+					"demo::traits::Blanket": "Implementation"
+				}
+			}
+		})
+	})
+
+	test("ignores missing module children in structured output", async () => {
+		const result = await createLookupSymbolHandler(
+			createFetcher({
+				load: () => {
+					const data = createModuleLookupJson()
+					if (typeof data.index["0"].inner === "object" && "module" in data.index["0"].inner) {
+						data.index["0"].inner.module.items.push(9999)
+					}
+					return Promise.resolve({
+						data,
+						fromCache: true
+					})
+				}
+			})
+		)({
+			crateName: "demo",
+			symbolname: "demo",
+			symbolType: "module"
+		})
+
+		expect(result.isError ?? false).toBeFalse()
+		expect(result.structuredContent).toMatchObject({
+			items: {
+				modules: {
+					net: "Networking tools"
+				}
 			}
 		})
 	})
