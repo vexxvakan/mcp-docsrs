@@ -7,7 +7,7 @@ import { normalizeVersion, resolveBuildVersion } from "../version.ts"
 import { buildFailureMessage, buildLabel, formatLogs, formatThrownError } from "./errors.ts"
 import { usage } from "./help.ts"
 
-const ENTRYPOINT = "./src/cli.ts"
+const ENTRYPOINT = "./src/main.ts"
 const DIST_DIR = "./dist"
 const TARGET_LABEL_WIDTH = 18
 const HELP_FLAGS = new Set([
@@ -44,18 +44,6 @@ const TARGETS: readonly BuildTarget[] = [
 		label: "Linux arm64",
 		outfile: join(DIST_DIR, `${APP_NAME}-linux-arm64`),
 		target: "bun-linux-arm64"
-	},
-	{
-		id: "linux-x64-musl",
-		label: "Linux x64 musl",
-		outfile: join(DIST_DIR, `${APP_NAME}-linux-x64-musl`),
-		target: "bun-linux-x64-musl"
-	},
-	{
-		id: "linux-arm64-musl",
-		label: "Linux arm64 musl",
-		outfile: join(DIST_DIR, `${APP_NAME}-linux-arm64-musl`),
-		target: "bun-linux-arm64-musl"
 	},
 	{
 		id: "darwin-x64",
