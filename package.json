@@ -5,6 +5,7 @@
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "1.27.1",
+		"neverthrow": "8.2.0",
 		"zod": "4.3.6"
 	},
 	"description": "MCP server for fetching Rust crate documentation via docs.rs RustDoc API",
@@ -32,7 +33,7 @@
 	"main": "./dist/mcp-docsrs",
 	"name": "mcp-docsrs",
 	"scripts": {
-		"build": "bun run ./scripts/build.ts",
+		"build": "bun run ./scripts/build/script.ts",
 		"check": "tsc --noEmit",
 		"dev": "bun run src/cli.ts",
 		"inspect": "mcp-inspector --config mcp-inspector.config.json --server mcp-docsrs",

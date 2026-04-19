@@ -1,4 +1,5 @@
 import { inspect } from "node:util"
+import { fromAsyncThrowable, fromThrowable, type Result, type ResultAsync } from "neverthrow"
 import { APP_NAME } from "./meta.ts"
 
 const TEST_ENV = "test"
@@ -118,6 +119,39 @@ class ItemNotFoundError extends McpDocsrsError {
 	}
 }
 
+class StartupError extends McpDocsrsError {
+	constructor(step: string, cause: unknown) {
+		const resolved = toError(cause)
+		super(`Failed to ${step}: ${resolved.message}`, {
+			cause: resolved.message,
+			causeName: resolved.name,
+			step
+		})
+	}
+}
+
+class ShutdownError extends McpDocsrsError {
+	constructor(step: string, cause: unknown) {
+		const resolved = toError(cause)
+		super(`Failed to ${step}: ${resolved.message}`, {
+			cause: resolved.message,
+			causeName: resolved.name,
+			step
+		})
+	}
+}
+
+type AppResult<T, E = Error> = Result<T, E>
+type AppResultAsync<T, E = Error> = ResultAsync<T, E>
+
+const toAppError = (error: unknown) => toError(error)
+
+const trySync = <T, E>(fn: () => T, map: (error: Error) => E): AppResult<T, E> =>
+	fromThrowable(fn, (error) => map(toError(error)))()
+
+const tryAsync = <T, E>(fn: () => Promise<T>, map: (error: Error) => E): AppResultAsync<T, E> =>
+	fromAsyncThrowable(fn, (error) => map(toError(error)))()
+
 const ErrorLogger = {
 	log(error: unknown) {
 		if (isSilent()) {
@@ -160,6 +194,8 @@ const isCrateNotFoundError = (error: unknown): error is CrateNotFoundError =>
 	error instanceof CrateNotFoundError
 
 export {
+	type AppResult,
+	type AppResultAsync,
 	CacheError,
 	CrateNotFoundError,
 	DecompressionError,
@@ -172,5 +208,10 @@ export {
 	McpDocsrsError,
 	NetworkError,
 	RustdocParseError,
-	TimeoutError
+	ShutdownError,
+	StartupError,
+	TimeoutError,
+	toAppError,
+	tryAsync,
+	trySync
 }

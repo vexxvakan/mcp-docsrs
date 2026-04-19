@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
 
 import { mkdir, rm, stat } from "node:fs/promises"
-import { basename, extname, join } from "node:path"
-import { APP_NAME } from "../src/meta.ts"
-import { normalizeVersion, resolveBuildVersion } from "./version.ts"
+import { extname, join } from "node:path"
+import { APP_NAME } from "../../src/meta.ts"
+import { normalizeVersion, resolveBuildVersion } from "../version.ts"
+import { buildFailureMessage, buildLabel, formatLogs, formatThrownError } from "./errors.ts"
+import { usage } from "./help.ts"
 
 const ENTRYPOINT = "./src/cli.ts"
 const DIST_DIR = "./dist"
@@ -24,8 +26,6 @@ type BuildTarget = {
 	outfile: string
 	target?: Bun.Build.CompileTarget
 }
-
-type BuildLog = Bun.BuildOutput["logs"][number]
 
 const TARGETS: readonly BuildTarget[] = [
 	{
@@ -93,28 +93,6 @@ const TARGET_LOOKUP = new Map(
 			: [])
 	])
 )
-
-const usage = () =>
-	`
-Usage: bun run build -- [target] [--clean]
-
-Targets:
-  host                Build the current platform executable (default)
-  all                 Build every release artifact
-  list                Print the available build targets
-  linux-x64
-  linux-arm64
-  linux-x64-musl
-  linux-arm64-musl
-  darwin-x64
-  darwin-arm64
-  windows-x64
-
-Options:
-  --target <name>     Select a target explicitly
-  --clean             Remove the target artifact before building
-  --help, -h          Show help
-`.trim()
 
 const readArgValue = (args: string[], name: string) => {
 	for (const arg of args) {
@@ -209,16 +187,6 @@ const findOutputPath = async (outfile: string) => {
 
 const formatSize = (size: number) => new Intl.NumberFormat("en-US").format(size)
 
-const formatLogs = (logs: BuildLog[]) =>
-	logs
-		.map((log) => {
-			const location = log.position
-				? `${basename(log.position.file)}:${log.position.line}:${log.position.column}`
-				: "build"
-			return `${location} ${log.level}: ${log.message}`
-		})
-		.join("\n")
-
 const writeLine = (message: string) => {
 	process.stdout.write(`${message}\n`)
 }
@@ -232,27 +200,12 @@ const APP_VERSION = resolveBuildVersion(
 	normalizeVersion(Bun.env.APP_VERSION ?? "")
 )
 
-const buildLabel = (build: BuildTarget) =>
-	build.id === HOST_TARGET ? APP_NAME : `${APP_NAME} for ${build.label}`
-
-const buildErrorMessage = (build: BuildTarget, details: string) => {
-	const lockedHint = details.includes("EPERM")
-		? "\nThe output artifact may be locked by a running executable. Stop the process and retry."
-		: ""
-	const downloadHint =
-		build.target && (details.includes("Failed to download") || details === "Bundle failed")
-			? "\nCross-target compilation may need Bun to download the target runtime before the first build."
-			: ""
-
-	return `Build failed for '${build.id}'.${details ? `\n${details}` : ""}${lockedHint}${downloadHint}`
-}
-
 const buildTarget = async (build: BuildTarget, clean: boolean) => {
 	if (clean) {
 		await removeOutputs(build.outfile)
 	}
 
-	writeLine(`Building ${buildLabel(build)}...`)
+	writeLine(`Building ${buildLabel(build, APP_NAME)}...`)
 
 	try {
 		const result = await Bun.build({
@@ -276,18 +229,20 @@ const buildTarget = async (build: BuildTarget, clean: boolean) => {
 		})
 
 		if (!result.success) {
-			throw new Error(buildErrorMessage(build, formatLogs(result.logs)))
+			throw new Error(buildFailureMessage(build, formatLogs(result.logs)))
 		}
 
 		const outputPath = await findOutputPath(build.outfile)
 		const info = await stat(outputPath)
-		writeLine(`Built ${buildLabel(build)} -> ${outputPath} (${formatSize(info.size)} bytes)`)
+		writeLine(
+			`Built ${buildLabel(build, APP_NAME)} -> ${outputPath} (${formatSize(info.size)} bytes)`
+		)
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error)
+		const message = formatThrownError(error)
 		if (message.startsWith(`Build failed for '${build.id}'.`)) {
 			throw error
 		}
-		throw new Error(buildErrorMessage(build, message))
+		throw new Error(buildFailureMessage(build, message))
 	}
 }
 
@@ -326,7 +281,7 @@ const run = async () => {
 }
 
 run().catch((error) => {
-	const message = error instanceof Error ? error.message : String(error)
+	const message = formatThrownError(error)
 	writeError(message)
 	process.exit(1)
 })

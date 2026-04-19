@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { errAsync, okAsync } from "neverthrow"
 import {
 	parseCliFlags,
 	readEnvConfig,
@@ -7,17 +8,34 @@ import {
 	resolveConfig,
 	validateConfig
 } from "./config/index.ts"
-import { ErrorLogger } from "./errors.ts"
+import { ErrorLogger, StartupError, trySync } from "./errors.ts"
 import { APP_VERSION } from "./meta.ts"
 import { createServer } from "./server/server.ts"
 
-const exitOnFailure = (error: unknown) => {
-	ErrorLogger.log(error)
-	process.exit(1)
+type CliDeps = {
+	createServer: typeof createServer
+	installShutdown: typeof installShutdown
+	readEnvConfig: typeof readEnvConfig
+	write: (message: string) => unknown
 }
 
-const installShutdown = (close: () => Promise<void>) => {
+const createExitOnFailure =
+	(exit: (code: number) => unknown, log = ErrorLogger.log) =>
+	(error: unknown) => {
+		log(error)
+		exit(1)
+		return undefined as never
+	}
+
+const exitOnFailure = createExitOnFailure((code) => process.exit(code))
+
+const createShutdownHandlers = (
+	close: ReturnType<typeof createServer>["close"],
+	exit: (code: number) => unknown,
+	log = ErrorLogger.log
+) => {
 	let shuttingDown = false
+	const fail = createExitOnFailure(exit, log)
 
 	const shutdown = async (exitCode: number) => {
 		if (shuttingDown) {
@@ -25,49 +43,75 @@ const installShutdown = (close: () => Promise<void>) => {
 		}
 
 		shuttingDown = true
-		await close()
-		process.exit(exitCode)
+		const result = await close()
+		result.match(() => exit(exitCode), fail)
 	}
 
-	process.on("SIGINT", () => {
-		shutdown(0).catch(exitOnFailure)
-	})
-
-	process.on("SIGTERM", () => {
-		shutdown(0).catch(exitOnFailure)
-	})
-
-	process.on("uncaughtException", (error) => {
-		ErrorLogger.log(error)
-		shutdown(1).catch(exitOnFailure)
-	})
-
-	process.on("unhandledRejection", (error) => {
-		ErrorLogger.log(error)
-		shutdown(1).catch(exitOnFailure)
-	})
+	return {
+		sigint: () => shutdown(0).catch(fail),
+		sigterm: () => shutdown(0).catch(fail),
+		uncaughtException: (error: unknown) => {
+			log(error)
+			return shutdown(1).catch(fail)
+		},
+		unhandledRejection: (error: unknown) => {
+			log(error)
+			return shutdown(1).catch(fail)
+		}
+	}
 }
 
-const run = async () => {
-	const flags = parseCliFlags()
+const installShutdown = (close: ReturnType<typeof createServer>["close"]) => {
+	const handlers = createShutdownHandlers(close, (code) => process.exit(code))
+
+	process.on("SIGINT", handlers.sigint)
+	process.on("SIGTERM", handlers.sigterm)
+	process.on("uncaughtException", handlers.uncaughtException)
+	process.on("unhandledRejection", handlers.unhandledRejection)
+}
+
+const defaultDeps: CliDeps = {
+	createServer,
+	installShutdown,
+	readEnvConfig,
+	write: (message) => process.stdout.write(message)
+}
+
+const run = (args?: string[], deps: CliDeps = defaultDeps) => {
+	const flags = parseCliFlags(args)
 	if (flags.showHelp) {
-		process.stdout.write(`${renderHelp()}\n`)
-		return
+		deps.write(`${renderHelp()}\n`)
+		return okAsync(undefined)
 	}
 	if (flags.showVersion) {
-		process.stdout.write(`${APP_VERSION}\n`)
-		return
+		deps.write(`${APP_VERSION}\n`)
+		return okAsync(undefined)
 	}
 
-	const config = validateConfig(
-		resolveConfig({
-			...readEnvConfig(),
-			...flags.overrides
-		})
+	const configResult = trySync(
+		() =>
+			validateConfig(
+				resolveConfig({
+					...deps.readEnvConfig(),
+					...flags.overrides
+				})
+			),
+		(error) => new StartupError("resolve CLI configuration", error)
 	)
-	const app = createServer(config)
-	installShutdown(app.close)
-	await app.start()
+	if (configResult.isErr()) {
+		return errAsync(configResult.error)
+	}
+
+	const app = deps.createServer(configResult.value)
+	deps.installShutdown(app.close)
+
+	return app.start()
 }
 
-run().catch(exitOnFailure)
+if (import.meta.main) {
+	run()
+		.match(() => undefined, exitOnFailure)
+		.then(() => undefined)
+}
+
+export { createShutdownHandlers, installShutdown, run }
