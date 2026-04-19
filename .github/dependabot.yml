@@ -24,7 +24,6 @@ updates:
           - "@biomejs/biome"
           - "@types/*"
           - "@modelcontextprotocol/inspector"
-          - "release-please"
           - "typescript"
         update-types:
           - "minor"
@@ -36,7 +35,6 @@ updates:
           - "@biomejs/biome"
           - "@types/*"
           - "@modelcontextprotocol/inspector"
-          - "release-please"
           - "typescript"
         update-types:
           - "patch"
