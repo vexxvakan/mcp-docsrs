@@ -67,7 +67,7 @@ jobs:
 
       # 6. Create Tag and GitHub Release
       - name: Publish Release
-        uses: softprops/action-gh-release@v2.6.1
+        uses: softprops/action-gh-release@v3.0.0
         with:
           tag_name: "v${{ steps.semver.outputs.version }}"
           body_path: release_notes.md
