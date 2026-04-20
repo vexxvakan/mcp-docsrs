@@ -1,6 +1,6 @@
 import { inspect } from "node:util"
 import { fromAsyncThrowable, fromThrowable, type Result, type ResultAsync } from "neverthrow"
-import { APP_NAME } from "./meta.ts"
+import { APP_NAME } from "../meta.ts"
 
 const TEST_ENV = "test"
 const TRUE_VALUE = "true"
