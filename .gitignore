@@ -9,7 +9,6 @@ dist/
 .env
 .env.local
 
-
 # artifacts
 *.bun-build
 *.sqlite
@@ -17,6 +16,7 @@ dist/
 *.db
 *.log
 review/
+.tmp
 
 # AI
 .codex/

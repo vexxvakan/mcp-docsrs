@@ -12,20 +12,6 @@ on:
       version:
         required: true
         type: string
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: Git ref to build and publish from
-        required: false
-        type: string
-      tag_name:
-        description: Release tag
-        required: true
-        type: string
-      version:
-        description: Release version without the v prefix
-        required: true
-        type: string
 
 permissions:
   contents: write

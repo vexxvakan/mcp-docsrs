@@ -1,4 +1,4 @@
-import { DecompressionError, JsonParseError } from "../errors.ts"
+import { DecompressionError, JsonParseError } from "@mcp-docsrs/errors"
 import type { Crate } from "./rustdoc/types/items.ts"
 
 const TEXT_DECODER = new TextDecoder()

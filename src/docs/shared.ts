@@ -1,5 +1,5 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc item kind tags use upstream snake_case
-import { RustdocParseError } from "../errors.ts"
+import { RustdocParseError } from "@mcp-docsrs/errors"
 import type { Id } from "./rustdoc/types/core.ts"
 import type { Crate, Item, ItemEnum, ItemKind } from "./rustdoc/types/items.ts"
 

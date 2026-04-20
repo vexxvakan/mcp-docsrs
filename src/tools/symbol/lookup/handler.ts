@@ -1,6 +1,6 @@
 import { ensureRoot, KIND_LABELS } from "@mcp-docsrs/docs/shared.ts"
 import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
-import { ItemNotFoundError } from "@mcp-docsrs/errors.ts"
+import { ItemNotFoundError } from "@mcp-docsrs/errors"
 import { createErrorResult, createStructuredResult, toErrorMessage } from "../../shared.ts"
 import type { ToolHandler } from "../../types.ts"
 import { findSymbol, getFirstLine, getVisibility } from "../shared.ts"

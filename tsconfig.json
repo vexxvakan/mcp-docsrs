@@ -21,6 +21,9 @@
 			"@mcp-docsrs/*": [
 				"./src/*"
 			],
+			"@mcp-docsrs/errors": [
+				"./src/errors/errors.ts"
+			],
 			"@mcp-docsrs/cache/*": [
 				"./src/cache/*"
 			],

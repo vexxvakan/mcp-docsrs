@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: rustdoc fixture data uses upstream snake_case keys
 import { describe, expect, it } from "bun:test"
+import { ShutdownError } from "@mcp-docsrs/errors"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
-import { ShutdownError } from "../../errors.ts"
 import { closeServer, createServer, startServer } from "../server.ts"
 
 describe("createServer", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, spyOn, test } from "bun:test"
+import { CrateNotFoundError, NetworkError, TimeoutError } from "@mcp-docsrs/errors"
 import { createConfig, createStoreJson, toResponse } from "../../../tests/fixtures/docs.ts"
 import { createCacheEntry, createCacheStoreMock } from "../../../tests/mocks/cache.ts"
-import { CrateNotFoundError, NetworkError, TimeoutError } from "../../errors.ts"
 import { APP_USER_AGENT } from "../../meta.ts"
 import { buildJsonUrl, getCachedDocument, getRemoteDocument } from "../store.ts"
 

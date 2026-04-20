@@ -1,6 +1,6 @@
+import { CrateNotFoundError, NetworkError, TimeoutError } from "@mcp-docsrs/errors"
 import type { CacheStore } from "../cache/types.ts"
 import type { ServerConfig } from "../config/types.ts"
-import { CrateNotFoundError, NetworkError, TimeoutError } from "../errors.ts"
 import { APP_USER_AGENT } from "../meta.ts"
 import { parseRustdoc } from "./parse.ts"
 import type { DocsLoadResult, DocsRequest } from "./types.ts"

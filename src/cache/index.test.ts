@@ -1,8 +1,8 @@
 import { afterEach, beforeAll, describe, expect, mock, test } from "bun:test"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
+import { CacheError } from "@mcp-docsrs/errors"
 import { createQueryJson } from "../../tests/fixtures/docs.ts"
-import { CacheError } from "../errors.ts"
 import type { CacheRecordRow } from "./types.ts"
 
 type CacheScenario = {

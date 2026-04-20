@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite"
 import { mkdirSync } from "node:fs"
 import { dirname } from "node:path"
+import { CacheError, ErrorLogger } from "@mcp-docsrs/errors"
 import type { Crate } from "../docs/rustdoc/types/items.ts"
-import { CacheError, ErrorLogger } from "../errors.ts"
 import type { CacheEntry, CacheStatements, CacheStore } from "./types.ts"
 
 const MEMORY_DB = ":memory:"

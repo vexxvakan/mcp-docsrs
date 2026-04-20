@@ -1,5 +1,5 @@
 import type { DocsFetcher } from "@mcp-docsrs/docs/types.ts"
-import { ItemNotFoundError } from "@mcp-docsrs/errors.ts"
+import { ItemNotFoundError } from "@mcp-docsrs/errors"
 import { createErrorResult, createTextResult, toErrorMessage } from "../../shared.ts"
 import type { ToolHandler } from "../../types.ts"
 import { findSymbol } from "../shared.ts"

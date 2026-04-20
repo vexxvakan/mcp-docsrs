@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { CrateNotFoundError, JsonParseError, StartupError } from "../errors.ts"
+import { CrateNotFoundError, JsonParseError, StartupError } from "@mcp-docsrs/errors"
 import {
 	createErrorResult,
 	createStructuredResult,

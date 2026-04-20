@@ -18,7 +18,7 @@ import {
 	toAppError,
 	tryAsync,
 	trySync
-} from "../errors.ts"
+} from "@mcp-docsrs/errors"
 import { APP_NAME } from "../meta.ts"
 
 const HTTP_NOT_FOUND = 404

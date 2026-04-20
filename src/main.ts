@@ -1,3 +1,4 @@
+import { ErrorLogger, StartupError, trySync } from "@mcp-docsrs/errors"
 import { errAsync, okAsync } from "neverthrow"
 import {
 	parseCliFlags,
@@ -6,7 +7,6 @@ import {
 	resolveConfig,
 	validateConfig
 } from "./config/index.ts"
-import { ErrorLogger, StartupError, trySync } from "./errors.ts"
 import { APP_VERSION } from "./meta.ts"
 import { createServer } from "./server/server.ts"
 

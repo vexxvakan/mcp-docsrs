@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
+import { DecompressionError, JsonParseError } from "@mcp-docsrs/errors"
 import { createStoreJson, toResponse } from "../../../tests/fixtures/docs.ts"
-import { DecompressionError, JsonParseError } from "../../errors.ts"
 import { decodeBytes, parseRustdoc } from "../parse.ts"
 
 const TEST_URL = "https://docs.rs/test"

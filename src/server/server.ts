@@ -1,7 +1,7 @@
 import { resolveConfig } from "@mcp-docsrs/config/index.ts"
 import type { ServerConfigInput } from "@mcp-docsrs/config/types.ts"
 import { createDocsFetcher } from "@mcp-docsrs/docs/index.ts"
-import { ErrorLogger, ShutdownError, StartupError, tryAsync } from "@mcp-docsrs/errors.ts"
+import { ErrorLogger, ShutdownError, StartupError, tryAsync } from "@mcp-docsrs/errors"
 import { APP_NAME, APP_VERSION } from "@mcp-docsrs/meta.ts"
 import { registerPrompts } from "@mcp-docsrs/prompts/register.ts"
 import { registerTools } from "@mcp-docsrs/tools/register.ts"
