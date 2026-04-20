@@ -1,0 +1,76 @@
+name: Cut Release
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "Type of version bump"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get Next Version
+        id: semver
+        uses: paulhatch/semantic-version@v6.0.2
+        with:
+          tag_prefix: "v"
+          major_pattern: "${{ github.event.inputs.bump_type == 'major' && '.*' || 'NONE' }}"
+          minor_pattern: "${{ github.event.inputs.bump_type == 'minor' && '.*' || 'NONE' }}"
+          version_format: "${major}.${minor}.${patch}"
+
+      - name: Update Version in Files
+        uses: tj-actions/sync-release-version@v13
+        with:
+          new_version: ${{ steps.semver.outputs.version }}
+          paths: |
+            package.json
+            version.txt
+            README.md
+
+      # 4. Generate Changelog via GitHub API
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          VERSION="v${{ steps.semver.outputs.version }}"
+          CHANGELOG=$(gh api -X POST /repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="$VERSION" \
+            -f target_commitish="${{ github.ref_name }}" \
+            --jq .body)
+
+          echo "$CHANGELOG" > release_notes.md
+          # Prepend to the main CHANGELOG.md
+          echo -e "# $VERSION\n\n$CHANGELOG\n\n$(cat CHANGELOG.md 2>/dev/null || echo '')" > CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 5. Commit changes back to main
+      - name: Commit & Push to Main
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore: release v${{ steps.semver.outputs.version }}"
+          branch: main
+
+      # 6. Create Tag and GitHub Release
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2.6.1
+        with:
+          tag_name: "v${{ steps.semver.outputs.version }}"
+          body_path: release_notes.md
+          name: "Release v${{ steps.semver.outputs.version }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

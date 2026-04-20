@@ -1,7 +1,31 @@
 name: Release
 
 on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+      tag_name:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build and publish from
+        required: false
+        type: string
+      tag_name:
+        description: Release tag
+        required: true
+        type: string
+      version:
+        description: Release version without the v prefix
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -9,58 +33,67 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: release-${{ github.workflow }}-${{ github.ref }}
+  group: release-${{ github.workflow }}-${{ inputs.tag_name || github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Prepare Release
-    runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-      version: ${{ steps.release.outputs.version }}
-
-    steps:
-      - name: Create Release
-        id: release
-        uses: googleapis/release-please-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-          target-branch: main
-
   build:
     name: Build Binaries
-    if: needs.release.outputs.release_created == 'true'
-    needs: release
     uses: ./.github/workflows/build-release.yml
     secrets: inherit
+    with:
+      ref: ${{ inputs.ref || inputs.tag_name }}
 
   docker:
     name: Publish Docker Images
-    if: needs.release.outputs.release_created == 'true'
-    needs: release
+    needs: build
     permissions:
       contents: read
       packages: write
     uses: ./.github/workflows/docker.yml
     secrets: inherit
     with:
-      tag_name: ${{ needs.release.outputs.tag_name }}
-      version: ${{ needs.release.outputs.version }}
+      tag_name: ${{ inputs.tag_name }}
+      version: ${{ inputs.version }}
 
   publish:
     name: Publish Release Assets
-    if: needs.release.outputs.release_created == 'true'
     needs:
-      - release
       - build
       - docker
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || inputs.tag_name }}
+
+      - name: Prepare release notes
+        run: |
+          node - <<'EOF'
+          const fs = require('node:fs');
+          const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+          const version = process.env.VERSION;
+          const start = changelog.indexOf(`## ${version} -`);
+          if (start < 0) throw new Error(`Could not find changelog entry for ${version}`);
+          const next = changelog.indexOf('\n## ', start + 1);
+          const notes = next >= 0 ? changelog.slice(start, next).trim() : changelog.slice(start).trim();
+          fs.writeFileSync(process.env.RUNNER_TEMP + '/release-notes.md', `${notes}\n`);
+          EOF
+        env:
+          VERSION: ${{ inputs.version }}
+
+      - name: Create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "${{ inputs.tag_name }}" >/dev/null 2>&1; then
+            gh release create "${{ inputs.tag_name }}" \
+              --title "${{ inputs.version }}" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+
       - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
@@ -78,14 +111,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mapfile -t files < <(find artifacts -type f)
-          gh release upload "${{ needs.release.outputs.tag_name }}" "${files[@]}" --clobber
+          gh release upload "${{ inputs.tag_name }}" "${files[@]}" --clobber
 
       - name: Write release summary
         run: |
           {
             echo "## Release Published"
             echo ""
-            echo "- Tag: \`${{ needs.release.outputs.tag_name }}\`"
-            echo "- Docker image: \`ghcr.io/${{ github.repository }}:${{ needs.release.outputs.tag_name }}\`"
+            echo "- Tag: \`${{ inputs.tag_name }}\`"
+            echo "- Docker image: \`ghcr.io/${{ github.repository }}:${{ inputs.tag_name }}\`"
             echo "- Docker image: \`ghcr.io/${{ github.repository }}:latest\`"
           } >> "$GITHUB_STEP_SUMMARY"
