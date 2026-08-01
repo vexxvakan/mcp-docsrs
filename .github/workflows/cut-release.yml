@@ -26,7 +26,7 @@ jobs:
 
       - name: Get Next Version
         id: semver
-        uses: paulhatch/semantic-version@v6.0.2
+        uses: paulhatch/semantic-version@v6.0.3
         with:
           tag_prefix: "v"
           major_pattern: "${{ github.event.inputs.bump_type == 'major' && '.*' || 'NONE' }}"
